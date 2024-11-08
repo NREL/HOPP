@@ -6,7 +6,7 @@ from hopp import ROOT_DIR
 from hopp.simulation.technologies.resource.solar_resource import BASE_URL as SOLAR_URL
 from hopp.simulation.technologies.resource.wind_resource import WTK_BASE_URL, TAP_BASE_URL
 from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
-from tests.hopp.utils import DEFAULT_WIND_RESOURCE_FILE
+from hopp.utilities.utils_for_tests import DEFAULT_WIND_RESOURCE_FILE
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv
@@ -21,7 +21,7 @@ hubheight = 80
 with open(DEFAULT_WIND_RESOURCE_FILE, 'r') as f:
     wind_body = f.read()
 
-solar_file = ROOT_DIR.parent / "resource_files" / "solar" / "39.7555_-105.2211_psmv3_60_2012.csv"
+solar_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "39.7555_-105.2211_psmv3_60_2012.csv"
 
 with open(solar_file, 'r') as f:
     solar_body = f.read()

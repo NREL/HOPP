@@ -177,9 +177,9 @@ class HybridSimulation(BaseClass):
     """
     site: SiteInfo
     tech_config: TechnologiesConfig
-    dispatch_options: Optional[dict] = field(default=None)
-    cost_info: Optional[dict] = field(default=None)
-    simulation_options: Optional[dict] = field(default=None)
+    dispatch_options: dict
+    cost_info: dict
+    simulation_options: dict = field(default=None)
 
     pv: Optional[Union[PVPlant, DetailedPVPlant]] = field(init=False, default=None)
     wind: Optional[WindPlant] = field(init=False, default=None)
@@ -280,8 +280,23 @@ class HybridSimulation(BaseClass):
                                                             self.technologies,
                                                             dispatch_options=self.dispatch_options or {})
 
+        # extract o&m costs from the cost_info dict
+        om_cost_info = {}
+        keys_to_remove = []
+        for key in self.cost_info:
+            if "_om_per_kw" in key:
+                om_cost_info.update({key: self.cost_info[key]})
+                keys_to_remove.append(key)
+            if "_om_per_mwh" in key:
+                om_cost_info.update({key: self.cost_info[key]})
+                keys_to_remove.append(key)
+        for key in keys_to_remove: self.cost_info.pop(key)
+        
         # Default cost calculator, can be overwritten
         self.cost_model = create_cost_calculator(self.interconnect_kw, **self.cost_info or {})
+
+        # set O and M costs
+        self.set_om_costs(**om_cost_info or {})
 
         self.outputs_factory = HybridSimulationOutput(self.technologies)
 
@@ -309,35 +324,63 @@ class HybridSimulation(BaseClass):
         if hasattr(cost_calculator, "calculate_total_costs"):
             self.cost_model = cost_calculator
 
-    def set_om_costs_per_kw(self, pv_om_per_kw=None, wind_om_per_kw=None,
+    def set_om_costs(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None, 
-                            wave_om_per_kw=None,
-                            hybrid_om_per_kw=None):
-        # TODO: Remove??? This doesn't seem to be used.
-        # TODO: fix this error statement it doesn't work
+                            wave_om_per_kw=None, battery_om_per_kw=None,
+                            hybrid_om_per_kw=None,
+                            pv_om_per_mwh=None,wind_om_per_mwh=None,
+                            tower_om_per_mwh=None,trough_om_per_mwh=None,
+                            wave_om_per_mwh=None,battery_om_per_mwh=None,
+                            hybrid_om_per_mwh=None,):
+        """
+        Sets Capacity-based O&M amount for each technology [$/kWcap].
+        Sets Production-based O&M amount for each technology [$/MWh].
+        """
         # om_vals = [pv_om_per_kw, wind_om_per_kw, tower_om_per_kw, trough_om_per_kw, wave_om_per_kw, hybrid_om_per_kw]
         # techs = ["pv", "wind", "tower", "trough", "wave", "hybrid"]
         # om_lengths = {tech + "_om_per_kw" : om_val for om_val, tech in zip(om_vals, techs)}
         # if len(set(om_lengths.values())) != 1 and len(set(om_lengths.values())) is not None:
         #     raise ValueError(f"Length of yearly om cost per kw arrays must be equal. Some lengths of om_per_kw values are different from others: {om_lengths}")
+        if self.pv:
+            if pv_om_per_kw:
+                self.pv.om_capacity = pv_om_per_kw
+            if pv_om_per_mwh:
+                self.pv.om_production = pv_om_per_mwh
 
-        if pv_om_per_kw and self.pv:
-            self.pv.om_capacity = pv_om_per_kw
+        if self.wind:
+            if wind_om_per_kw:
+                self.wind.om_capacity = wind_om_per_kw
+            if wind_om_per_mwh:
+                self.wind.om_production = wind_om_per_mwh
 
-        if wind_om_per_kw and self.wind:
-            self.wind.om_capacity = wind_om_per_kw
+        if self.tower:
+            if tower_om_per_kw:
+                self.tower.om_capacity = tower_om_per_kw
+            if tower_om_per_mwh:
+                self.tower.om_production = tower_om_per_mwh
 
-        if tower_om_per_kw and self.tower:
-            self.tower.om_capacity = tower_om_per_kw
-
-        if trough_om_per_kw and self.trough:
-            self.trough.om_capacity = trough_om_per_kw
+        if self.trough:
+            if trough_om_per_kw:
+                self.trough.om_capacity = trough_om_per_kw
+            if trough_om_per_mwh:
+                self.trough.om_production = trough_om_per_mwh
         
-        if wave_om_per_kw and self.wave:
-            self.wave.om_capacity = wave_om_per_kw
+        if self.wave:
+            if wave_om_per_kw:
+                self.wave.om_capacity = wave_om_per_kw
+            if wave_om_per_mwh:
+                self.wave.om_production = wave_om_per_mwh
 
+        if self.battery:
+            if battery_om_per_kw:
+                self.battery.om_capacity = battery_om_per_kw
+            if battery_om_per_mwh:
+                self.battery.om_production = battery_om_per_mwh
+            
         if hybrid_om_per_kw:
             self.grid.om_capacity = hybrid_om_per_kw
+        if hybrid_om_per_mwh:
+            self.hybrid.om_production = hybrid_om_per_mwh
 
     def size_from_reopt(self):
         """
@@ -369,29 +412,22 @@ class HybridSimulation(BaseClass):
         if not self.cost_model:
             raise RuntimeError("'calculate_installed_cost' called before 'setup_cost_calculator'.")
 
-        wind_mw = 0
-        pv_mw = 0
-        battery_mw = 0
-        battery_mwh = 0
-        if self.pv:
-            pv_mw = self.pv.system_capacity_kw / 1000
-        if self.wind:
-            wind_mw = self.wind.system_capacity_kw / 1000
-        if self.battery:
-            battery_mw = self.battery.system_capacity_kw / 1000
-            battery_mwh = self.battery.system_capacity_kwh / 1000
-
         # TODO: add tower and trough to cost_model functionality
-        pv_cost, wind_cost, storage_cost, total_cost = self.cost_model.calculate_total_costs(wind_mw,
-                                                                                             pv_mw,
-                                                                                             battery_mw,
-                                                                                             battery_mwh)
+        total_cost = 0 
+
         if self.pv:
-            self.pv.total_installed_cost = pv_cost
+            cost_kw = self.cost_model.pv_installed_cost_mw / 1000
+            self.pv.total_installed_cost = self.pv.calculate_total_installed_cost(cost_kw)
+            total_cost += self.pv.total_installed_cost
         if self.wind:
-            self.wind.total_installed_cost = wind_cost
+            cost_kw = self.cost_model.wind_installed_cost_mw / 1000
+            self.wind.total_installed_cost = self.wind.calculate_total_installed_cost(cost_kw)
+            total_cost += self.wind.total_installed_cost
         if self.battery:
-            self.battery.total_installed_cost = storage_cost
+            cost_kw = self.cost_model.storage_installed_cost_mw / 1000
+            cost_kwh = self.cost_model.storage_installed_cost_mwh / 1000
+            self.battery.total_installed_cost = self.battery.calculate_total_installed_cost(cost_kwh, cost_kw)
+            total_cost += self.battery.total_installed_cost
         if self.wave:
             self.wave.total_installed_cost = self.wave.calculate_total_installed_cost()
             total_cost += self.wave.total_installed_cost
@@ -401,10 +437,9 @@ class HybridSimulation(BaseClass):
         if self.trough:
             self.trough.total_installed_cost = self.trough.calculate_total_installed_cost()
             total_cost += self.trough.total_installed_cost
-
         self.grid.total_installed_cost = total_cost
         logger.info("HybridSystem set hybrid total installed cost to to {}".format(total_cost))
-
+        
     def calculate_financials(self):
         """
         Prepare financial parameters from individual power plants for hybrid system financial metrics.
@@ -421,6 +456,7 @@ class HybridSimulation(BaseClass):
             ``om_capacity``                   Weighted average by capacities
             ``om_fixed``                      Sum of values
             ``om_variable``                   Weighted average by production of non-negative generators
+            ``om_production``                 Weighted average by production of non-negative generators
             ``degradation``                   Weighted average by production of non-negative generators
             ``ptc_fed_amount``                Weighted average by production (assumes 0 for negative generators)
             ``ptc_fed_escal``                 Weighted average by production (assumes 0 for negative generators)
@@ -549,6 +585,7 @@ class HybridSimulation(BaseClass):
         set_average_for_hybrid("om_capacity", size_ratios)
         set_average_for_hybrid("om_fixed", [1] * len(generators))
         set_average_for_hybrid("om_variable", non_storage_production_ratio)
+        set_average_for_hybrid("om_production", non_storage_production_ratio)
         if 'battery' in self.technologies.keys():
             self.grid.value("om_batt_variable_cost", self.battery.value("om_batt_variable_cost"))
 
@@ -660,7 +697,14 @@ class HybridSimulation(BaseClass):
         # Consolidate grid generation by copying over power and storage generation information
         if self.battery:
             self.grid.generation_profile_wo_battery = total_gen_before_battery
-        self.grid.simulate_grid_connection(hybrid_size_kw, total_gen, project_life, lifetime_sim, total_gen_max_feasible_year1)
+        self.grid.simulate_grid_connection(
+            hybrid_size_kw, 
+            total_gen, 
+            project_life, 
+            lifetime_sim,
+            total_gen_max_feasible_year1,
+            self.dispatch_builder.options
+        )
         self.grid.hybrid_nominal_capacity = hybrid_nominal_capacity
         self.grid.total_gen_max_feasible_year1 = total_gen_max_feasible_year1
         logger.info(f"Hybrid Peformance Simulation Complete. AEPs are {self.annual_energies}.")
@@ -948,6 +992,13 @@ class HybridSimulation(BaseClass):
         Fixed O&M, $/year
         """
         return self._aggregate_financial_output("om_fixed_expense", 1)
+    
+    @property
+    def om_production(self):
+        """
+        Production-based O&M amount, $/MWh
+        """
+        return self._aggregate_financial_output("om_production", 1)
 
     @property
     def om_variable_expenses(self):

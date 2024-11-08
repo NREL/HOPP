@@ -10,7 +10,7 @@ from hopp.simulation.technologies.utility_rate import UtilityRate, URDB_BASE_URL
 from hopp.utilities.keys import get_developer_nrel_gov_key
 
 path = os.path.dirname(os.path.abspath(__file__))
-path_rates = ROOT_DIR.parent / "resource_files"
+path_rates = ROOT_DIR / "simulation" / "resource_files"
 
 # these rates sometimes mysteriously disappear from URDB fyi
 urdb_label = "5ca4d1175457a39b23b3d45e"  # https://openei.org/apps/IURDB/rate/view/5ca4d1175457a39b23b3d45e
@@ -34,7 +34,7 @@ def test_urdb_url(urdb):
 @responses.activate
 def test_urdb_response(urdb):
     # instead of making a real call, we'll stub using a saved JSON response
-    file = str(ROOT_DIR.parent / "resource_files" / "utility_rate_response.json")
+    file = str(ROOT_DIR / "simulation" / "resource_files" / "utility_rate_response.json")
     with open(file, 'r') as f:
         body = json.load(f)
     responses.add(

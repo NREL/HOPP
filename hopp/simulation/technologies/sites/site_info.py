@@ -5,10 +5,10 @@ from attrs import define, field
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
-from shapely.geometry import Polygon, MultiPolygon, Point 
+from shapely.geometry import Polygon, MultiPolygon, Point, shape
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
-from shapely.validation import make_valid
+from shapely import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
@@ -52,6 +52,8 @@ class SiteInfo(BaseClass):
         hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
         capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
         desired_schedule: Absolute desired load profile in MWe. Defaults to [].
+        curtailment_value_type: whether to curtail power above grid interconnection limit or desired schedule. 
+            Options "interconnect_kw" or "desired_schedule". Defaults to "interconnect_kw".
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to True.
@@ -66,6 +68,8 @@ class SiteInfo(BaseClass):
     hub_height: hopp_float_type = field(default=97., converter=hopp_float_type)
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
+    curtailment_value_type: str = field(default="interconnect_kw", validator=contains(["interconnect_kw", "desired_schedule"]))
+
     solar: bool = field(default=True)
     wind: bool = field(default=True)
     wave: bool = field(default=False)
@@ -140,7 +144,7 @@ class SiteInfo(BaseClass):
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                            filepath=self.wind_resource_file, source=self.wind_resource_origin)
+                                                filepath=self.wind_resource_file, source=self.wind_resource_origin)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
@@ -255,7 +259,8 @@ class SiteInfo(BaseClass):
         valid_region = None
         for pm in placemarks:
             if "boundary" in pm.name.lower():
-                valid_region = make_valid(pm.geometry)
+                shapely_object = shape(pm.geometry)
+                valid_region = make_valid(shapely_object)
                 lon, lat = valid_region.centroid.x, valid_region.centroid.y
                 if project is None:
                     zone_num = utm.from_latlon(lat, lon)[2]
@@ -268,9 +273,9 @@ class SiteInfo(BaseClass):
         for pm in placemarks:
             if 'exclusion' in pm.name.lower():
                 try:
-                    valid_region = valid_region.difference(transform(project, pm.geometry.buffer(0)))
+                    valid_region = valid_region.difference(transform(project, shape(pm.geometry.buffer(0))))
                 except:
-                    valid_region = valid_region.difference(transform(project, make_valid(pm.geometry)))
+                    valid_region = valid_region.difference(transform(project, make_valid(shape(pm.geometry))))
         return k, valid_region, lat, lon
 
     @staticmethod

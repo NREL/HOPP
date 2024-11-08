@@ -1,12 +1,42 @@
 # Release Notes
 
-## Version 1.0.0, Upcoming
-* Add Wind + PV + Battery + PEM Electrolyzer analysis to examples in `H2_Analysis`
-* Add default scenario inputs for hydrogen as end product with result files
-* Add files for simulating, optimizing and plotting Wind + PV + Battery + PEM Electrolyzer hybrids
-* Add a PEM electrolyzer model to hybrid (not integrated into HybridSimulation)
-* Separate power and financial simulations for PowerSoures and HybridSimulation
-* Fix multiprocessing issues
+## Version 3.1, Oct. 28, 2024
+* Added [Cambium](https://www.nrel.gov/analysis/cambium.html) and [GREET](https://www.energy.gov/eere/greet) integration for LCA analysis
+* Updated examples throughout
+* Removed package dependencies to streamline installation on Windows
+
+## Version 3.0, Oct. 18th, 2024
+* Updated to use pyproject for package management
+* Adopted FLORIS v4
+* Removed hydrogen modeling and GreenHEART into a separate repository
+* Removed out-dated examples to be update in a future release
+* General clean-up of repository for planned new development
+
+## Version 2.2.0, Apr. 23, 2024
+* Added load following heuristic dispatch method for battery
+* Fixed a bug with defining a user's email for the API calls from resource databases
+* HOPP solver refactored to be more modular
+
+## Version 2.1.0, Nov. 27, 2023
+* Solar plant updated with new input parameters
+* GitHub templates added for PRs and Issues
+* Updated PySAM dependency to v4.2.0
+* Re-enabled testing for hydrogen pressure vessel
+
+## Version 2.0.0, Nov. 27, 2023
+* Restructuring of core code to facilitate a new, more user-friendly interface and developer experience
+* Developed HoppInterface as the single entry-point for users
+* Expanded input files to yaml format for all technologies
+* Restructured code by technology to make relevant code more easy to find
+* Refactored technology classes using attrs library to better define classes
+* Improved documentation for the technologies and what fields are available for each
+* Cleaned up examples and resource files
+* Added Wind + PV + Battery + PEM Electrolyzer analysis to examples in `H2_Analysis`
+* Added default scenario inputs for hydrogen as end product with result files
+* Added files for simulating, optimizing and plotting Wind + PV + Battery + PEM Electrolyzer hybrids
+* Added a PEM electrolyzer model to hybrid (not integrated into HybridSimulation)
+* Separate power and financial simulations for PowerSources and HybridSimulation
+* Fixed multiprocessing issues
 * Updates to integrate FLORIS v3
 
 ## Version 0.1.0.dev3, Mar. 11, 2022
@@ -36,7 +66,7 @@
 * Battery dispatch and simulation with example in examples/simulate_hybrid_wbattery_dispatch.py 
 * Separate layout-related functions from optimization code into Layout classes
 * Refactor Optimizer classes to use HybridSimulation with examples in examples/optimization/hybrid_npv.py and examples/optimization/hybrid_sizing_problem.py
-* Add Floris as custom module for Wind simulations with examples in examples/add_custom_module
+* Add FLORIS as custom module for Wind simulations with examples in examples/add_custom_module
 * Move plotting functions into dedicated files
 * Rename "Solar" classes to "PV"
 * Add ElectricityPrices class with some example input files in resource_files/grid

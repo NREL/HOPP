@@ -20,14 +20,11 @@ Welcome to HOPP's documentation!
    hopp/simulation/hopp_interface.rst
    hopp/simulation/technologies/sites/site_info.rst
    hopp/simulation/technologies/technologies.rst
-
+   hopp/simulation/technologies/dispatch.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Additional Tooling and Information
-
-   alt_dev/opt_problem.rst
-   alt_dev/opt_driver.rst
 
    hopp/simulation/technologies/layout/flicker.rst
    hopp/tools/analysis/bos/cost_calculator.rst

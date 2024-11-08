@@ -4,18 +4,22 @@ from pyomo.environ import units as u
 try:
     u.USD
 except AttributeError:
-    u.load_definitions_from_strings(['USD = [currency]', 'lifecycle = [energy] / [energy]'])
+    u.load_definitions_from_strings(
+        ["USD = [currency]", "lifecycle = [energy] / [energy]"]
+    )
+
 
 class Dispatch:
-    """
+    """ """
 
-    """
-    def __init__(self,
-                 pyomo_model: pyomo.ConcreteModel,
-                 index_set: pyomo.Set,
-                 system_model,
-                 financial_model,
-                 block_set_name: str = 'dispatch'):
+    def __init__(
+        self,
+        pyomo_model: pyomo.ConcreteModel,
+        index_set: pyomo.Set,
+        system_model,
+        financial_model,
+        block_set_name: str = "dispatch",
+    ):
 
         self.block_set_name = block_set_name
         self.round_digits = int(4)
@@ -29,13 +33,19 @@ class Dispatch:
 
     @staticmethod
     def dispatch_block_rule(block, t):
-        raise NotImplemented("This function must be overridden for specific dispatch model")
+        raise NotImplemented(
+            "This function must be overridden for specific dispatch model"
+        )
 
     def initialize_parameters(self):
-        raise NotImplemented("This function must be overridden for specific dispatch model")
+        raise NotImplemented(
+            "This function must be overridden for specific dispatch model"
+        )
 
     def update_time_series_parameters(self, start_time: int):
-        raise NotImplemented("This function must be overridden for specific dispatch model")
+        raise NotImplemented(
+            "This function must be overridden for specific dispatch model"
+        )
 
     @staticmethod
     def _check_efficiency_value(efficiency):

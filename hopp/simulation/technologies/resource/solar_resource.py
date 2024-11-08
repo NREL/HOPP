@@ -6,13 +6,13 @@ import numpy as np
 import csv
 from PySAM.ResourceTools import SAM_CSV_to_solar_data
 
-from hopp.utilities.keys import get_developer_nrel_gov_key
+from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 
 
-BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-download.csv"
+BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv"
 
 
 class SolarResource(Resource):
@@ -35,7 +35,7 @@ class SolarResource(Resource):
         lat: float, 
         lon: float, 
         year: int, 
-        path_resource: Union[str, Path] = ROOT_DIR.parent / "resource_files", 
+        path_resource: Union[str, Path] = ROOT_DIR / "simulation" / "resource_files", 
         filepath: Union[str, Path] ="", 
         use_api: bool = False,
         **kwargs
@@ -71,7 +71,7 @@ class SolarResource(Resource):
     def download_resource(self):
         url = '{base}?wkt=POINT({lon}+{lat})&names={year}&leap_day={leap}&interval={interval}&utc={utc}&full_name={name}&email={email}&affiliation={affiliation}&mailing_list={mailing_list}&reason={reason}&api_key={api}&attributes={attr}'.format(
             base=BASE_URL, year=self.year, lat=self.latitude, lon=self.longitude, leap=self.leap_year, interval=self.interval,
-            utc=self.utc, name=self.name, email=self.email,
+            utc=self.utc, name=self.name, email=get_developer_nrel_gov_email(),
             mailing_list=self.mailing_list, affiliation=self.affiliation, reason=self.reason, api=get_developer_nrel_gov_key(),
             attr=self.solar_attributes)
 
