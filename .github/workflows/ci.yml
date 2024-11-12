@@ -6,16 +6,22 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+      - uses: actions/checkout@v4
+      - name: Set up Miniconda Python ${{ matrix.python-version }}
+        uses: conda-incubator/setup-miniconda@v3
         with:
+          auto-update-conda: true
           python-version: ${{ matrix.python-version }}
+          channels: conda-forge
+          activate-environment: hopp-test-${{ matrix.python-version }}
       - name: Install dependencies
         env:
           SKLEARN_ALLOW_DEPRECATED_SKLEARN_PACKAGE_INSTALL: True
@@ -28,9 +34,18 @@ jobs:
           touch .env
       #     echo NREL_API_KEY=${{ secrets.NREL_API_KEY }} >> .env
       #     cat .env
+      - name: Save environment build details
+        run: |
+          mkdir ~/artifacts
+          conda env export --file ~/artifacts/environment.yml
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.python-version }}-environment
+          path: ~/artifacts/environment.yml
       - name: Run tests
         run: |
-          PYTHONPATH=. pytest tests
+          pytest tests
       - name: Lint with flake8
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide

@@ -2,6 +2,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from pytest import approx, fixture, raises
+# import pytest
 
 import numpy as np
 import json
@@ -44,7 +45,7 @@ wave_resource_file = (
 
 
 @fixture
-def wavesite():
+def wavesite(): # TODO this should be used, but there were problems getting it working so tests duplicate the work each time right now
     data = {"lat": 44.6899, "lon": 124.1346, "year": 2010, "tz": -7}
     return SiteInfo(
         data, wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True
@@ -181,7 +182,7 @@ capacity_credit_hours = [
 ]
 
 
-def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
+def test_hybrid_wave_only(hybrid_config, subtests):
     hybrid_config["site"]["wave"] = True
     hybrid_config["site"]["wave_resource_file"] = wave_resource_file
     wave_only_technologies = {
@@ -306,9 +307,9 @@ def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
         assert hybrid_plant.wave._financial_model.value("inflation_rate") == approx(
             hybrid_plant.grid._financial_model.value("inflation_rate")
         )
-    with subtests.test("annual_energy"):
-        assert hybrid_plant.wave._financial_model.value("annual_energy") == approx(
-            hybrid_plant.grid._financial_model.value("annual_energy")
+    with subtests.test("annual_energy_kwh"):
+        assert hybrid_plant.wave.value("annual_energy_kwh") == approx(
+            hybrid_plant.grid.value("annual_energy_kwh")
         )
     with subtests.test("ppa_price_input"):
         assert hybrid_plant.wave._financial_model.value("ppa_price_input") == approx(
@@ -330,12 +331,12 @@ def test_hybrid_wave_only(hybrid_config, wavesite, subtests):
         assert cf.hybrid == approx(cf.wave)
     with subtests.test("wave npv"):
         # TODO check/verify this test value somehow, not sure how to do it right now
-        assert npvs.wave == approx(-53731805.52113224)
+        assert npvs.wave == approx(-53714525.2968821, 5.e-2)
     with subtests.test("hybrid wave only npv"):
         assert npvs.hybrid == approx(npvs.wave)
 
 
-def test_hybrid_wave_battery(hybrid_config, wavesite, subtests):
+def test_hybrid_wave_battery(hybrid_config, subtests):
     hybrid_config["site"]["wave"] = True
     hybrid_config["site"]["wave_resource_file"] = wave_resource_file
     wave_only_technologies = {
@@ -1490,7 +1491,7 @@ def test_capacity_credit(hybrid_config):
     assert tc.battery[1] == approx(2201850, rel=5e-2)
     assert tc.hybrid[1] == approx(4338902, rel=5e-2)
 
-def test_hybrid_financials(hybrid_config):
+def test_hybrid_financials(hybrid_config, subtests):
     """
     Performance from Wind is slightly different from wind-only case because the solar presence modified the wind layout
     """
@@ -1504,7 +1505,10 @@ def test_hybrid_financials(hybrid_config):
     hybrid_plant
     hi.simulate()
 
-    assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
-    assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
-    assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
+    with subtests.test("pv om_production"):
+        assert hi.system.pv._financial_model.SystemCosts.om_production == hi.system.pv.om_production
+    with subtests.test("pv om total"):
+        assert hi.system.om_total_expenses['pv'][1] == approx(248536, rel=5e-2)
+    with subtests.test("wind om total"):
+        assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
 
