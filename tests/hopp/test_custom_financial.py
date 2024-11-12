@@ -4,9 +4,27 @@ import json
 from hopp import ROOT_DIR
 from hopp.simulation import HoppInterface
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
+
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
+import copy
+
+DEFAULT_FIN_CONFIG_LOCAL = copy.deepcopy(DEFAULT_FIN_CONFIG)
+DEFAULT_FIN_CONFIG_LOCAL.pop("revenue") # these tests were written before the revenue section was added to the default financial config
+
+from hopp.utilities import load_yaml
+
+from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 
 pvsamv1_defaults_file = ROOT_DIR.parent / "tests" / "hopp" / "pvsamv1_basic_params.json"
+
+mhk_yaml_path = (
+    ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+)
+mhk_config = load_yaml(mhk_yaml_path)
+
+wave_resource_file = (
+    ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+)
 
 @fixture
 def site():
@@ -49,12 +67,12 @@ def test_detailed_pv(site, subtests):
                     "s_buffer": 2,
                     "x_buffer": 2
                 },
-                'fin_model': DEFAULT_FIN_CONFIG,
+                'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
                 'dc_degradation': [0] * 25,
             },
             "grid": {
                 'interconnect_kw': interconnect_kw,
-                'fin_model': DEFAULT_FIN_CONFIG,
+                'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
                 'ppa_price': 0.01
             }
         },
@@ -124,7 +142,7 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -138,11 +156,11 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             }, 
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.01
         },
     }
@@ -202,7 +220,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
             'use_pvwatts': False,
             'tech_config': tech_config,
             'layout_params': layout_params,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -216,11 +234,11 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.01
         }
     }
@@ -249,21 +267,35 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
 
-def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
+def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
+
+    site_internal = create_default_site_info(wave=True, wave_resource_file=wave_resource_file)
     # Test wind + simple PV (pvwattsv8) + storage with dispatch hybrid plant with custom financial model
     annual_energy_expected_pv = 9857584
     annual_energy_expected_wind = 31951719
-    annual_energy_expected_battery = -96912
-    annual_energy_expected_hybrid = 41709692
+    annual_energy_expected_wave = 12132526
+    annual_energy_expected_battery = -98292
+    annual_energy_expected_hybrid = 53840357
+
     npv_expected_pv = -1905544
     npv_expected_wind = -5159400
+    npv_expected_wave = -50006845
     npv_expected_battery = -8183543
-    npv_expected_hybrid = -15249189
+    npv_expected_hybrid = -65256581
 
-    interconnect_kw = 15000
+    lcoe_expected_pv = 3.370275050662196
+    lcoe_expected_wind = 3.162940789633178
+    lcoe_expected_wave = 28.83013114281512
+    lcoe_expected_battery = 13.29435118093791
+    lcoe_expected_hybrid = 9.971870828005137
+
+    total_installed_cost_expected = 81063378.16191691
+
+    interconnect_kw = 20000
     pv_kw = 5000
     wind_kw = 10000
     batt_kw = 5000
+    wave_kw = 2860
 
     power_sources = {
         'pv': {
@@ -276,7 +308,7 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -290,46 +322,108 @@ def test_hybrid_simple_pv_with_wind_storage_dispatch(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
+        },
+        "wave": {
+            "device_rating_kw": wave_kw/10,
+            "num_devices": 10,
+            "wave_power_matrix": mhk_config["wave_power_matrix"],
+            "fin_model": DEFAULT_FIN_CONFIG_LOCAL,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.03
         }
     }
-    hopp_config = {
-        "site": site,
-        "technologies": power_sources
+    config = {
+        "simulation_options": {
+            "wind": {
+                "skip_financial": False # test that setting this to false allows financial calculations to run
+            }
+        }
     }
+    hopp_config = {
+        "site": site_internal,
+        "technologies": power_sources,
+        "config": config
+    }
+
+    mhk_cost_model_inputs = MHKCostModelInputs.from_dict(
+        {
+            "reference_model_num": 3,
+            "water_depth": 100,
+            "distance_to_shore": 80,
+            "number_rows": 10,
+            "device_spacing": 600,
+            "row_spacing": 600,
+            "cable_system_overbuild": 20,
+        }
+    )
+    
     hi = HoppInterface(hopp_config)
     hybrid_plant = hi.system
     hybrid_plant.layout.plot()
     hybrid_plant.battery.dispatch.lifecycle_cost_per_kWh_cycle = 0.01
     hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
+    hybrid_plant.wave.create_mhk_cost_calculator(mhk_cost_model_inputs)
 
     hybrid_plant.simulate()
 
     sizes = hybrid_plant.system_capacity_kw
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
-    with subtests.test("with minimal params"):
+    lcoes = hybrid_plant.lcoe_nom # cents/kWh
+
+    with subtests.test("with minimal params pv size"):
         assert sizes.pv == approx(pv_kw, 1e-3)
+    with subtests.test("with minimal params wind size"):
         assert sizes.wind == approx(wind_kw, 1e-3)
+    with subtests.test("with minimal params wave size"):
+        assert sizes.wave == approx(wave_kw, 1e-3)
+    with subtests.test("with minimal params batt kw size"):
         assert sizes.battery == approx(batt_kw, 1e-3)
+
+    with subtests.test("with minimal params pv aep"):
         assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
+    with subtests.test("with minimal params wind aep"):
         assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+    with subtests.test("with minimal params wave aep"):
+        assert aeps.wave == approx(annual_energy_expected_wave, 1e-3)
+    with subtests.test("with minimal params battery aep"):
         assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)
+    with subtests.test("with minimal params hybrid aep"):
         assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
+
+    with subtests.test("with minimal params pv npv"):
         assert npvs.pv == approx(npv_expected_pv, 1e-3)
+    with subtests.test("with minimal params wind npv"):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
+    with subtests.test("with minimal params wave npv"):
+        assert npvs.wave == approx(npv_expected_wave, 1e-3)
+    with subtests.test("with minimal params batt npv"):
         assert npvs.battery == approx(npv_expected_battery, 1e-3)
+    with subtests.test("with minimal params hybrid npv"):
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
+
+    with subtests.test("lcoe pv"):
+        assert lcoes.pv == approx(lcoe_expected_pv, 1e-3)
+    with subtests.test("lcoe wind"):
+        assert lcoes.wind == approx(lcoe_expected_wind, 1e-3)
+    with subtests.test("lcoe wave"):
+        assert lcoes.wave == approx(lcoe_expected_wave, 1e-3)
+    with subtests.test("lcoe battery"): ############## left commented since I'm not sure calculating LCOE for battery this way makes sense
+        assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
+    with subtests.test("lcoe hybrid"):
+        assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
+
+    with subtests.test("total installed cost"):
+        assert hybrid_plant.grid.total_installed_cost == approx(total_installed_cost_expected, 1E-6)
 
 
 def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
@@ -367,7 +461,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
                 "s_buffer": 2, 
                 "x_buffer": 2
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'dc_degradation': [0] * 25
         },
         'wind': {
@@ -381,16 +475,16 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
-            'fin_model': DEFAULT_FIN_CONFIG,
+            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
             'ppa_price': 0.03
         }
     }
