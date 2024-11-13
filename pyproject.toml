@@ -40,7 +40,7 @@ dependencies = [
     "scikit-learn",
     "scikit-optimize",
     "scipy",
-    "shapely",
+    "shapely>=2",
     "setuptools",
     "timezonefinder",
     "urllib3",
@@ -85,9 +85,8 @@ develop = [
     "pytest-subtests",
     "pytest-dependency",
     "responses",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-copybutton",
+    "jupyter-book",
+    "sphinxcontrib-napoleon",
 ]
 examples = ["jupyterlab"]
 all = ["hopp[develop,examples]"]

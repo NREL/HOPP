@@ -96,4 +96,5 @@ The [Examples](./examples/) contain Jupyter notebooks and sample YAML files for 
 
 ## Contributing
 
-Interested in improving HOPP? Please see the [Contributing](./CONTRIBUTING.md) section for more information.
+Interested in improving HOPP? Please see the [Contributor's Guide](docs/CONTRIBUTING.md)
+for more information.
