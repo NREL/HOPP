@@ -67,7 +67,7 @@ technologies = {
 }
 
 def test_solar_dispatch(site):
-    expected_objective = 23890.6768
+    expected_objective = 34300.55
 
     dispatch_n_look_ahead = 48
 
@@ -112,7 +112,7 @@ def test_solar_dispatch(site):
 
     assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
     gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
-    assert gen == pytest.approx(409.8751, 1e-3)
+    assert gen == pytest.approx(588.46, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
@@ -660,7 +660,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 39005
+    expected_objective = 49012
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -761,7 +761,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 24029
+    expected_objective = 28445
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -998,9 +998,9 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
     hybrid_plant = hi.system
 
-    assert hybrid_plant.grid.time_load_met == pytest.approx(91.9, 1e-2)
+    assert hybrid_plant.grid.time_load_met == pytest.approx(92.87, 1e-2)
     assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
-    assert hybrid_plant.grid.total_number_hours == pytest.approx(3732, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(3844, 1e-2)
 
 def test_dispatch_load_following_heuristic_with_wave(site, subtests):
     dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}

@@ -89,12 +89,16 @@ class PVPlant(PowerSource):
                     tilt = (self.site.lat*0.76) + 3.1
                 else:
                     tilt = self.site.lat
+            else:
+                raise Exception("The str can be set to 'lat' or 'lat-func'.")
                 
         elif isinstance(self.config.panel_tilt_angle,float):
             if self.config.panel_tilt_angle > 0 and self.config.panel_tilt_angle<90:
                 tilt = self.config.panel_tilt_angle
             else:
                 tilt = 0
+        else:
+            raise TypeError("panel_tilt_angle must be a float or a str.")
         system_model.SystemDesign.assign({"tilt":tilt})
 
 

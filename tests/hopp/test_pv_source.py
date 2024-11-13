@@ -79,3 +79,47 @@ def test_pv_plant_mass(site, subtests):
 
     with subtests.test("plant mass"):
         assert pv_plant.system_mass == pytest.approx(5079.51,0.01)
+
+def test_pv_panel_tilt(site,subtests):
+    system_capacity_kw = 100.0
+
+    with subtests.test("default latitude function"):
+        config_data = {'system_capacity_kw': system_capacity_kw}
+        config = PVConfig.from_dict(config_data)
+        pv_plant = PVPlant(site=site, config=config)
+        assert pv_plant.panel_tilt_angle == pytest.approx(29.85,0.01)
+
+    with subtests.test("default latitude function"):
+        config_data = {'system_capacity_kw': system_capacity_kw,
+                       "panel_tilt_angle":"lat-func"}
+        config = PVConfig.from_dict(config_data)
+        pv_plant = PVPlant(site=site, config=config)
+        assert pv_plant.panel_tilt_angle == pytest.approx(29.85,0.01)
+
+    with subtests.test("tilt angle float"):
+        config_data = {'system_capacity_kw': system_capacity_kw,
+                       'panel_tilt_angle': 1.0}
+        config = PVConfig.from_dict(config_data)
+        pv_plant = PVPlant(site=site, config=config)
+        assert pv_plant.panel_tilt_angle == 1
+
+    with subtests.test("tilt angle latitude"):
+        config_data = {'system_capacity_kw': system_capacity_kw,
+                       'panel_tilt_angle': "lat"}
+        config = PVConfig.from_dict(config_data)
+        pv_plant = PVPlant(site=site, config=config)
+        assert pv_plant.panel_tilt_angle == 35.2018863
+    
+    with subtests.test("with invalid str"):
+        with pytest.raises(Exception):
+            config_data = {'system_capacity_kw': system_capacity_kw,
+                       'panel_tilt_angle': "fail"}
+            config = PVConfig.from_dict(config_data)
+            pv_plant = PVPlant(site=site, config=config)
+
+    with subtests.test("with invalid type"):
+        with pytest.raises(TypeError):
+            config_data = {'system_capacity_kw': system_capacity_kw,
+                       'panel_tilt_angle': 1} #cant be an int
+            config = PVConfig.from_dict(config_data)
+            pv_plant = PVPlant(site=site, config=config)
