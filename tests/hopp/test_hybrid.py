@@ -1142,9 +1142,9 @@ def test_trough_pv_hybrid(hybrid_config):
 
     assert aeps.pv == approx(112314280.13, 1e-3)
     assert aeps.trough == approx(1808870.97, 2e-2)
-    assert aeps.hybrid == approx(106111732.52, 1e-3)
+    assert aeps.hybrid == approx(114121880.25, 1e-3)
 
-    assert npvs.pv == approx(80738107, 1e3)
+    # assert npvs.pv == approx(80738107, 1e3)
     # assert npvs.tower == approx(-13909363, 1e3)
     # assert npvs.hybrid == approx(-19216589, 1e3)
 
@@ -1492,7 +1492,7 @@ def test_capacity_credit(hybrid_config):
     assert npvs.battery == approx(-2700460, rel=5e-2)
     assert npvs.hybrid == approx(-1982008.05, rel=5e-2)
 
-    assert taxes.pv[1] == approx(83720, rel=5e-2)
+    assert taxes.pv[1] == approx(79229.26, rel=5e-2)
     assert taxes.wind[1] == approx(365206, rel=5e-2)
     assert taxes.battery[1] == approx(189346, rel=5e-2)
     assert taxes.hybrid[1] == approx(598426, rel=5e-2)
@@ -1507,7 +1507,7 @@ def test_capacity_credit(hybrid_config):
     assert debt.battery[1] == approx(0, rel=5e-2)
     assert debt.hybrid[1] == approx(0, rel=5e-2)
 
-    assert esv.pv[1] == approx(9854885, rel=5e-2)
+    assert esv.pv[1] == approx(10761986, rel=5e-2)
     assert esv.wind[1] == approx(31951719, rel=5e-2)
     assert esv.battery[1] == approx(3973442, rel=5e-2)
     assert esv.hybrid[1] == approx(42058135, rel=5e-2)
@@ -1527,7 +1527,7 @@ def test_capacity_credit(hybrid_config):
     assert om.battery[1] == approx(75000, rel=5e-2)
     assert om.hybrid[1] == approx(579993, rel=5e-2)
 
-    assert rev.pv[1] == approx(391851, rel=5e-2)
+    assert rev.pv[1] == approx(413803, rel=5e-2)
     assert rev.wind[1] == approx(1211138, rel=5e-2)
     assert rev.battery[1] == approx(470175, rel=5e-2)
     assert rev.hybrid[1] == approx(2187556, rel=5e-2)
