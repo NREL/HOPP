@@ -123,3 +123,10 @@ def test_pv_panel_tilt(site,subtests):
                        'panel_tilt_angle': 1} #cant be an int
             config = PVConfig.from_dict(config_data)
             pv_plant = PVPlant(site=site, config=config)
+
+    with subtests.test("with invalid value"):
+        with pytest.raises(ValueError):
+            config_data = {'system_capacity_kw': system_capacity_kw,
+                       'panel_tilt_angle': 95.0} #can't be greater than 90
+            config = PVConfig.from_dict(config_data)
+            pv_plant = PVPlant(site=site, config=config)
