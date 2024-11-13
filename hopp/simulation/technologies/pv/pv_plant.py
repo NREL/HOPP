@@ -39,8 +39,10 @@ class PVConfig(BaseClass):
 
         dc_degradation: Annual DC degradation for lifetime simulations [%/year]
         approx_nominal_efficiency: approx nominal efficiency depends on module type (standard crystalline silicon 19%, premium 21%, thin film 18%) [decimal]
-        panel_system_design:
-        panel_tilt_angle:
+        panel_system_design (Optional[dict]): Optional dictionary for specifying the design characteristics of 
+            the panel system. Design characteristics include: 
+        panel_tilt_angle (Optional[Union[str, float]]): Panel tilt angle, which can be a fixed angle in degrees and set as a float
+            or set by the str "lat" to match the latitude of the site or "lat-func" which calculates the optimal tilt angle based on the latitude.
         module_unit_mass: Mass of the individual module unit (default to 11.092). [kg/m2]
     """
     system_capacity_kw: float = field(validator=gt_zero)
