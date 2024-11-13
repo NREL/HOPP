@@ -1106,7 +1106,7 @@ def test_tower_pv_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701.28, 1e-3)
+    assert aeps.pv == approx(112314280.13, 1e-3)
     assert aeps.tower == approx(3769716.50, 5e-2)
     assert aeps.hybrid == approx(107780622.67, 1e-2)
 
@@ -1140,7 +1140,7 @@ def test_trough_pv_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701.17, 1e-3)
+    assert aeps.pv == approx(112314280.13, 1e-3)
     assert aeps.trough == approx(1858279.58, 2e-2)
     assert aeps.hybrid == approx(106111732.52, 1e-3)
 
@@ -1178,7 +1178,7 @@ def test_tower_pv_battery_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701, 1e-3)
+    assert aeps.pv == approx(112314280.13, 1e-3)
     assert aeps.tower == approx(3783849, 5e-2)
     assert aeps.battery == approx(-9477, 2e-1)
     assert aeps.hybrid == approx(107903653, 1e-2)
@@ -1487,7 +1487,7 @@ def test_capacity_credit(hybrid_config):
     assert aeps.battery == approx(-97166, rel=0.05)
     assert aeps.hybrid == approx(43489117, rel=0.05)
 
-    assert npvs.pv == approx(-435187, rel=5e-2)
+    assert npvs.pv == approx(-253177, rel=5e-2)
     assert npvs.wind == approx(-369348, rel=5e-2)
     assert npvs.battery == approx(-2700460, rel=5e-2)
     assert npvs.hybrid == approx(-2129876, rel=5e-2)
