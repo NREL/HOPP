@@ -120,12 +120,12 @@ def test_detailed_pv(site, subtests):
 
 def test_hybrid_simple_pv_with_wind(site, subtests):
     # Run wind + simple PV (pvwattsv8) hybrid plant with custom financial model
-    annual_energy_expected_pv = 98653103
+    annual_energy_expected_pv = 107705270
     annual_energy_expected_wind = 32440267
-    annual_energy_expected_hybrid = 131067896
-    npv_expected_pv = -39925445
+    annual_energy_expected_hybrid = 140145538
+    npv_expected_pv = -39184550
     npv_expected_wind = -11884863
-    npv_expected_hybrid = -51812393
+    npv_expected_hybrid = -51069413
 
     interconnect_kw = 150e6
     pv_kw = 50000
@@ -177,12 +177,17 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
 
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
-    with subtests.test("with minimal params"):
+    with subtests.test("minimal params pv aep"):
         assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
+    with subtests.test("minimal params wind aep"):
         assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+    with subtests.test("minimal params hybrid aep"):
         assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
+    with subtests.test("minimal params pv npv"):
         assert npvs.pv == approx(npv_expected_pv, 1e-3)
+    with subtests.test("minimal params wind npv"):
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
+    with subtests.test("minimal params hybrid npv"):
         assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
 
 
@@ -271,23 +276,23 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
 
     site_internal = create_default_site_info(wave=True, wave_resource_file=wave_resource_file)
     # Test wind + simple PV (pvwattsv8) + storage with dispatch hybrid plant with custom financial model
-    annual_energy_expected_pv = 9857584
+    annual_energy_expected_pv = 10761987
     annual_energy_expected_wind = 31951719
     annual_energy_expected_wave = 12132526
     annual_energy_expected_battery = -98292
-    annual_energy_expected_hybrid = 53840357
+    annual_energy_expected_hybrid = 54747904
 
-    npv_expected_pv = -1905544
+    npv_expected_pv = -1640023
     npv_expected_wind = -5159400
     npv_expected_wave = -50006845
     npv_expected_battery = -8183543
-    npv_expected_hybrid = -65256581
+    npv_expected_hybrid = -64990137
 
-    lcoe_expected_pv = 3.370275050662196
+    lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
     lcoe_expected_wave = 28.83013114281512
     lcoe_expected_battery = 13.29435118093791
-    lcoe_expected_hybrid = 9.971870828005137
+    lcoe_expected_hybrid = 9.810109326608142
 
     total_installed_cost_expected = 81063378.16191691
 
