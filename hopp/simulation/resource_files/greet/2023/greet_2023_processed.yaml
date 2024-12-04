@@ -1,5 +1,7 @@
-DRI_iron_ore_mining_EI: 0.22901198723003552
-DRI_iron_ore_pelletizing_EI: 0.23105675045934587
+DRI_iron_ore_mining_EI_per_MT_ore: 125.60298098051585
+DRI_iron_ore_mining_EI_per_MT_steel: 229.01198723003554
+DRI_iron_ore_pelletizing_EI_per_MT_ore: 126.7244434860691
+DRI_iron_ore_pelletizing_EI_per_MT_steel: 231.0567504593459
 NG_combust_EI: 56.531234265084805
 NG_supply_EI: 12.683622297844511
 NH3_H2_consume: 0.197284
