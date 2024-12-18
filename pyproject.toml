@@ -15,7 +15,7 @@ dependencies = [
     "NREL-PySAM==4.2.0",
     "Pillow",
     "Pyomo>=6.1.2",
-    "fastkml",
+    "fastkml<1",
     "floris>=4.0",
     "future",
     "global_land_mask",
@@ -40,13 +40,15 @@ dependencies = [
     "scikit-learn",
     "scikit-optimize",
     "scipy",
-    "shapely",
+    "shapely>=2",
     "setuptools",
     "timezonefinder",
     "urllib3",
     "openpyxl",
     "attrs",
     "utm",
+    "pyyaml-include",
+    "profast"
 ]
 keywords = [
     "python3",
@@ -83,9 +85,8 @@ develop = [
     "pytest-subtests",
     "pytest-dependency",
     "responses",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-copybutton",
+    "jupyter-book",
+    "sphinxcontrib-napoleon",
 ]
 examples = ["jupyterlab"]
 all = ["hopp[develop,examples]"]

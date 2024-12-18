@@ -101,7 +101,7 @@ def test_custom_financial(site):
     config = DetailedPVConfig.from_dict(
         {
             "system_capacity_kw": 100,
-            "fin_model": CustomFinancialModel(DEFAULT_FIN_CONFIG),
+            "fin_model": CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test"),
         }
     )
     pv_plant = DetailedPVPlant(site=site, config=config)

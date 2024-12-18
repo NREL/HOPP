@@ -1,9 +1,7 @@
-import pytest
-from pytest import fixture
+from pytest import fixture, approx
 import math
 
 import PySAM.Windpower as windpower
-from floris import FlorisModel, TimeSeries 
 
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from tests.hopp.utils import create_default_site_info
@@ -76,7 +74,7 @@ def test_changing_n_turbines_pysam(site):
     for n in range(1, 20):
         model.num_turbines = n
         assert model.num_turbines == n, "n turbs should be " + str(n)
-        assert model.system_capacity_kw == pytest.approx(20000, 1), "system capacity different when n turbs " + str(n)
+        assert model.system_capacity_kw == approx(20000, 1), "system capacity different when n turbs " + str(n)
 
     # test with row layout
 
@@ -111,8 +109,8 @@ def test_changing_powercurve_pysam(site):
     for n in range(1000, 3001, 500):
         d = math.ceil(n * d_to_r * 1)
         model.modify_powercurve(d, n)
-        assert model.turb_rating == pytest.approx(n, 0.1), "turbine rating should be " + str(n)
-        assert model.system_capacity_kw == pytest.approx(model.turb_rating * n_turbs, 0.1), "size error when rating is " + str(n)
+        assert model.turb_rating == approx(n, 0.1), "turbine rating should be " + str(n)
+        assert model.system_capacity_kw == approx(model.turb_rating * n_turbs, 0.1), "size error when rating is " + str(n)
 
 
 def test_changing_system_capacity_pysam(site):
@@ -129,7 +127,7 @@ def test_changing_system_capacity_pysam(site):
     model = WindPlant(site, config=config)
     for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
-        assert model.system_capacity_kw == pytest.approx(n)
+        assert model.system_capacity_kw == approx(n)
 
 #################### FLORIS tests ################
 
@@ -173,4 +171,4 @@ def test_changing_system_capacity_floris(site):
     model = WindPlant(site, config=config)
     for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
-        assert model.system_capacity_kw == pytest.approx(n)
+        assert model.system_capacity_kw == approx(n)

@@ -44,6 +44,7 @@ class MHKConfig(BaseClass):
     loss_transmission: float = field(default=0., validator=range_val(0, 100))
     loss_downtime: float = field(default=0., validator=range_val(0, 100))
     loss_additional: float = field(default=0., validator=range_val(0, 100))
+    name: str = field(default="MHKWavePlant")
 
 
 @define
@@ -69,7 +70,7 @@ class MHKWavePlant(PowerSource):
         system_model = MhkWave.new()
 
         if isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 

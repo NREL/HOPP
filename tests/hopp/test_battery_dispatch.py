@@ -13,31 +13,11 @@ from hopp.simulation.technologies.dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp import ROOT_DIR
+from tests.hopp.utils import DEFAULT_FIN_CONFIG
 
 solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 site = SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
-
-default_fin_config = {
-    'batt_computed_bank_capacity': 0,
-    'batt_replacement_schedule_percent': [0],
-    'batt_bank_replacement': [0],
-    'batt_replacement_option': 0,
-    'batt_meter_position': 0,
-    'om_fixed': [1],
-    'om_production': [2],
-    'om_capacity': (0,),
-    'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0.75],
-    'om_batt_capacity_cost': 0,
-    'om_batt_replacement_cost': [0],
-    'om_replacement_cost_escal': 0,
-    'system_use_lifetime_output': 0,
-    'inflation_rate': 2.5,
-    'real_discount_rate': 6.4,
-    'cp_capacity_credit_percent': [0],
-    'degradation': [0],
-}
 
 interconnect_mw = 50
 technologies_input = {
@@ -48,7 +28,7 @@ technologies_input = {
         'system_capacity_kwh': 200 * 1000,
         'system_capacity_kw': 50 * 1000,
         'tracking': False,
-        'fin_model': CustomFinancialModel(default_fin_config)
+        'fin_model': CustomFinancialModel(DEFAULT_FIN_CONFIG, name="Test")
     },
     'grid': {
         'interconnect_kw': interconnect_mw * 1000

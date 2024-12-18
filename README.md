@@ -62,7 +62,7 @@ solar and storage.
        pip install ".[examples]"
        ```
 
-    - If you also want development dependencies for running tests and building docs:  
+    - If you also want development dependencies for running tests and building docs. Note the `-e` flag which installs HOPP in-place so you can edit the HOPP package files:  
 
        ```bash
        pip install -e ".[develop]"
@@ -96,4 +96,5 @@ The [Examples](./examples/) contain Jupyter notebooks and sample YAML files for 
 
 ## Contributing
 
-Interested in improving HOPP? Please see the [Contributing](./CONTRIBUTING.md) section for more information.
+Interested in improving HOPP? Please see the [Contributor's Guide](docs/CONTRIBUTING.md)
+for more information.
