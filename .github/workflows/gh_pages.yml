@@ -38,7 +38,7 @@ jobs:
     - name: Build the book
       run: |
         cd docs/
-        jupyter-book build
+        jupyter-book build .
 
     # Upload the book's HTML as an artifact
     - name: Upload artifact
