@@ -26,7 +26,7 @@ from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import
 from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDispatch
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
-from tests.hopp.utils import create_default_site_info
+from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
 
@@ -66,29 +66,8 @@ technologies = {
     }
 }
 
-default_fin_config = {
-    'batt_computed_bank_capacity': 0,
-    'batt_replacement_schedule_percent': [0],
-    'batt_bank_replacement': [0],
-    'batt_replacement_option': 0,
-    'batt_meter_position': 0,
-    'om_fixed': [1],
-    'om_production': [2],
-    'om_capacity': (0,),
-    'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0.75],
-    'om_batt_capacity_cost': 0,
-    'om_batt_replacement_cost': [0],
-    'om_replacement_cost_escal': 0,
-    'system_use_lifetime_output': 0,
-    'inflation_rate': 2.5,
-    'real_discount_rate': 6.4,
-    'cp_capacity_credit_percent': [0],
-    'degradation': [0],
-}
-
 def test_solar_dispatch(site):
-    expected_objective = 23890.6768
+    expected_objective = 34300.55
 
     dispatch_n_look_ahead = 48
 
@@ -133,7 +112,7 @@ def test_solar_dispatch(site):
 
     assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
     gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
-    assert gen == pytest.approx(409.8751, 1e-3)
+    assert gen == pytest.approx(588.46, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
@@ -378,30 +357,7 @@ def test_wave_dispatch():
     mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
     mhk_config = load_yaml(mhk_yaml_path)
 
-    default_fin_config = {
-	'batt_replacement_schedule_percent': [0],
-	'batt_bank_replacement': [0],
-	'batt_replacement_option': 0,
-	'batt_computed_bank_capacity': 0,
-	'batt_meter_position': 0,
-	'om_fixed': [1],
-	'om_production': [2],
-	'om_capacity': (0,),
-	'om_batt_fixed_cost': 0,
-	'om_batt_variable_cost': [0],
-	'om_batt_capacity_cost': 0,
-	'om_batt_replacement_cost': 0,
-	'om_replacement_cost_escal': 0,
-	'system_use_lifetime_output': 0,
-	'inflation_rate': 2.5,
-	'real_discount_rate': 6.4,
-	'cp_capacity_credit_percent': [0],
-	'degradation': [0],
-	'ppa_price_input': [25],
-	'ppa_escalation': 2.5
-    }
-
-    financial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+    financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
     mhk_config.update(financial_model)
     config = MHKConfig.from_dict(mhk_config)
 
@@ -704,7 +660,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 39005
+    expected_objective = 49012
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -805,7 +761,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 24029
+    expected_objective = 28445
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -1042,16 +998,16 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
     hybrid_plant = hi.system
 
-    assert hybrid_plant.grid.time_load_met == pytest.approx(91.9, 1e-2)
+    assert hybrid_plant.grid.time_load_met == pytest.approx(92.87, 1e-2)
     assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
-    assert hybrid_plant.grid.total_number_hours == pytest.approx(3732, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(3844, 1e-2)
 
 def test_dispatch_load_following_heuristic_with_wave(site, subtests):
     dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}
     wave_battery = {key: technologies[key] for key in ['wave', 'battery', 'grid']}
 
     for tech in wave_battery.keys():
-        wave_battery[tech]["fin_model"] = default_fin_config
+        wave_battery[tech]["fin_model"] = DEFAULT_FIN_CONFIG
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 

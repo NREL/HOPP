@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 3.1.1, Dec. 18, 2024
+
+* Enhanced PV plant functionality: added tilting solar panel support, improved system design handling, and refined tilt angle calculations.
+* Integrated ProFAST into the custom financial model for LCOE and other financial calculations; updated CI and documentation accordingly.
+* Adjusted battery financials to use discharged energy for levelized cost calculations.
+* Improved testing and fixed various bugs, including logging errors, financial model instantiation, and configuration handling.
+* Removes unnecessary packages from the dependency stack.
+* Documentation moved to a jupyter-book style and build process.
+
 ## Version 3.1, Oct. 28, 2024
 * Added [Cambium](https://www.nrel.gov/analysis/cambium.html) and [GREET](https://www.energy.gov/eere/greet) integration for LCA analysis
 * Updated examples throughout
