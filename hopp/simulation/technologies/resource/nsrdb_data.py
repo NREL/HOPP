@@ -5,6 +5,7 @@ from hopp.simulation.technologies.resource.resource import Resource
 from typing import Optional, Union
 from pathlib import Path
 import os
+from hopp.utilities.validators import range_val
 NSRDB_DEP = "/datasets/NSRDB/deprecated_v3/nsrdb_"
 
 # NOTE: Current version of PSM v3.2.2 which corresponds to /api/nsrdb/v2/solar/psm3-2-2-download 
@@ -16,13 +17,12 @@ class HPCSolarData(Resource):
     """
     Class to manage Solar Resource data from NSRDB Datasets
 
-    Args:
-        lat (float): site latitude
-        lon (float): site longitude
-        year: year to get resource data for
-        nsrdb_source_path (str or Path): directory where NSRDB data is hosted on HPC. Defaults to ""
-        filepath (str): filepath to NSRDB h5 file on HPC. Defaults to "".
-            - should be formatted as: /path/to/file/name_of_file.h5
+    Attributes:
+        nsrdb_file (str): path of file that resource data is pulled from
+        site_gid (int): id for NSRDB location that resource data was pulled from
+        nsrdb_latitude (float): latitude of NSRDB location corresponding to site_gid
+        nsrdb_longitude: (float): longitude of NSRDB location corresponding to site_gid
+        
     """
 
 
@@ -34,11 +34,19 @@ class HPCSolarData(Resource):
         nsrdb_source_path: Union[str,Path] = "",
         filepath: str = "",
         ):
+        """_summary_
+
+        Args:
+            lat (float): latitude corresponding to location for solar resource data
+            lon (float): longitude corresponding to location for solar resource data
+            year (int): year for resource data. must be between 1998 and 2022
+            nsrdb_source_path (Union[str,Path], optional): directory where NSRDB data is hosted on HPC. Defaults to "".
+            filepath (str, optional): filepath to NSRDB h5 file on HPC. Defaults to "".
+                - should be formatted as: /path/to/file/name_of_file.h5
+        """
        
-        # NOTE: self.data must be compatible with PVWatts.SolarResource.solar_resource_data to https://nrel-pysam.readthedocs.io/en/main/modules/Pvwattsv8.html#PySAM.Pvwattsv8.Pvwattsv8.SolarResource
-        self.latitude = lat
-        self.longitude = lon
-        self.year = year
+        # NOTE: self.data must be compatible with PVWatts.SolarResource.solar_resource_data
+        # see: https://nrel-pysam.readthedocs.io/en/main/modules/Pvwattsv8.html#PySAM.Pvwattsv8.Pvwattsv8.SolarResource
         super().__init__(lat, lon, year)
 
         if filepath == "" and nsrdb_source_path=="":
@@ -54,6 +62,10 @@ class HPCSolarData(Resource):
             # use default filepaths
             self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
         
+        # Check for valid filepath for NSRDB file
+        if not os.path.isfile(self.nsrdb_file):
+            raise FileNotFoundError(f"Cannot find NSRDB .h5 file, filepath {self.nsrdb_file} does not exist")
+
         # Pull data from HPC NSRDB dataset
         self.download_resource()
 
@@ -139,34 +151,8 @@ class HPCSolarData(Resource):
         # self.solar_zenith_angle_arr = list(np.round(self.solar_zenith_angle_arr, decimals=1))
         self.pres_arr = list(self.pres_arr.astype(float, copy=False))
         self.tdew_arr = list(self.tdew_arr.astype(float, copy=False))
-        self.data = {} #unsure if this will cause problem
-    
-    @Resource.data.setter
-    def data(self,data_dict):
-        """
-        Output: self.data
-            dictionary:
-                tz (float): Time zone is for standard time in hours ahead of GMT
-                elev (float): Elevation is in meters above sea level
-                lat (float): degrees north of the equator
-                lon (float): degrees East of the prime meridian
-                year (list(int)): year
-                month (list(float)): number associated with month (1 = January)
-                day (list(float)): number indicating the day of month (Day = 1 is the first day of the month)
-                hour (list(float)): number indicating the hour of day (Hour = 0 is the first hour of the day)
-                minute (list(float)): number indicating minute of hour (Minute = 0 is the first minute of the hour)
-                dn (list(float)): Beam normal irradiance (W/m2)
-                df (list(float)): Diffuse horizontal irradiance (W/m2)
-                gh (list(float)): Global horizontal irradiance (W/m2)
-                wspd (list(float)): Wind speed at 10 meters above the ground (m/s)
-                tdry (list(float)): Ambient dry bulb temperature (°C)
-                pres (list(float)): Atmospheric pressure (millibar)
-                tdew (list(float)): Dew point temperature (°C)
-        """
-        dic = {
-            # 'site_gid': self.site_gid,
-            # 'nsrdb_lat':self.nsrdb_latitude,
-            # 'nsrdb_lon':self.nsrdb_longitude,
+
+        self.data = {
             'tz' :     self.time_zone,
             'elev' :   self.elevation,
             'lat' :    self.nsrdb_latitude,
@@ -184,4 +170,48 @@ class HPCSolarData(Resource):
             'pres' :   self.pres_arr,
             'tdew' :   self.tdew_arr
             }
-        self._data = dic
+    
+    @Resource.data.setter
+    def data(self,data_dict):
+        """
+        Sets data property with formatted solar resource data for SAM
+            data (dict):
+                :key tz (float): Time zone is for standard time in hours ahead of GMT
+                :key elev (float): Elevation is in meters above sea level
+                :key lat (float): degrees north of the equator
+                :key lon (float): degrees East of the prime meridian
+                :key year (list(int)): year
+                :key month (list(float)): number associated with month (1 = January)
+                :key day (list(float)): number indicating the day of month (Day = 1 is the first day of the month)
+                :key hour (list(float)): number indicating the hour of day (Hour = 0 is the first hour of the day)
+                :key minute (list(float)): number indicating minute of hour (Minute = 0 is the first minute of the hour)
+                :key dn (list(float)): Beam normal irradiance (W/m2)
+                :key df (list(float)): Diffuse horizontal irradiance (W/m2)
+                :key gh (list(float)): Global horizontal irradiance (W/m2)
+                :key wspd (list(float)): Wind speed at 10 meters above the ground (m/s)
+                :key tdry (list(float)): Ambient dry bulb temperature (°C)
+                :key pres (list(float)): Atmospheric pressure (millibar)
+                :key tdew (list(float)): Dew point temperature (°C)
+        """
+        if "dn" not in data_dict.keys():
+            dic = {
+                'tz' :     self.time_zone,
+                'elev' :   self.elevation,
+                'lat' :    self.nsrdb_latitude,
+                'lon' :    self.nsrdb_longitude,
+                'year' :   self.year_arr,
+                'month' :  self.month_arr,
+                'day' :    self.day_arr,
+                'hour' :   self.hour_arr,
+                'minute' : self.minute_arr,
+                'dn' :     self.dni_arr,
+                'df' :     self.dhi_arr,
+                'gh' :     self.ghi_arr,
+                'wspd' :   self.wspd_arr,
+                'tdry' :   self.tdry_arr,
+                'pres' :   self.pres_arr,
+                'tdew' :   self.tdew_arr
+                }
+            self._data = dic
+        else:
+            self._data = data_dict

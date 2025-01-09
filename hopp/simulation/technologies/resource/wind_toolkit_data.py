@@ -12,14 +12,13 @@ WTK_V11_BASE = "/datasets/WIND/conus/v1.1.0/wtk_conus_"
 
 class HPCWindData(Resource):
     """
-    Args:
-        lat (float): latitude
-        lon (float): longitude
-        year (int): year to get resource data for (valid years are 2007-2014)
-        hub_height_meters (float): turbine hub height
-        wtk_source_path (str): directory of wind resource data on HPC. Defaults to ""
-        filepath (str): filepath for wind toolkit h5 file on HPC. Defaults to ""
-            - should be formatted as: /path/to/file/name_of_file.h5
+    Class to manage Wind Resource data from Wind Toolkit Datasets
+    
+    Attributes:
+        wtk_file (str): path of file that resource data is pulled from
+        site_gid (int): id for Wind Toolkit location that resource data was pulled from
+        wtk_latitude (float): latitude of Wind Toolkit location corresponding to site_gid
+        wtk_longitude: (float): longitude of Wind Toolkit location corresponding to site_gid
     """
 
 
@@ -28,17 +27,26 @@ class HPCWindData(Resource):
         lat: float,
         lon: float,
         year: int,
-        hub_height_meters: float,
+        wind_turbine_hub_ht: float,
         wtk_source_path: Union[str,Path] = "",
         filepath: str = "",
         ):
-        
-        self.latitude = lat
-        self.longitude = lon
-        self.year = year
+        """_summary_
+
+        Args:
+            lat (float): latitude corresponding to location for wind resource data
+            lon (float): longitude corresponding to location for wind resource data
+            year (int): year for resource data. must be between 2007 and 2014
+            wind_turbine_hub_ht (float): turbine hub height (m)
+            wtk_source_path (Union[str,Path], optional): directory where Wind Toolkit data is hosted on HPC. Defaults to "".
+            filepath (str, optional): filepath to Wind Toolkit h5 file on HPC. Defaults to "".
+                - should be formatted as: /path/to/file/name_of_file.h5
+        Raises:
+            FileNotFoundError: if wtk_file is not valid filepath
+        """
         super().__init__(lat, lon, year)
 
-        self.hub_height_meters = hub_height_meters
+        self.hub_height_meters = wind_turbine_hub_ht
         self.allowed_hub_heights_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
         self.data_hub_heights = self.calculate_heights_to_download()
         
@@ -62,10 +70,14 @@ class HPCWindData(Resource):
             elif self.year == 2014:
                 self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
         
-        # Pull data from HPC NSRDB dataset
+        # Check for valid filepath for Wind Toolkit file
+        if not os.path.isfile(self.wtk_file):
+            raise FileNotFoundError(f"Cannot find Wind Toolkit .h5 file, filepath {self.wtk_file} does not exist")
+        
+        # Pull data from HPC Wind Toolkit dataset
         self.download_resource()
 
-        # Set solar resource data into SAM/PySAM digestible format
+        # Set wind resource data into SAM/PySAM digestible format
         self.format_data() 
 
     
@@ -159,24 +171,28 @@ class HPCWindData(Resource):
         self.data = self.combined_data
     
     @Resource.data.setter
-    def data(self, data_file):
-        """Wind resource data formatted for SAM
+    def data(self, combined_data):
+        """Sets data property with wind resource data formatted for SAM
 
-        Output: self.data
-            dictionary:
-                heights: list(int): floats corresponding to hub-height for 'data' entry
-                fields list(int): integers corresponding to data type for 'data' entry
-                data:
-                    temperature: Ambient temperature in degrees Celsius
-                    pressure: Atmospheric pressure in in atmospheres.
-                    windspeed: Wind speed in meters per second (m/s)
-                    winddirection: Wind direction in degrees east of north (degrees).
-                        Zero degrees indicates wind from the north, and 90 degrees indicates wind from the east.
-
+            data (dict):
+                :key heights (list(float)): floats corresponding to hub-height for 'data' entry.
+                    ex: [100, 100, 100, 100, 120, 120, 120, 120]
+                :key fields (list(int)): integers corresponding to data type for 'data' entry
+                    ex: [1, 2, 3, 4, 1, 2, 3, 4]
+                    for each field (int) the corresponding data is:
+                    - 1: Ambient temperature in degrees Celsius
+                    - 2: Atmospheric pressure in in atmospheres.
+                    - 3: Wind speed in meters per second (m/s)
+                    - 4: Wind direction in degrees east of north (degrees).
+                :key data (list(list(floats)): 8760 list with data of corresponding field and hub-height
+                    ex. data[timestep] is [-23.5, 0.65, 7.6, 261.2, -23.7, 0.65, 7.58, 261.1]
+                        - -23.5 is temperature at 100m at timestep
+                        - 7.6 is wind speed at 100m at timestep
+                        - 7.58 is wind speed at 120m at timestep
         """
         dic = {
             'heights': [float(h) for h in self.data_hub_heights for i in range(4)],
             'fields':  [1, 2, 3, 4] * len(self.data_hub_heights),
-            'data':    data_file #self.combined_data
+            'data':    combined_data
             }
         self._data = dic

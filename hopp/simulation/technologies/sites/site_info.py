@@ -173,7 +173,7 @@ class SiteInfo(BaseClass):
                     self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                                 path_resource=self.path_resource, filepath=self.wind_resource_file, source=self.wind_resource_origin)
                 else:
-                    self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], hub_height_meters=self.hub_height,
+                    self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                                     wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
