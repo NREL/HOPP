@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased, TBD
+* Added option and functionality to load wind and solar resource data from NSRDB and Wind Toolkit data files if user-specified.
+* Fixed a bug in site_info that set resource year to 2012 even if otherwise specified.
+
 ## Version 3.1.1, Dec. 18, 2024
 
 * Enhanced PV plant functionality: added tilting solar panel support, improved system design handling, and refined tilt angle calculations.
