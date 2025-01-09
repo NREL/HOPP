@@ -48,7 +48,8 @@ dependencies = [
     "attrs",
     "utm",
     "pyyaml-include",
-    "profast"
+    "profast",
+    "NREL-rex"
 ]
 keywords = [
     "python3",
