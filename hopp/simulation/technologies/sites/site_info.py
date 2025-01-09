@@ -52,6 +52,14 @@ class SiteInfo(BaseClass):
         solar_resource_file: Path to solar resource file. Defaults to "".
         wind_resource_file: Path to wind resource file. Defaults to "".
         grid_resource_file: Path to grid pricing data file. Defaults to "".
+        path_resource: Path to folder to save resource files. 
+            Defaults to ROOT/simulation/resource_files
+        wtk_source_path (Optional): directory of Wind Toolkit h5 files hosted on HPC.
+            Only used if renewable_resource_origin != "API"
+        nsrdb_source_path (Optional): directory of NSRDB h5 files hosted on HPC.
+            Only used if renewable_resource_origin != "API"
+        renewable_resource_origin (str): whether to download resource data from API or load directly from datasets files.
+            Options are "API" or "HPC". Defaults to "API"
         hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
         capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
         desired_schedule: Absolute desired load profile in MWe. Defaults to [].
@@ -122,7 +130,8 @@ class SiteInfo(BaseClass):
             urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
             follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
         """
-        set_nrel_key_dot_env()
+        if self.renewable_resource_origin=="API":
+            set_nrel_key_dot_env()
 
         data = self.data
         if 'site_boundaries' in data:
@@ -139,7 +148,10 @@ class SiteInfo(BaseClass):
         self.lon = data['lon']
 
         if 'year' not in data:
-            data['year'] = 2012
+            data['year'] = self.year
+        
+        self.year = data["year"]
+
         if 'tz' in data:
             self.tz = data['tz']
         
