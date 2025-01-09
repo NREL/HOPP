@@ -5,9 +5,22 @@ from typing import Optional, Union
 from pathlib import Path
 import os
 from hopp.simulation.technologies.resource.resource import Resource
-WTK_V10_BASE = "/kfs2/datasets/WIND/conus/v1.0.0/wtk_conus_"
-WTK_V11_BASE = "/kfs2/datasets/WIND/conus/v1.1.0/wtk_conus_"
+
+WTK_V10_BASE = "/datasets/WIND/conus/v1.0.0/wtk_conus_"
+WTK_V11_BASE = "/datasets/WIND/conus/v1.1.0/wtk_conus_"
+
+
 class HPCWindData(Resource):
+    """
+    Args:
+        lat (float): latitude
+        lon (float): longitude
+        year (int): year to get resource data for (valid years are 2007-2014)
+        hub_height_meters (float): turbine hub height
+        wtk_source_path (str): directory of wind resource data on HPC. Defaults to ""
+        filepath (str): filepath for wind toolkit h5 file on HPC. Defaults to ""
+            - should be formatted as: /path/to/file/name_of_file.h5
+    """
     def __init__(
         self,
         lat: float,
@@ -16,18 +29,7 @@ class HPCWindData(Resource):
         hub_height_meters: float,
         wtk_source_path: Union[str,Path] = "",
         filepath: str = "",
-        **kwargs
         ):
-        """
-        Input:
-        lat (float): site latitude
-        lon (float): site longitude
-        resource_year (int): year to get resource data for
-        wtk_source_path (str): directory of wind resource data on HPC
-        filepath (str): filepath for wind toolkit h5 file on HPC
-        """
-        
-        
         
         self.latitude = lat
         self.longitude = lon
@@ -40,36 +42,34 @@ class HPCWindData(Resource):
         
 
         if filepath == "" and wtk_source_path=="":
+            # use default filepaths based on resource year
             if self.year < 2014:
                 self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
-            # wtk_file = '/datasets/WIND/conus/v1.0.0/wtk_conus_{year}.h5'.format(year=self.year)
             elif self.year == 2014:
                 self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
         elif filepath != "" and wtk_source_path == "":
+            # filepath (full h5 filepath) is provided by user
             self.wtk_file = filepath
         elif filepath=="" and wtk_source_path !="":
+            # directory of h5 files (wtk_source_path) is provided by user
             self.wtk_file = os.path.join(str(wtk_source_path),"wtk_conus_{}.h5".format(self.year))
         else:
+            # use default filepaths
             if self.year < 2014:
                 self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
-            # wtk_file = '/datasets/WIND/conus/v1.0.0/wtk_conus_{year}.h5'.format(year=self.year)
             elif self.year == 2014:
                 self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
-            
-        # self.extract_resource()
+        
+        # Pull data from HPC NSRDB dataset
         self.download_resource()
+
+        # Set solar resource data into SAM/PySAM digestible format
         self.format_data() 
-
-        # self.data = {'heights': [float(h) for h in self.data_hub_heights for i in range(4)],
-        #              'fields':  [1, 2, 3, 4] * len(self.data_hub_heights),
-        #              'data':    self.combined_data
-        #             }
-
 
     
     def calculate_heights_to_download(self):
         """
-        Given the system hub height, and the available hubheights from WindToolkit,
+        Given the system hub height, and the available hub heights from WindToolkit,
         determine which heights to download to bracket the hub height
         """
         hub_height_meters = self.hub_height_meters
@@ -90,12 +90,12 @@ class HPCWindData(Resource):
 
         return heights
     
-    # def extract_resource(self):
     def download_resource(self):
-        # Define file to download from
+        """load WTK h5 file using rex and get wind resource data for location
+        specified by (self.lat, self.lon)
+        """
         # NOTE: Current setup of files on HPC WINDToolkit v1.0.0 = 2007-2013, v1.1.0 = 2014
-        
-
+    
         # Open file with rex WindX object
         with WindX(self.wtk_file, hsds=False) as f:
             # get gid of location closest to given lat/lon coordinates and timezone offset
@@ -123,7 +123,8 @@ class HPCWindData(Resource):
 
         # round to desired precision and concatenate data into format needed for data dictionary
         if len(self.data_hub_heights) == 2:
-            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. If not sensitive, can remove following 8 lines of code to increase computational efficiency
+            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. 
+            # If not sensitive, can remove following 8 lines of code to increase computational efficiency
             self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
             self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=2)
             self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=3)

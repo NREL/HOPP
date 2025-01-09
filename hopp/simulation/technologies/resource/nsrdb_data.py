@@ -5,12 +5,26 @@ from hopp.simulation.technologies.resource.resource import Resource
 from typing import Optional, Union
 from pathlib import Path
 import os
-# import pandas as pd
-NSRDB_DEP = "/kfs2/datasets/NSRDB/deprecated_v3/nsrdb_"
-NSRDB_NEW = "/kfs2/datasets/NSRDB/current/nsrdb_"
+NSRDB_DEP = "/datasets/NSRDB/deprecated_v3/nsrdb_"
+
+# NOTE: Current version of PSM v3.2.2 which corresponds to /api/nsrdb/v2/solar/psm3-2-2-download 
+NSRDB_NEW = "/datasets/NSRDB/current/nsrdb_"
+
 # Pull Solar Resource Data directly from NSRDB on HPC
 # To be called instead of SolarResource from hopp.simulation.technologies.resource
 class HPCSolarData(Resource):
+    """
+    Class to manage Solar Resource data from NSRDB Datasets
+
+    Args:
+        lat (float): site latitude
+        lon (float): site longitude
+        year: year to get resource data for
+        nsrdb_source_path (str): directory where NSRDB data is hosted on HPC. Defaults to ""
+        filepath (str): filepath to NSRDB h5 file on HPC. Defaults to "".
+            - should be formatted as: /path/to/file/name_of_file.h5
+    """
+
 
     def __init__(
         self,
@@ -19,14 +33,8 @@ class HPCSolarData(Resource):
         year: int,
         nsrdb_source_path: Union[str,Path] = "",
         filepath: str = "",
-        **kwargs):
+        ):
         """
-        Input:
-        lat (float): site latitude
-        lon (float): site longitude
-        resource_year (int): year to get resource data for
-        filepath (str): filepath for nsrdb data on HPC
-
         Output: self.data
             dictionary:
                 tz: float
@@ -53,32 +61,30 @@ class HPCSolarData(Resource):
         super().__init__(lat, lon, year)
 
         if filepath == "" and nsrdb_source_path=="":
+            # use default filepath
             self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
         elif filepath != "" and nsrdb_source_path == "":
+            # filepath (full h5 filepath) is provided by user
             self.nsrdb_file = filepath
         elif filepath=="" and nsrdb_source_path !="":
+            # directory of h5 files (nsrdb_source_path) is provided by user
             self.nsrdb_file = os.path.join(str(nsrdb_source_path),"nsrdb_{}.h5".format(self.year))
         else:
+            # use default filepaths
             self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
+        
         # Pull data from HPC NSRDB dataset
-        # self.extract_resource()
         self.download_resource()
 
         # Set solar resource data into SAM/PySAM digestible format
         self.format_data()
-
-        # Define final dictionary
         
 
-    # def extract_resource(self):
     def download_resource(self):
-        # Define file to download from
-        # NOTE: HOPP is currently calling an old deprecated version of PSM v3.1 which corresponds to /api/nsrdb/v2/solar/psm3-download
+        """load NSRDB h5 file using rex and get solar resource data for location
+        specified by (self.lat, self.lon)
+        """
         
-
-        # NOTE: Current version of PSM v3.2.2 which corresponds to /api/nsrdb/v2/solar/psm3-2-2-download 
-       
-
         # Open file with rex NSRDBX object
         with NSRDBX(self.nsrdb_file, hsds=False) as f:
             # get gid of location closest to given lat/lon coordinates
@@ -132,7 +138,8 @@ class HPCSolarData(Resource):
             self.tdew_arr = np.delete(self.tdew_arr, feb29)
 
         # round to desired precision and convert to desired data type
-        # NOTE: unsure if SAM/PySAM is sensitive to data types and decimal precision. If not sensitive, can remove .astype() and round() to increase computational efficiency
+        # NOTE: unsure if SAM/PySAM is sensitive to data types and decimal precision. 
+        # If not sensitive, can remove .astype() and round() to increase computational efficiency
         self.time_zone = float(self.time_zone)
         self.elevation = round(float(self.elevation), 0)
         self.nsrdb_latitude = round(float(self.nsrdb_latitude), 2)
@@ -152,6 +159,7 @@ class HPCSolarData(Resource):
         self.pres_arr = list(self.pres_arr.astype(float, copy=False))
         self.tdew_arr = list(self.tdew_arr.astype(float, copy=False))
         self.data = {} #unsure if this will cause problem
+    
     @Resource.data.setter
     def data(self,data_dict):
         dic = {
