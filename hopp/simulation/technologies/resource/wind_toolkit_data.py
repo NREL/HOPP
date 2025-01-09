@@ -21,6 +21,8 @@ class HPCWindData(Resource):
         filepath (str): filepath for wind toolkit h5 file on HPC. Defaults to ""
             - should be formatted as: /path/to/file/name_of_file.h5
     """
+
+
     def __init__(
         self,
         lat: float,
@@ -50,7 +52,7 @@ class HPCWindData(Resource):
         elif filepath != "" and wtk_source_path == "":
             # filepath (full h5 filepath) is provided by user
             self.wtk_file = filepath
-        elif filepath=="" and wtk_source_path !="":
+        elif filepath == "" and wtk_source_path != "":
             # directory of h5 files (wtk_source_path) is provided by user
             self.wtk_file = os.path.join(str(wtk_source_path),"wtk_conus_{}.h5".format(self.year))
         else:
@@ -158,6 +160,20 @@ class HPCWindData(Resource):
     
     @Resource.data.setter
     def data(self, data_file):
+        """Wind resource data formatted for SAM
+
+        Output: self.data
+            dictionary:
+                heights: list(int): floats corresponding to hub-height for 'data' entry
+                fields list(int): integers corresponding to data type for 'data' entry
+                data:
+                    temperature: Ambient temperature in degrees Celsius
+                    pressure: Atmospheric pressure in in atmospheres.
+                    windspeed: Wind speed in meters per second (m/s)
+                    winddirection: Wind direction in degrees east of north (degrees).
+                        Zero degrees indicates wind from the north, and 90 degrees indicates wind from the east.
+
+        """
         dic = {
             'heights': [float(h) for h in self.data_hub_heights for i in range(4)],
             'fields':  [1, 2, 3, 4] * len(self.data_hub_heights),

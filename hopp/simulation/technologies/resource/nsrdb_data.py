@@ -20,7 +20,7 @@ class HPCSolarData(Resource):
         lat (float): site latitude
         lon (float): site longitude
         year: year to get resource data for
-        nsrdb_source_path (str): directory where NSRDB data is hosted on HPC. Defaults to ""
+        nsrdb_source_path (str or Path): directory where NSRDB data is hosted on HPC. Defaults to ""
         filepath (str): filepath to NSRDB h5 file on HPC. Defaults to "".
             - should be formatted as: /path/to/file/name_of_file.h5
     """
@@ -34,26 +34,7 @@ class HPCSolarData(Resource):
         nsrdb_source_path: Union[str,Path] = "",
         filepath: str = "",
         ):
-        """
-        Output: self.data
-            dictionary:
-                tz: float
-                elev: float
-                lat: float
-                lon: float
-                year: list of floats
-                month: list of floats
-                day: list of floats
-                hour: list of floats
-                minute: list of floats
-                dn: list of floats
-                df: list of floats
-                gh: list of floats
-                wspd: list of floats
-                tdry: list of floats
-                pres: list of floats
-                tdew: list of floats
-        """
+       
         # NOTE: self.data must be compatible with PVWatts.SolarResource.solar_resource_data to https://nrel-pysam.readthedocs.io/en/main/modules/Pvwattsv8.html#PySAM.Pvwattsv8.Pvwattsv8.SolarResource
         self.latitude = lat
         self.longitude = lon
@@ -66,7 +47,7 @@ class HPCSolarData(Resource):
         elif filepath != "" and nsrdb_source_path == "":
             # filepath (full h5 filepath) is provided by user
             self.nsrdb_file = filepath
-        elif filepath=="" and nsrdb_source_path !="":
+        elif filepath == "" and nsrdb_source_path != "":
             # directory of h5 files (nsrdb_source_path) is provided by user
             self.nsrdb_file = os.path.join(str(nsrdb_source_path),"nsrdb_{}.h5".format(self.year))
         else:
@@ -162,6 +143,26 @@ class HPCSolarData(Resource):
     
     @Resource.data.setter
     def data(self,data_dict):
+        """
+        Output: self.data
+            dictionary:
+                tz (float): Time zone is for standard time in hours ahead of GMT
+                elev (float): Elevation is in meters above sea level
+                lat (float): degrees north of the equator
+                lon (float): degrees East of the prime meridian
+                year (list(int)): year
+                month (list(float)): number associated with month (1 = January)
+                day (list(float)): number indicating the day of month (Day = 1 is the first day of the month)
+                hour (list(float)): number indicating the hour of day (Hour = 0 is the first hour of the day)
+                minute (list(float)): number indicating minute of hour (Minute = 0 is the first minute of the hour)
+                dn (list(float)): Beam normal irradiance (W/m2)
+                df (list(float)): Diffuse horizontal irradiance (W/m2)
+                gh (list(float)): Global horizontal irradiance (W/m2)
+                wspd (list(float)): Wind speed at 10 meters above the ground (m/s)
+                tdry (list(float)): Ambient dry bulb temperature (°C)
+                pres (list(float)): Atmospheric pressure (millibar)
+                tdew (list(float)): Dew point temperature (°C)
+        """
         dic = {
             # 'site_gid': self.site_gid,
             # 'nsrdb_lat':self.nsrdb_latitude,
