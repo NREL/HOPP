@@ -128,6 +128,7 @@ class SolarResource(Resource):
         """
         if isinstance(data_info,dict):
             self._data = data_info
+            self.filename = None
         else:
             self._data = SAM_CSV_to_solar_data(data_info)
             # TODO: Update ResourceTools.py in pySAM to include pressure and dew point or relative humidity

@@ -55,6 +55,8 @@ class WindResource(Resource):
         # if resource_data is input as a dictionary then set_data   
         if isinstance(resource_data,dict):
             self.data = resource_data
+            self.filename = None
+            
         # if resource_data is not provided, download or load resource data
         else:
             if os.path.isdir(path_resource):
