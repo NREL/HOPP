@@ -5,11 +5,13 @@ import os
 from hopp import ROOT_DIR
 from hopp.simulation.technologies.resource.solar_resource import BASE_URL as SOLAR_URL
 from hopp.simulation.technologies.resource.wind_resource import WTK_BASE_URL, TAP_BASE_URL
-from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource
+from hopp.simulation.technologies.resource import SolarResource, WindResource, Resource, HPCWindData, HPCSolarData
 from hopp.utilities.utils_for_tests import DEFAULT_WIND_RESOURCE_FILE
 
 import PySAM.Windpower as wp
 import PySAM.Pvwattsv8 as pv
+
+import pytest
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -154,3 +156,19 @@ def test_from_file():
         filepath=str(solar_file)
     )
     assert(len(solar_resource.data['gh']) > 0)
+
+def test_wtk_resource_filenotfound():
+    wtk_fake_dir = str(ROOT_DIR)
+    resource_year = 2012
+    wtk_fake_fpath = os.path.join(str(ROOT_DIR),f"wtk_conus_{resource_year}.h5")
+    with pytest.raises(FileNotFoundError) as err:
+        HPCWindData(lat = 35.201, lon = -101.945, year = resource_year, wind_turbine_hub_ht = 110, wtk_source_path=wtk_fake_dir)
+    assert str(err.value) == f"Cannot find Wind Toolkit .h5 file, filepath {wtk_fake_fpath} does not exist"
+
+def test_nsrdb_resource_filenotfound():
+    nsrdb_fake_dir = str(ROOT_DIR)
+    resource_year = 2012
+    nsrdb_fake_fpath = os.path.join(str(ROOT_DIR),f"nsrdb_{resource_year}.h5")
+    with pytest.raises(FileNotFoundError) as err:
+        HPCSolarData(lat = 35.201, lon = -101.945, year = 2012, nsrdb_source_path=nsrdb_fake_dir)
+    assert str(err.value) == f"Cannot find NSRDB .h5 file, filepath {nsrdb_fake_fpath} does not exist"
