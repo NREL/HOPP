@@ -68,7 +68,8 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to False.
-        wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
+        wind_resource_origin: Which wind resource API to use, defaults toto "WTK" for WIND Toolkit.
+            Options are "WTK" or "TAP".
     """
     # User provided
     data: dict
@@ -161,6 +162,8 @@ class SiteInfo(BaseClass):
                     self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], path_resource=self.path_resource, filepath=self.solar_resource_file)
                 else:
                     self.solar_resource = HPCSolarData(data['lat'], data['lon'], data['year'],nsrdb_source_path = self.nsrdb_source_path, filepath=self.solar_resource_file)
+            elif isinstance(self.solar_resource,dict):
+                self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'],resource_data = self.solar_resource)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
@@ -175,6 +178,8 @@ class SiteInfo(BaseClass):
                 else:
                     self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                                     wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
+            elif isinstance(self.wind_resource,dict):
+                self.wind_resource = WindResource(data['lat'], data['lon'], data['year'],wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
