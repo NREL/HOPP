@@ -70,9 +70,24 @@ class SiteInfo(BaseClass):
         wave: Whether to set wave data for this site. Defaults to False.
         wind_resource_origin: Which wind resource API to use, defaults toto "WTK" for WIND Toolkit.
             Options are "WTK" or "TAP".
+        solar_resource (Optional): dictionary or object containing solar resource data
+        wind_resource (Optional): dictionary or object containing wind resource data
     """
     # User provided
     data: dict
+    """dictionary of site info data with key as:
+
+        - lat (float): site latitude
+        - lon (float): site longitude
+        - year (int): year to get resource data for. Default to 2012
+        - tz (int, optional): timezone of site
+        - elev (int, optional): elevation of site (m)
+        - site_boundaries (dict):
+            - verts (list(list(float))): vertices of site polygon
+        - urdb_label (str,optional): string corresponding to data from utility rate databse
+    """
+
+    
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wave_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
