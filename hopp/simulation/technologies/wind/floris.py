@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 class Floris(BaseClass):
     site: SiteInfo = field()
     config: "WindConfig" = field()
+    verbose: bool = field(default = True)
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
@@ -43,14 +44,6 @@ class Floris(BaseClass):
 
         self.wind_resource_data = self.site.wind_resource.data
         self.speeds, self.wind_dirs = self.parse_resource_data()
-
-        save_data = np.zeros((len(self.speeds),2))
-        save_data[:,0] = self.speeds
-        save_data[:,1] = self.wind_dirs
-
-        with open('speed_dir_data.csv', 'w', newline='') as fo:
-            writer = csv.writer(fo)
-            writer.writerows(save_data)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
@@ -90,7 +83,7 @@ class Floris(BaseClass):
         """
         if set_value = None, then retrieve value; otherwise overwrite variable's value
         """
-        if set_value:
+        if set_value is not None:
             self.__setattr__(name, set_value)
         else:
             return self.__getattribute__(name)
@@ -119,8 +112,9 @@ class Floris(BaseClass):
         return speeds, wind_dirs
 
     def execute(self, project_life):
-
-        print('Simulating wind farm output in FLORIS...')
+        
+        if self.verbose:
+            print('Simulating wind farm output in FLORIS...')
 
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
