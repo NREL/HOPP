@@ -114,6 +114,7 @@ class SiteInfo(BaseClass):
     lon: hopp_float_type = field(init=False)
     year: int = field(init=False, default=2012)
     tz: Optional[int] = field(init=False, default=None)
+    elev: Optional[float] = field(init=False, default=None)
     solar_resource: Optional[Union[SolarResource,HPCSolarData]] = field(default=None)
     wind_resource: Optional[Union[WindResource,HPCWindData]] = field(default=None)
     wave_resoure: Optional[WaveResource] = field(init=False, default=None)
@@ -171,6 +172,9 @@ class SiteInfo(BaseClass):
         if 'tz' in data:
             self.tz = data['tz']
         
+        if 'elev' in data:
+            self.elev = data['elev']
+        
         if self.solar:
             if self.solar_resource is None:
                 if self.renewable_resource_origin=="API":
@@ -180,6 +184,7 @@ class SiteInfo(BaseClass):
             elif isinstance(self.solar_resource,dict):
                 self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'],resource_data = self.solar_resource)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+            self.elev = self.solar_resource.data["elev"]
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
