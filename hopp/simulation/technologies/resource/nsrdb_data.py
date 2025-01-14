@@ -34,7 +34,7 @@ class HPCSolarData(Resource):
         nsrdb_source_path: Union[str,Path] = "",
         filepath: str = "",
         ):
-        """_summary_
+        """Class to pull solar resource data from NSRDB datasets hosted on the HPC
 
         Args:
             lat (float): latitude corresponding to location for solar resource data
@@ -54,6 +54,8 @@ class HPCSolarData(Resource):
             self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
         elif filepath != "" and nsrdb_source_path == "":
             # filepath (full h5 filepath) is provided by user
+            if ".h5" not in filepath:
+                filepath = filepath + ".h5"
             self.nsrdb_file = filepath
         elif filepath == "" and nsrdb_source_path != "":
             # directory of h5 files (nsrdb_source_path) is provided by user

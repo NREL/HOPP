@@ -31,7 +31,7 @@ class HPCWindData(Resource):
         wtk_source_path: Union[str,Path] = "",
         filepath: str = "",
         ):
-        """_summary_
+        """Class to pull wind resource data from WIND Toolkit datasets hosted on the HPC
 
         Args:
             lat (float): latitude corresponding to location for wind resource data
@@ -59,6 +59,8 @@ class HPCWindData(Resource):
                 self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
         elif filepath != "" and wtk_source_path == "":
             # filepath (full h5 filepath) is provided by user
+            if ".h5" not in filepath:
+                filepath = filepath + ".h5"
             self.wtk_file = filepath
         elif filepath == "" and wtk_source_path != "":
             # directory of h5 files (wtk_source_path) is provided by user
