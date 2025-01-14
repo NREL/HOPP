@@ -43,6 +43,9 @@ class HPCSolarData(Resource):
             nsrdb_source_path (Union[str,Path], optional): directory where NSRDB data is hosted on HPC. Defaults to "".
             filepath (str, optional): filepath to NSRDB h5 file on HPC. Defaults to "".
                 - should be formatted as: /path/to/file/name_of_file.h5
+        Raises:
+            ValueError: if year is not between 1998 and 2022 (inclusive)
+            FileNotFoundError: if nsrdb_file is not valid filepath
         """
        
         # NOTE: self.data must be compatible with PVWatts.SolarResource.solar_resource_data
@@ -63,6 +66,10 @@ class HPCSolarData(Resource):
         else:
             # use default filepaths
             self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
+        
+        # Check for valid year
+        if self.year < 1998 or self.year > 2022:
+                raise ValueError(f"Resource year for NSRDB Data must be between 1998 and 2022 but {self.year} was provided")
         
         # Check for valid filepath for NSRDB file
         if not os.path.isfile(self.nsrdb_file):

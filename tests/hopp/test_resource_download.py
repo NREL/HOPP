@@ -165,10 +165,26 @@ def test_wtk_resource_filenotfound():
         HPCWindData(lat = 35.201, lon = -101.945, year = resource_year, wind_turbine_hub_ht = 110, wtk_source_path=wtk_fake_dir)
     assert str(err.value) == f"Cannot find Wind Toolkit .h5 file, filepath {wtk_fake_fpath} does not exist"
 
+def test_wtk_resource_invalid_year():
+    wtk_fake_dir = str(ROOT_DIR)
+    resource_year = 2006
+    wtk_fake_fpath = os.path.join(str(ROOT_DIR),f"wtk_conus_{resource_year}.h5")
+    with pytest.raises(ValueError) as err:
+        HPCWindData(lat = 35.201, lon = -101.945, year = resource_year, wind_turbine_hub_ht = 110, wtk_source_path=wtk_fake_dir)
+    assert str(err.value) == f"Resource year for WIND Toolkit Data must be between 2007 and 2014 but {resource_year} was provided"
+
 def test_nsrdb_resource_filenotfound():
     nsrdb_fake_dir = str(ROOT_DIR)
     resource_year = 2012
     nsrdb_fake_fpath = os.path.join(str(ROOT_DIR),f"nsrdb_{resource_year}.h5")
     with pytest.raises(FileNotFoundError) as err:
-        HPCSolarData(lat = 35.201, lon = -101.945, year = 2012, nsrdb_source_path=nsrdb_fake_dir)
+        HPCSolarData(lat = 35.201, lon = -101.945, year = resource_year, nsrdb_source_path=nsrdb_fake_dir)
     assert str(err.value) == f"Cannot find NSRDB .h5 file, filepath {nsrdb_fake_fpath} does not exist"
+
+def test_nsrdb_resource_invalid_year():
+    nsrdb_fake_dir = str(ROOT_DIR)
+    resource_year = 2023
+    nsrdb_fake_fpath = os.path.join(str(ROOT_DIR),f"nsrdb_{resource_year}.h5")
+    with pytest.raises(ValueError) as err:
+        HPCSolarData(lat = 35.201, lon = -101.945, year = resource_year, nsrdb_source_path=nsrdb_fake_dir)
+    assert str(err.value) == f"Resource year for NSRDB Data must be between 1998 and 2022 but {resource_year} was provided"
