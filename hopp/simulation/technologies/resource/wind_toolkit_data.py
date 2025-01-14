@@ -42,6 +42,7 @@ class HPCWindData(Resource):
             filepath (str, optional): filepath to Wind Toolkit h5 file on HPC. Defaults to "".
                 - should be formatted as: /path/to/file/name_of_file.h5
         Raises:
+            ValueError: if year is not between 2007 and 2014 (inclusive)
             FileNotFoundError: if wtk_file is not valid filepath
         """
         super().__init__(lat, lon, year)
@@ -50,10 +51,13 @@ class HPCWindData(Resource):
         self.allowed_hub_heights_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
         self.data_hub_heights = self.calculate_heights_to_download()
         
-
+        # Check for valid year
+        if self.year < 2007 or self.year > 2014:
+            raise ValueError(f"Resource year for WIND Toolkit Data must be between 2007 and 2014 but {self.year} was provided")
+        
         if filepath == "" and wtk_source_path=="":
             # use default filepaths based on resource year
-            if self.year < 2014:
+            if self.year < 2014 and self.year>=2007:
                 self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
             elif self.year == 2014:
                 self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
