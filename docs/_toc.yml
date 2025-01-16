@@ -14,6 +14,13 @@ parts:
   chapters:
   - file: api/hopp_interface
   - file: api/site_info
+    sections:
+    - file: api/resource/index
+      sections:
+      - file: api/resource/solar_api
+      - file: api/resource/wind_api
+      - file: api/resource/solar_hpc
+      - file: api/resource/wind_hpc
   - file: api/hybrid_simulation
   - file: api/technology/index
     sections:
