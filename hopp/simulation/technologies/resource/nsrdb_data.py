@@ -15,13 +15,13 @@ NSRDB_NEW = "/datasets/NSRDB/current/nsrdb_"
 # To be called instead of SolarResource from hopp.simulation.technologies.resource
 class HPCSolarData(Resource):
     """
-    Class to manage Solar Resource data from NSRDB Datasets
+    Class to manage Solar Resource data from NSRDB Datasets.
 
     Attributes:
-        nsrdb_file (str): path of file that resource data is pulled from
-        site_gid (int): id for NSRDB location that resource data was pulled from
-        nsrdb_latitude (float): latitude of NSRDB location corresponding to site_gid
-        nsrdb_longitude: (float): longitude of NSRDB location corresponding to site_gid
+        nsrdb_file: (str) path of file that resource data is pulled from.
+        site_gid: (int) id for NSRDB location that resource data was pulled from.
+        nsrdb_latitude: (float) latitude of NSRDB location corresponding to site_gid.
+        nsrdb_longitude: (float) longitude of NSRDB location corresponding to site_gid.
         
     """
 

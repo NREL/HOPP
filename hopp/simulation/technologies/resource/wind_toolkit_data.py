@@ -15,10 +15,10 @@ class HPCWindData(Resource):
     Class to manage Wind Resource data from Wind Toolkit Datasets
     
     Attributes:
-        wtk_file (str): path of file that resource data is pulled from
-        site_gid (int): id for Wind Toolkit location that resource data was pulled from
-        wtk_latitude (float): latitude of Wind Toolkit location corresponding to site_gid
-        wtk_longitude: (float): longitude of Wind Toolkit location corresponding to site_gid
+        wtk_file: (str) path of file that resource data is pulled from
+        site_gid: (int) id for Wind Toolkit location that resource data was pulled from
+        wtk_latitude: (float) latitude of Wind Toolkit location corresponding to site_gid
+        wtk_longitude: (float) longitude of Wind Toolkit location corresponding to site_gid
     """
 
 
