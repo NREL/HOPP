@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 class Floris(BaseClass):
     site: SiteInfo = field()
     config: "WindConfig" = field()
+    verbose: bool = field(default = True)
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
@@ -43,14 +44,6 @@ class Floris(BaseClass):
 
         self.wind_resource_data = self.site.wind_resource.data
         self.speeds, self.wind_dirs = self.parse_resource_data()
-
-        save_data = np.zeros((len(self.speeds),2))
-        save_data[:,0] = self.speeds
-        save_data[:,1] = self.wind_dirs
-
-        with open('speed_dir_data.csv', 'w', newline='') as fo:
-            writer = csv.writer(fo)
-            writer.writerows(save_data)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
@@ -90,7 +83,7 @@ class Floris(BaseClass):
         """
         if set_value = None, then retrieve value; otherwise overwrite variable's value
         """
-        if set_value:
+        if set_value is not None:
             self.__setattr__(name, set_value)
         else:
             return self.__getattribute__(name)
@@ -119,8 +112,9 @@ class Floris(BaseClass):
         return speeds, wind_dirs
 
     def execute(self, project_life):
-
-        print('Simulating wind farm output in FLORIS...')
+        
+        if self.verbose:
+            print('Simulating wind farm output in FLORIS...')
 
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
@@ -138,14 +132,15 @@ class Floris(BaseClass):
         power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape((self.nTurbs, self.end_idx - self.start_idx))
         power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape((self.end_idx - self.start_idx))
 
+        operational_efficiency = ((100 - self._operational_losses)/100)
         # Adding losses from PySAM defaults (excluding turbine and wake losses)
-        self.gen = power_farm * ((100 - self._operational_losses)/100) / 1000 # kW
+        self.gen = power_farm * operational_efficiency / 1000 # kW
 
         self.annual_energy = np.sum(self.gen) # kWh
         self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
-        self.turb_powers = power_turbines * (100 - self._operational_losses) / 100 / 1000 # kW
+        self.turb_powers = power_turbines * operational_efficiency / 1000 # kW
         self.turb_velocities = self.fi.turbine_average_velocities
-        self.annual_energy_pre_curtailment_ac = self.annual_energy
+        self.annual_energy_pre_curtailment_ac = np.sum(self.gen) # kWh
 
     def export(self):
         """
