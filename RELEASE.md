@@ -1,5 +1,8 @@
 # Release Notes
 
+## Unreleased, TBD
++ minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
+
 ## Version 3.1.1, Dec. 18, 2024
 
 * Enhanced PV plant functionality: added tilting solar panel support, improved system design handling, and refined tilt angle calculations.
