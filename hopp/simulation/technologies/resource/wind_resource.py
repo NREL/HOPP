@@ -16,10 +16,10 @@ class WindResource(Resource):
     """ Class to manage Wind Resource data from API calls or preloaded data.
 
     Attributes:
-        hub_height_meters - the system height
+        hub_height_meters (float): the system height
             TODO: if optimizer will modify hub height, need to download a range rather than a single
         file_resource_heights (dict): dictionary of heights and filenames to download from Wind Toolkit
-        filename (str): full filepath of solar resource data file
+        filename (str): full filepath of wind resource data file
     """
 
     allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
