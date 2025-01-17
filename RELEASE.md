@@ -2,6 +2,7 @@
 
 ## Unreleased, TBD
 + minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
++ bug fix in load following heuristic method: only using beginning of variable load signals 
 
 ## Version 3.1.1, Dec. 18, 2024
 
