@@ -1,6 +1,6 @@
 import csv, os
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List
 from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
@@ -14,15 +14,18 @@ TAP_BASE_URL = "https://dw-tap.nrel.gov/v2/srw"
 
 class WindResource(Resource):
     """ Class to manage Wind Resource data from API calls or preloaded data.
-
-    Attributes:
-        hub_height_meters (float): the system height
-            TODO: if optimizer will modify hub height, need to download a range rather than a single
-        file_resource_heights (dict): dictionary of heights and filenames to download from Wind Toolkit
-        filename (str): full filepath of wind resource data file
     """
 
-    allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
+    allowed_hub_height_meters: List[int] = [10, 40, 60, 80, 100, 120, 140, 160, 200]
+    
+    #: the hub-height for wind resource data (meters)
+    hub_height_meters: float
+    # TODO: if optimizer will modify hub height, need to download a range rather than a single
+    
+    #: dictionary of heights and filenames to download from Wind Toolkit
+    file_resource_heights: dict
+
+
     def __init__(
         self, 
         lat: float, 
@@ -55,7 +58,6 @@ class WindResource(Resource):
         # if resource_data is input as a dictionary then set_data   
         if isinstance(resource_data,dict):
             self.data = resource_data
-            self.filename = None
             
         # if resource_data is not provided, download or load resource data
         else:

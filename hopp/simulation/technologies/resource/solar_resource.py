@@ -18,11 +18,10 @@ BASE_URL = "https://developer.nrel.gov/api/nsrdb/v2/solar/psm3-2-2-download.csv"
 class SolarResource(Resource):
     """
     Class to manage Solar Resource data from API calls or preloaded data.
-
-    Attributes:
-        filename (str): full filepath of solar resource data file
-        solar_attributes (str): attributes to download from API call
     """
+    
+    #: attributes of solar resource data to download from API call
+    solar_attributes: str =  'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle,surface_pressure,dew_point'
 
     def __init__(
         self, 
@@ -57,7 +56,6 @@ class SolarResource(Resource):
             if os.path.isdir(path_resource):
                 self.path_resource = path_resource
 
-            self.solar_attributes = 'ghi,dhi,dni,wind_speed,air_temperature,solar_zenith_angle,surface_pressure,dew_point'
 
             self.path_resource = os.path.join(self.path_resource, 'solar')
 
