@@ -58,23 +58,23 @@ class HPCWindData(Resource):
         if filepath == "" and wtk_source_path=="":
             # use default filepaths based on resource year
             if self.year < 2014 and self.year>=2007:
-                self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V10_BASE + f"{self.year}.h5"
             elif self.year == 2014:
-                self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V11_BASE + f"{self.year}.h5"
         elif filepath != "" and wtk_source_path == "":
             # filepath (full h5 filepath) is provided by user
             if ".h5" not in filepath:
                 filepath = filepath + ".h5"
-            self.wtk_file = filepath
+            self.wtk_file = str(filepath)
         elif filepath == "" and wtk_source_path != "":
             # directory of h5 files (wtk_source_path) is provided by user
-            self.wtk_file = os.path.join(str(wtk_source_path),"wtk_conus_{}.h5".format(self.year))
+            self.wtk_file = os.path.join(str(wtk_source_path),f"wtk_conus_{self.year}.h5")
         else:
             # use default filepaths
-            if self.year < 2014:
-                self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
+            if self.year < 2014 and self.year>=2007:
+                self.wtk_file = WTK_V10_BASE + f"{self.year}.h5"
             elif self.year == 2014:
-                self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V11_BASE + f"{self.year}.h5"
         
         # Check for valid filepath for Wind Toolkit file
         if not os.path.isfile(self.wtk_file):

@@ -54,18 +54,18 @@ class HPCSolarData(Resource):
 
         if filepath == "" and nsrdb_source_path=="":
             # use default filepath
-            self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
+            self.nsrdb_file = NSRDB_NEW + f"{self.year}.h5"
         elif filepath != "" and nsrdb_source_path == "":
             # filepath (full h5 filepath) is provided by user
             if ".h5" not in filepath:
                 filepath = filepath + ".h5"
-            self.nsrdb_file = filepath
+            self.nsrdb_file = str(filepath)
         elif filepath == "" and nsrdb_source_path != "":
             # directory of h5 files (nsrdb_source_path) is provided by user
-            self.nsrdb_file = os.path.join(str(nsrdb_source_path),"nsrdb_{}.h5".format(self.year))
+            self.nsrdb_file = os.path.join(str(nsrdb_source_path),f"nsrdb_{self.year}.h5")
         else:
             # use default filepaths
-            self.nsrdb_file = NSRDB_NEW + "{}.h5".format(self.year)
+            self.nsrdb_file = NSRDB_NEW + f"{self.year}.h5"
         
         # Check for valid year
         if self.year < 1998 or self.year > 2022:
