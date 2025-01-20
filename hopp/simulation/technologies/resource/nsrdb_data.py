@@ -98,10 +98,15 @@ class HPCSolarData(Resource):
             self.nsrdb_latitude = f.meta['latitude'].iloc[site_gid]
             self.nsrdb_longitude = f.meta['longitude'].iloc[site_gid]
             
-            # extract remaining datapoints: year, month, day, hour, minute, dn, df, gh, wspd,tdry, pres, tdew
-            # NOTE: datasets have readings at 0 and 30 minutes each hour, HOPP/SAM workflow requires only 30 minute reading values -> filter 0 minute readings with [1::2]
-            # NOTE: datasets are not auto shifted by timezone offset -> wrap extraction in SAMResource.roll_timeseries(input_array, timezone, #steps in an hour=1) to roll timezones
-            # NOTE: solar_resource.py code references solar_zenith_angle and RH = relative_humidity but I couldn't find them actually being utilized. Captured them below just in case.
+            # extract remaining datapoints: 
+            # year, month, day, hour, minute, dn, df, gh, wspd,tdry, pres, tdew
+
+            # 1) NOTE: datasets have readings at 0 and 30 minutes each hour, 
+            # HOPP/SAM workflow requires only 30 minute reading values -> filter 0 minute readings with [1::2]
+            # 2) NOTE: datasets are not auto shifted by timezone offset 
+            # -> wrap extraction in SAMResource.roll_timeseries(input_array, timezone, #steps in an hour=1) to roll timezones
+            # 3) NOTE: solar_resource.py code references solar_zenith_angle and RH = relative_humidity but I couldn't find them 
+            # actually being utilized. Captured them below just in case.
             self.year_arr = f.time_index.year.values[1::2]
             self.month_arr = f.time_index.month.values[1::2]
             self.day_arr = f.time_index.day.values[1::2]
