@@ -58,23 +58,23 @@ class HPCWindData(Resource):
         if filepath == "" and wtk_source_path=="":
             # use default filepaths based on resource year
             if self.year < 2014 and self.year>=2007:
-                self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V10_BASE + f"{self.year}.h5"
             elif self.year == 2014:
-                self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V11_BASE + f"{self.year}.h5"
         elif filepath != "" and wtk_source_path == "":
             # filepath (full h5 filepath) is provided by user
             if ".h5" not in filepath:
                 filepath = filepath + ".h5"
-            self.wtk_file = filepath
+            self.wtk_file = str(filepath)
         elif filepath == "" and wtk_source_path != "":
             # directory of h5 files (wtk_source_path) is provided by user
-            self.wtk_file = os.path.join(str(wtk_source_path),"wtk_conus_{}.h5".format(self.year))
+            self.wtk_file = os.path.join(str(wtk_source_path),f"wtk_conus_{self.year}.h5")
         else:
             # use default filepaths
-            if self.year < 2014:
-                self.wtk_file = WTK_V10_BASE + "{}.h5".format(self.year)
+            if self.year < 2014 and self.year>=2007:
+                self.wtk_file = WTK_V10_BASE + f"{self.year}.h5"
             elif self.year == 2014:
-                self.wtk_file = WTK_V11_BASE + "{}.h5".format(self.year)
+                self.wtk_file = WTK_V11_BASE + f"{self.year}.h5"
         
         # Check for valid filepath for Wind Toolkit file
         if not os.path.isfile(self.wtk_file):
@@ -125,7 +125,8 @@ class HPCWindData(Resource):
             # instantiate temp dictionary to hold each attributes dataset
             self.wind_dict = {}
             # loop through hub heights to download, capture datasets
-            # NOTE: datasets are not auto shifted by timezone offset -> wrap extraction in SAMResource.roll_timeseries(input_array, timezone, #steps in an hour=1) to roll timezones
+            # NOTE: datasets are not auto shifted by timezone offset 
+            # -> wrap extraction in SAMResource.roll_timeseries(input_array, timezone, #steps in an hour=1) to roll timezones
             # NOTE: pressure datasets unit = Pa, convert to atm via division by 101325
             for h in self.data_hub_heights:
                 self.wind_dict['temperature_{height}m_arr'.format(height=h)] = SAMResource.roll_timeseries((f['temperature_{height}m'.format(height=h), :, site_gid]), time_zone, 1)
@@ -164,7 +165,8 @@ class HPCWindData(Resource):
                                                        self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[1])])]
 
         elif len(self.data_hub_heights) == 1:
-            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. If not sensitive, can remove following 4 lines of code to increase computational efficiency
+            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. 
+            # If not sensitive, can remove following 4 lines of code to increase computational efficiency
             self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
             self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=2)
             self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=3)
