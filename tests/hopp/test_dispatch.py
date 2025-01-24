@@ -973,7 +973,9 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
 
 def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
-    desired_schedule = 8760*[20]
+    desired_schedule = 8760 * [20]
+    # Using a non-uniform schedule to test the baseload heuristic bugfix
+    desired_schedule[:2000] = [10.] * 2000
 
     desired_schedule_site = SiteInfo(flatirons_site,
                                      desired_schedule=desired_schedule)
@@ -998,9 +1000,9 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
     hybrid_plant = hi.system
 
-    assert hybrid_plant.grid.time_load_met == pytest.approx(92.87, 1e-2)
-    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
-    assert hybrid_plant.grid.total_number_hours == pytest.approx(3844, 1e-2)
+    assert hybrid_plant.grid.time_load_met == pytest.approx(94.429, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.659, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4270, 1e-2)
 
 def test_dispatch_load_following_heuristic_with_wave(site, subtests):
     dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}
