@@ -11,6 +11,8 @@ from numpy.testing import assert_array_equal
 from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp import ROOT_DIR
 
+from PySAM.ResourceTools import SRW_to_wind_data, SAM_CSV_to_solar_data
+
 solar_resource_file = os.path.join(
     ROOT_DIR, "simulation", "resource_files", "solar", 
     "35.2018863_-101.945027_psmv3_60_2012.csv"
@@ -157,3 +159,73 @@ def test_site_kml_file_append():
     k, valid_region, lat, lon = SiteInfo.kml_read(kml_filepath)
     assert valid_region.area > 0
     os.remove(filepath_new)
+
+def test_site_wind_resource_input_filename():
+    data = copy.deepcopy(flatirons_site)
+    wind_resource_data_dict = SRW_to_wind_data(wind_resource_file)
+    site = SiteInfo(
+        data, 
+        hub_height = 90,
+        wind = True,
+        solar = False,
+        wind_resource = wind_resource_data_dict
+    )
+    assert site.wind_resource.filename is None
+
+def test_site_wind_resource_input_data_length():
+    data = copy.deepcopy(flatirons_site)
+    wind_resource_data_dict = SRW_to_wind_data(wind_resource_file)
+    site = SiteInfo(
+        data, 
+        hub_height = 90,
+        wind = True,
+        solar = False,
+        wind_resource = wind_resource_data_dict
+    )
+    assert len(site.wind_resource.data['data'])==8760
+
+def test_site_wind_resource_input_data_format():
+    data = copy.deepcopy(flatirons_site)
+    wind_resource_data_dict = SRW_to_wind_data(wind_resource_file)
+    site = SiteInfo(
+        data, 
+        hub_height = 90,
+        wind = True,
+        solar = False,
+        wind_resource = wind_resource_data_dict
+    )
+    assert int(site.wind_resource.data['heights'][0])==80
+
+def test_site_solar_resource_input_filename():
+    data = copy.deepcopy(flatirons_site)
+    solar_resource_data_dict = SAM_CSV_to_solar_data(solar_resource_file)
+    site = SiteInfo(
+        data, 
+        wind = False,
+        solar = True,
+        solar_resource = solar_resource_data_dict
+    )
+    assert site.solar_resource.filename is None
+
+def test_site_solar_resource_input_data_length():
+    data = copy.deepcopy(flatirons_site)
+    solar_resource_data_dict = SAM_CSV_to_solar_data(solar_resource_file)
+    site = SiteInfo(
+        data, 
+        wind = False,
+        solar = True,
+        solar_resource = solar_resource_data_dict
+    )
+    assert len(site.solar_resource.data['dn'])==8760
+
+def test_site_solar_resource_input_data_format():
+    data = copy.deepcopy(flatirons_site)
+    solar_resource_data_dict = SAM_CSV_to_solar_data(solar_resource_file)
+    site = SiteInfo(
+        data, 
+        wind = False,
+        solar = True,
+        solar_resource = solar_resource_data_dict
+    )
+    assert site.solar_resource.data['tz']==-6
+
