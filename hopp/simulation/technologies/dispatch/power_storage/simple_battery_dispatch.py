@@ -1,7 +1,7 @@
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
-import PySAM.BatteryStateful as BatteryModel
+import PySAM.BatteryStateful as PySAMBatteryModel
 
 from hopp.simulation.technologies.dispatch.power_storage.power_storage_dispatch import (
     PowerStorageDispatch,
@@ -16,7 +16,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         self,
         pyomo_model: pyomo.ConcreteModel,
         index_set: pyomo.Set,
-        system_model: BatteryModel.BatteryStateful,
+        system_model: PySAMBatteryModel.BatteryStateful,
         financial_model: FinancialModelType,
         block_set_name: str,
         dispatch_options,
@@ -26,7 +26,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
         Args:
             pyomo_model (pyomo.ConcreteModel): The Pyomo model instance.
             index_set (pyomo.Set): The Pyomo index set.
-            system_model (BatteryModel.BatteryStateful): The battery stateful model.
+            system_model (PySAMBatteryModel.BatteryStateful): The battery stateful model.
             financial_model (FinancialModelType): The financial model type.
             block_set_name (str): Name of the block set.
             dispatch_options: Dispatch options.
@@ -68,7 +68,7 @@ class SimpleBatteryDispatch(PowerStorageDispatch):
 
     def _set_control_mode(self):
         """Sets control mode."""
-        if isinstance(self._system_model, BatteryModel.BatteryStateful):
+        if isinstance(self._system_model, PySAMBatteryModel.BatteryStateful):
             self._system_model.value("control_mode", 1.0)  # Power control
             self._system_model.value("input_power", 0.0)
             self.control_variable = "input_power"

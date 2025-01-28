@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from attrs import define, field
-import PySAM.BatteryStateful as BatteryModel
+import PySAM.BatteryStateful as PySAMBatteryModel
 import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.base import BaseClass
@@ -76,14 +76,29 @@ class BatteryConfig(BaseClass):
         system_capacity_kw: Battery rated power capacity [kW]
         chemistry: Battery chemistry option
 
-            - "LFPGraphite" (default)
-
-            - "LMOLTO"
-
-            - "LeadAcid" 
-
-            - "NMCGraphite"
-
+            PySAM options:
+                - "LFPGraphite" (default)
+                - "LMOLTO"
+                - "LeadAcid" 
+                - "NMCGraphite"
+            Interday:
+                Mechanical:
+                    - "PHS" Novel pumped hydro
+                    - "GB" Gravity-based
+                    - "CAES" Compressed air
+                    - "LAES" Liquid air
+                    - "LCO2" Liquid CO2
+                Alternative:
+                    - "Li-ion" Lithium-ion battery
+            Multi-day/week:
+                Thermal:
+                    - "SH" Sensible heat (eg, molten salts, rock material, concrete)
+                    - "LH" Latent heat (eg, aluminum alloy)
+                    - "TCH" Thermochemical heat (eg, zeolites, silica gel)
+                Electro-chemical
+                    - "AEF" Aqueous electrolyte flow batteries
+                    - "MA" Metal anode batteries
+                    - "HF" Hybrid flow battery, with liquid electrolyte and metal anode (some flow batteries are diurnal)
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -122,7 +137,7 @@ class Battery(PowerSource):
     def __attrs_post_init__(self):
         """
         """
-        system_model = BatteryModel.default(self.config.chemistry)
+        system_model = PySAMBatteryModel.default(self.config.chemistry)
 
         if isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)

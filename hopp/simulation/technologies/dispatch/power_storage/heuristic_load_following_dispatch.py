@@ -2,7 +2,7 @@ from typing import Optional, List
 
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
-import PySAM.BatteryStateful as BatteryModel
+import PySAM.BatteryStateful as PySAMBatteryModel
 import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch_heuristic import (
@@ -22,7 +22,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         self,
         pyomo_model: pyomo.ConcreteModel,
         index_set: pyomo.Set,
-        system_model: BatteryModel.BatteryStateful,
+        system_model: PySAMBatteryModel.BatteryStateful,
         financial_model: Singleowner.Singleowner,
         fixed_dispatch: Optional[List] = None,
         block_set_name: str = "heuristic_load_following_battery",
@@ -33,7 +33,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.
             index_set (pyomo.Set): Indexed set.
-            system_model (BatteryModel.BatteryStateful): System model.
+            system_model (PySAMBatteryModel.BatteryStateful): System model.
             financial_model (Singleowner.Singleowner): Financial model.
             fixed_dispatch (Optional[List], optional): List of normalized values [-1, 1] (Charging (-), Discharging (+)). Defaults to None.
             block_set_name (str, optional): Name of the block set. Defaults to 'heuristic_load_following_battery'.
