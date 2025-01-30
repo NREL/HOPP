@@ -58,33 +58,36 @@ class WindResource(Resource):
         # if resource_data is input as a dictionary then set_data   
         if isinstance(resource_data,dict):
             self.data = resource_data
-            
+            return 
+        
         # if resource_data is not provided, download or load resource data
+        if isinstance(path_resource,str):
+            path_resource = Path(path_resource).resolve()
+        if os.path.isdir(path_resource):
+            self.path_resource = path_resource
+        if path_resource.parts[-1]!="wind":
+            self.path_resource = self.path_resource / 'wind'
+        
+        # Force override any internal definitions if passed in
+        self.__dict__.update(kwargs)
+
+        self.file_resource_heights = None
+        self.update_height(wind_turbine_hub_ht)
+
+        if filepath == "":
+            self.filename = ""
+            self.calculate_heights_to_download()
         else:
-            if os.path.isdir(path_resource):
-                self.path_resource = path_resource
+            self.filename = filepath
 
-            self.path_resource = os.path.join(self.path_resource, 'wind')
+        self.source = source
 
-            self.__dict__.update(kwargs)
+        self.check_download_dir()
 
-            self.file_resource_heights = None
-            self.update_height(wind_turbine_hub_ht)
-
-            if filepath == "":
-                self.filename = ""
-                self.calculate_heights_to_download()
-            else:
-                self.filename = filepath
-
-            self.source = source
-
-            self.check_download_dir()
-
-            if not os.path.isfile(self.filename) or use_api:
-                self.download_resource()
-            
-            self.format_data()
+        if not os.path.isfile(self.filename) or use_api:
+            self.download_resource()
+        
+        self.format_data()
         
     def calculate_heights_to_download(self):
         """
@@ -107,18 +110,18 @@ class WindResource(Resource):
             heights[0] = height_low
             heights.append(height_high)
 
-        file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_windtoolkit_" + str(
-            self.year) + "_" + str(self.interval) + "min")
-        file_resource_full = file_resource_base
+        filename_base = f"{self.latitude}_{self.longitude}_windtoolkit_{self.year}_{self.interval}min"
+        file_resource_full = filename_base
         file_resource_heights = dict()
 
         for h in heights:
-            file_resource_heights[int(h)] = file_resource_base + '_' + str(int(h)) + 'm.srw'
-            file_resource_full += "_" + str(int(h)) + 'm'
+            h_int = int(h)
+            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.srw')
+            file_resource_full += f'_{h_int}m'
         file_resource_full += ".srw"
 
         self.file_resource_heights = file_resource_heights
-        self.filename = file_resource_full
+        self.filename = self.path_resource / file_resource_full
 
     def update_height(self, hub_height_meters):
         self.hub_height_meters = hub_height_meters

@@ -51,32 +51,31 @@ class SolarResource(Resource):
         # if resource_data is input as a dictionary then set_data
         if isinstance(resource_data,dict):
             self.data = resource_data
+            return
         # if resource_data is not provided, download or load resource data
-        else:
-            if os.path.isdir(path_resource):
-                self.path_resource = path_resource
+        if isinstance(path_resource,str):
+            path_resource = Path(path_resource).resolve()
+        if os.path.isdir(path_resource):
+            self.path_resource = path_resource
+        if path_resource.parts[-1]!="solar":
+            self.path_resource = self.path_resource/ 'solar'
 
+        # Force override any internal definitions if passed in
+        self.__dict__.update(kwargs)
 
-            self.path_resource = os.path.join(self.path_resource, 'solar')
+        # resource_files files
+        if filepath == "":
+            filepath = self.path_resource / f"{self.latitude}_{self.longitude}_psmv3_{self.interval}_{self.year}.csv"
+        self.filename = filepath
 
-            # Force override any internal definitions if passed in
-            self.__dict__.update(kwargs)
+        self.check_download_dir()   # FIXME: This breaks if weather file is in the same directory as caller
 
-            # resource_files files
-            if filepath == "":
-                filepath = os.path.join(self.path_resource,
-                                        str(lat) + "_" + str(lon) + "_psmv3_" + str(self.interval) + "_" + str(
-                                            year) + ".csv")
-            self.filename = filepath
+        if not self.filename.is_file() or use_api:
+            self.download_resource()
 
-            self.check_download_dir()   # FIXME: This breaks if weather file is in the same directory as caller
+        self.format_data()
 
-            if not os.path.isfile(self.filename) or use_api:
-                self.download_resource()
-
-            self.format_data()
-
-            logger.info("SolarResource: {}".format(self.filename))
+        logger.info("SolarResource: {}".format(self.filename))
 
     def download_resource(self):
         """Download solar resource file from NSRDB API call
@@ -152,7 +151,7 @@ class SolarResource(Resource):
         """Roll weather data timezone. This function appears unused.
 
         Args:
-            roll_hours (Union[int,float]): number of hours to role the timezone by
+            roll_hours (Union[int,float]): number of hours to roll the timezone by
             timezone (int): timezone for location
         """
         rollable_keys = ['dn', 'df', 'gh', 'wspd', 'tdry']

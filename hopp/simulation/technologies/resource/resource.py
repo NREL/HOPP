@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import time
+from pathlib import Path
 from hopp import ROOT_DIR
 
 class Resource(metaclass=ABCMeta):
@@ -51,8 +52,10 @@ class Resource(metaclass=ABCMeta):
     def check_download_dir(self):
         """Creates directory for the resource file if it does not exist.
         """
-        if not os.path.isdir(os.path.dirname(self.filename)):
-            os.makedirs(os.path.dirname(self.filename))
+        if isinstance(self.filename,str):
+            self.filename = Path(self.filename).resolve()
+        if not self.filename.parent.is_dir():
+            os.makedirs(self.filename.parent)
 
     @staticmethod
     def call_api(url, filename):
