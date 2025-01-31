@@ -70,7 +70,7 @@ class SolarResource(Resource):
 
         self.check_download_dir()   # FIXME: This breaks if weather file is in the same directory as caller
 
-        if not self.filename.is_file() or use_api:
+        if not os.path.isfile(self.filename) or use_api:
             self.download_resource()
 
         self.format_data()

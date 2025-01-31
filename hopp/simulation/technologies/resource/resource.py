@@ -52,10 +52,10 @@ class Resource(metaclass=ABCMeta):
     def check_download_dir(self):
         """Creates directory for the resource file if it does not exist.
         """
-        if isinstance(self.filename,str):
-            self.filename = Path(self.filename).resolve()
-        if not self.filename.parent.is_dir():
-            os.makedirs(self.filename.parent)
+        if not isinstance(self.filename,str):
+            self.filename = str(self.filename)
+        if not os.path.isdir(os.path.dirname(self.filename)):
+            os.makedirs(os.path.dirname(self.filename))
 
     @staticmethod
     def call_api(url, filename):
