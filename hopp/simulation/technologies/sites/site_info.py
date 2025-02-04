@@ -68,10 +68,26 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to False.
-        wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
+        wind_resource_origin: Which wind resource API to use, defaults toto "WTK" for WIND Toolkit.
+            Options are "WTK" or "TAP".
+        solar_resource (Optional): dictionary or object containing solar resource data
+        wind_resource (Optional): dictionary or object containing wind resource data
     """
     # User provided
     data: dict
+    """dictionary of site info data with key as:
+
+        - lat (float): site latitude
+        - lon (float): site longitude
+        - year (int): year to get resource data for. Default to 2012
+        - tz (int, optional): timezone of site
+        - elev (int, optional): elevation of site (m)
+        - site_boundaries (dict):
+            - verts (list(list(float))): vertices of site polygon
+        - urdb_label (str,optional): string corresponding to data from utility rate databse
+    """
+
+    
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wave_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
@@ -98,6 +114,7 @@ class SiteInfo(BaseClass):
     lon: hopp_float_type = field(init=False)
     year: int = field(init=False, default=2012)
     tz: Optional[int] = field(init=False, default=None)
+    elev: Optional[float] = field(init=False, default=None)
     solar_resource: Optional[Union[SolarResource,HPCSolarData]] = field(default=None)
     wind_resource: Optional[Union[WindResource,HPCWindData]] = field(default=None)
     wave_resoure: Optional[WaveResource] = field(init=False, default=None)
@@ -155,13 +172,19 @@ class SiteInfo(BaseClass):
         if 'tz' in data:
             self.tz = data['tz']
         
+        if 'elev' in data:
+            self.elev = data['elev']
+        
         if self.solar:
             if self.solar_resource is None:
                 if self.renewable_resource_origin=="API":
                     self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], path_resource=self.path_resource, filepath=self.solar_resource_file)
                 else:
                     self.solar_resource = HPCSolarData(data['lat'], data['lon'], data['year'],nsrdb_source_path = self.nsrdb_source_path, filepath=self.solar_resource_file)
+            elif isinstance(self.solar_resource,dict):
+                self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'],resource_data = self.solar_resource)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+            self.elev = self.solar_resource.data["elev"]
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
@@ -175,6 +198,8 @@ class SiteInfo(BaseClass):
                 else:
                     self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
                                                     wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
+            elif isinstance(self.wind_resource,dict):
+                self.wind_resource = WindResource(data['lat'], data['lon'], data['year'],wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
