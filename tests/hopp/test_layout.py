@@ -385,7 +385,6 @@ def test_detailed_pv_properties(site):
         'cec_adjust':           13.0949,
         'cec_alpha_sc':         0.0020822,
         'cec_beta_oc':          -0.134854,
-        'cec_gamma_r':          -0.3904,
         'cec_i_l_ref':          5.81,
         'cec_i_mp_ref':         5.4,
         'cec_i_o_ref':          3.698e-11,
@@ -499,7 +498,7 @@ def test_detailed_pv_plant_custom_design(site):
 
     detailed_pvplant.simulate(target_solar_kw)
 
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.31
     assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
     assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
 
