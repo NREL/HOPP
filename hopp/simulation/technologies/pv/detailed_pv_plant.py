@@ -133,11 +133,6 @@ class DetailedPVPlant(PowerSource):
         if self.config.tech_config is not None:
             config = self.config.tech_config
             
-            if 'subarray2_enable' in config.keys() and config['subarray2_enable'] == 1 \
-              or 'subarray3_enable' in config.keys() and config['subarray3_enable'] == 1 \
-              or 'subarray4_enable' in config.keys() and config['subarray4_enable'] == 1:
-                raise Exception('Detailed PV plant currently only supports one subarray.')
-
             # Get PV module attributes
             system_params = flatten_dict(self._system_model.export())
             system_params.update(config)
@@ -289,12 +284,6 @@ class DetailedPVPlant(PowerSource):
         )
         self._system_model.value('system_capacity', system_capacity)
         self._system_model.value('subarray1_nstrings', n_strings)
-        self._system_model.value('subarray2_nstrings', 0)
-        self._system_model.value('subarray3_nstrings', 0)
-        self._system_model.value('subarray4_nstrings', 0)
-        self._system_model.value('subarray2_enable', 0)
-        self._system_model.value('subarray3_enable', 0)
-        self._system_model.value('subarray4_enable', 0)
         self._system_model.value('inverter_count', n_inverters)
 
     @property
@@ -325,12 +314,6 @@ class DetailedPVPlant(PowerSource):
         )
         self._system_model.value('system_capacity', system_capacity)
         self._system_model.value('subarray1_nstrings', n_strings)
-        self._system_model.value('subarray2_nstrings', 0)
-        self._system_model.value('subarray3_nstrings', 0)
-        self._system_model.value('subarray4_nstrings', 0)
-        self._system_model.value('subarray2_enable', 0)
-        self._system_model.value('subarray3_enable', 0)
-        self._system_model.value('subarray4_enable', 0)
         self._system_model.value('inverter_count', n_inverters)
 
     @property
@@ -370,9 +353,6 @@ class DetailedPVPlant(PowerSource):
     def modules_per_string(self, _modules_per_string: float):
         """Sets the modules per string and updates the system capacity."""
         self._system_model.SystemDesign.subarray1_modules_per_string = _modules_per_string
-        self._system_model.SystemDesign.subarray2_modules_per_string = 0 
-        self._system_model.SystemDesign.subarray3_modules_per_string = 0
-        self._system_model.SystemDesign.subarray4_modules_per_string = 0
         # update system capacity directly to not recalculate the number of inverters, consistent with the SAM UI
         self._system_model.value('system_capacity', self.module_power * _modules_per_string * self.n_strings)
 
@@ -392,18 +372,12 @@ class DetailedPVPlant(PowerSource):
     @property
     def n_strings(self) -> float:
         """Total number of strings."""
-        return self._system_model.SystemDesign.subarray1_nstrings \
-               + self._system_model.SystemDesign.subarray2_nstrings \
-               + self._system_model.SystemDesign.subarray3_nstrings \
-               + self._system_model.SystemDesign.subarray4_nstrings
+        return self._system_model.SystemDesign.subarray1_nstrings
 
     @n_strings.setter
     def n_strings(self, _n_strings: float):
         """Sets the total number of strings and updates the system capacity."""
         self._system_model.SystemDesign.subarray1_nstrings = _n_strings
-        self._system_model.SystemDesign.subarray2_nstrings = 0 
-        self._system_model.SystemDesign.subarray3_nstrings = 0
-        self._system_model.SystemDesign.subarray4_nstrings = 0
         # update system capacity directly to not recalculate the number of inverters, consistent with the SAM UI
         self._system_model.value('system_capacity', self.module_power * self.modules_per_string * _n_strings)
 

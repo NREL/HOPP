@@ -490,6 +490,4 @@ Losses:
   wake_int_loss: 0.0
 Uncertainty:
   total_uncert: 12.085
-AdjustmentFactors:
-  constant: 0.0
 Outputs: {}
