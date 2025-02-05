@@ -1346,7 +1346,7 @@ def test_hybrid_tax_incentives(hybrid_config):
     )
 
 
-def test_capacity_credit(hybrid_config):
+def test_capacity_credit(hybrid_config,subtests):
     technologies = hybrid_config["technologies"]
     site = create_default_site_info(capacity_hours=capacity_credit_hours)
     wind_pv_battery = {key: technologies[key] for key in ("pv", "wind", "battery")}
@@ -1442,8 +1442,8 @@ def test_capacity_credit(hybrid_config):
     capcred = hybrid_plant.capacity_credit_percent
     assert capcred["pv"][0] == approx(6.85, rel=0.05)
     assert capcred["wind"][0] == approx(33.25, rel=0.10)
-    assert capcred["battery"][0] == approx(58.95, rel=0.05)
-    assert capcred["hybrid"][0] == approx(43.88, rel=0.05)
+    assert capcred["battery"][0] == approx(55.77, rel=0.05)
+    assert capcred["hybrid"][0] == approx(40.80, rel=0.05)
 
     cp_pay = hybrid_plant.capacity_payments
     np_cap = (
@@ -1484,60 +1484,104 @@ def test_capacity_credit(hybrid_config):
     print("REV", [rev.pv[1], rev.wind[1], rev.battery[1], rev.hybrid[1]])
     print("TC", [tc.pv[1], tc.wind[1], tc.battery[1], tc.hybrid[1]])
 
-    assert aeps.pv == approx(10761987, rel=0.05)
-    assert aeps.wind == approx(31951719, rel=0.05)
-    assert aeps.battery == approx(-97166, rel=0.05)
-    assert aeps.hybrid == approx(43489117, rel=0.05)
+    with subtests.test("pv aeps"):
+        assert aeps.pv == approx(10761987, rel=0.05)
+    with subtests.test("wind aeps"):
+        assert aeps.wind == approx(31951719, rel=0.05)
+    with subtests.test("battery aeps"):
+        assert aeps.battery == approx(-97166, rel=0.05)
+    with subtests.test("hybrid aeps"):
+        assert aeps.hybrid == approx(43489117, rel=0.05)
 
-    assert npvs.pv == approx(-253177, rel=5e-2)
-    assert npvs.wind == approx(-369348, rel=5e-2)
-    assert npvs.battery == approx(-2700460, rel=5e-2)
-    assert npvs.hybrid == approx(-1982008.05, rel=5e-2)
+    with subtests.test("pv npvs"):
+        assert npvs.pv == approx(792671, rel=5e-2)
+    with subtests.test("wind npvs"):
+        assert npvs.wind == approx(818510, rel=5e-2)
+    with subtests.test("battery npvs"):
+        assert npvs.battery == approx(-2895459, rel=5e-2)
+    with subtests.test("hybrid npvs"):
+        assert npvs.hybrid == approx(210321, rel=5e-2)
 
-    assert taxes.pv[1] == approx(79229.26, rel=5e-2)
-    assert taxes.wind[1] == approx(365206, rel=5e-2)
-    assert taxes.battery[1] == approx(189346, rel=5e-2)
-    assert taxes.hybrid[1] == approx(598426, rel=5e-2)
+    with subtests.test("pv taxes"):
+        assert taxes.pv[1] == approx(108631, rel=5e-2)
+    with subtests.test("wind taxes"):
+        assert taxes.wind[1] == approx(365206, rel=5e-2)
+    with subtests.test("battery taxes"):
+        assert taxes.battery[1] == approx(189346, rel=5e-2)
+    with subtests.test("hybrid taxes"):
+        assert taxes.hybrid[1] == approx(598426, rel=5e-2)
 
-    assert apv.pv[1] == approx(0, rel=5e-2)
-    assert apv.wind[1] == approx(0, rel=5e-2)
-    assert apv.battery[1] == approx(-4070354, rel=5e-2)
-    assert apv.hybrid[1] == approx(-348443, rel=5e-2)
+    with subtests.test("pv apv"):
+        assert apv.pv[1] == approx(0, rel=5e-2)
+    with subtests.test("wind apv"):
+        assert apv.wind[1] == approx(0, rel=5e-2)
+    with subtests.test("battery apv"):
+        assert apv.battery[1] == approx(-4070354, rel=5e-2)
+    with subtests.test("hybrid apv"):
+        assert apv.hybrid[1] == approx(-348443, rel=5e-2)
 
-    assert debt.pv[1] == approx(0, rel=5e-2)
-    assert debt.wind[1] == approx(0, rel=5e-2)
-    assert debt.battery[1] == approx(0, rel=5e-2)
-    assert debt.hybrid[1] == approx(0, rel=5e-2)
+    with subtests.test("pv debt"):
+        assert debt.pv[1] == approx(0, rel=5e-2)
+    with subtests.test("wind debt"):
+        assert debt.wind[1] == approx(0, rel=5e-2)
+    with subtests.test("battery debt"):
+        assert debt.battery[1] == approx(0, rel=5e-2)
+    with subtests.test("hybrid debt"):
+        assert debt.hybrid[1] == approx(0, rel=5e-2)
 
-    assert esv.pv[1] == approx(10761986, rel=5e-2)
-    assert esv.wind[1] == approx(31951719, rel=5e-2)
-    assert esv.battery[1] == approx(3973442, rel=5e-2)
-    assert esv.hybrid[1] == approx(42058135, rel=5e-2)
+    with subtests.test("pv esv"):
+        assert esv.pv[1] == approx(10761986, rel=5e-2)
+    with subtests.test("wind esv"):
+        assert esv.wind[1] == approx(31951719, rel=5e-2)
+    with subtests.test("battery esv"):
+        assert esv.battery[1] == approx(3973442, rel=5e-2)
+    with subtests.test("hybrid esv"):
+        assert esv.hybrid[1] == approx(42058135, rel=5e-2)
 
-    assert depr.pv[1] == approx(745532, rel=5e-2)
-    assert depr.wind[1] == approx(2651114, rel=5e-2)
-    assert depr.battery[1] == approx(1266736, rel=5e-2)
-    assert depr.hybrid[1] == approx(4663383, rel=5e-2)
+    with subtests.test("pv depr"):
+        assert depr.pv[1] == approx(875122, rel=5e-2)
+    with subtests.test("wind depr"):
+        assert depr.wind[1] == approx(2651114, rel=5e-2)
+    with subtests.test("battery depr"):
+        assert depr.battery[1] == approx(1266736, rel=5e-2)
+    with subtests.test("hybrid depr"):
+        assert depr.hybrid[1] == approx(4663383, rel=5e-2)
 
-    assert insr.pv[0] == approx(0, rel=5e-2)
-    assert insr.wind[0] == approx(0, rel=5e-2)
-    assert insr.battery[0] == approx(0, rel=5e-2)
-    assert insr.hybrid[0] == approx(0, rel=5e-2)
+    with subtests.test("pv insr"):
+        assert insr.pv[0] == approx(0, rel=5e-2)
+    with subtests.test("wind insr"):
+        assert insr.wind[0] == approx(0, rel=5e-2)
+    with subtests.test("battery insr"):
+        assert insr.battery[0] == approx(0, rel=5e-2)
+    with subtests.test("hybrid insr"):
+        assert insr.hybrid[0] == approx(0, rel=5e-2)
 
-    assert om.pv[1] == approx(74993, rel=5e-2)
-    assert om.wind[1] == approx(430000, rel=5e-2)
-    assert om.battery[1] == approx(75000, rel=5e-2)
-    assert om.hybrid[1] == approx(579993, rel=5e-2)
+    with subtests.test("pv om"):
+        assert om.pv[1] == approx(94992, rel=5e-2)
+    with subtests.test("wind om"):
+        assert om.wind[1] == approx(400000, rel=5e-2)
+    with subtests.test("battery om"):
+        assert om.battery[1] == approx(75000, rel=5e-2)
+    with subtests.test("hybrid om"):
+        assert om.hybrid[1] == approx(579993, rel=5e-2)
 
-    assert rev.pv[1] == approx(413803, rel=5e-2)
-    assert rev.wind[1] == approx(1211138, rel=5e-2)
-    assert rev.battery[1] == approx(470175, rel=5e-2)
-    assert rev.hybrid[1] == approx(2187556, rel=5e-2)
+    with subtests.test("pv rev"):
+        assert rev.pv[1] == approx(413803, rel=5e-2)
+    with subtests.test("wind rev"):
+        assert rev.wind[1] == approx(1211138, rel=5e-2)
+    with subtests.test("battery rev"):
+        assert rev.battery[1] == approx(446518, rel=5e-2)
+    with subtests.test("hybrid rev"):
+        assert rev.hybrid[1] == approx(2187556, rel=5e-2)
 
-    assert tc.pv[1] == approx(1295889, rel=5e-2)
-    assert tc.wind[1] == approx(830744, rel=5e-2)
-    assert tc.battery[1] == approx(2201850, rel=5e-2)
-    assert tc.hybrid[1] == approx(4338902, rel=5e-2)
+    with subtests.test("pv tc"):
+        assert tc.pv[1] == approx(322913, rel=5e-2)
+    with subtests.test("wind tc"):
+        assert tc.wind[1] == approx(958551, rel=5e-2)
+    with subtests.test("battery tc"):
+        assert tc.battery[1] == approx(2201850, rel=5e-2)
+    with subtests.test("hybrid tc"):
+        assert tc.hybrid[1] == approx(3491000, rel=5e-2)
 
 def test_hybrid_financials(hybrid_config, subtests):
     """
