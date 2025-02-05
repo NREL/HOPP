@@ -193,7 +193,6 @@ def set_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1], p
                 'cec_adjust',
                 'cec_alpha_sc',
                 'cec_beta_oc',
-                'cec_gamma_r',
                 'cec_i_l_ref',
                 'cec_i_mp_ref',
                 'cec_i_o_ref',
