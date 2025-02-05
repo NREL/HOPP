@@ -88,9 +88,12 @@ class SiteInfo(BaseClass):
             - **site_area_m2** (*float*): area of site in square meters.
             - **site_area_km2** (*float*): area of site in square kilometers. required if ``site_area_m2`` is not provided.
             - **site_shape** (*str, Optional*): shape of site area. Options are "circle", "rectangle", "square" or "hexagon". Defaults to "square".
-            - **aspect_ratio** (*float, Optional*): aspect ratio (width/height) if ``site_shape`` is set as "rectangle". Defaults to 1.5.
             - **x0** (*float, Optional*): left-most x coordinate of the site in meters. Defaults to 0.0.
             - **y0** (*float, Optional*): bottom-most x coordinate of the site in meters. Defaults to 0.0.
+            - **aspect_ratio** (*float, Optional*): aspect ratio (width/height) 
+                Only used if ``site_shape`` is set as "rectangle". Defaults to 1.5.
+            - **degrees_between_points** (*float | int, Optional*): difference in degrees for generating circular boundary. 
+                Only used if ``site_shape`` is set as "circle". Defaults to 10.
         - **urdb_label** (*str, Optional*): string corresponding to data from utility rate databse
         - **solar_lat** (*float, Optional*): latitude to get solar resource data if solar plant is in different location that lat/lon
         - **solar_lon** (*float, Optional*): longitude to get solar resource data if solar plant is in different location that lat/lon
@@ -229,6 +232,17 @@ class SiteInfo(BaseClass):
             logger.info("Set up SiteInfo with wave resource files: {}".format(self.wave_resource.filename))
     
     def create_site_polygon(self,data:dict):
+        """function to create site polygon.
+
+        Args:
+            data (dict): dictionary of site info data
+
+        Returns:
+            2-element tuple containing
+
+            - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+            - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+        """
         polygon = None
         vertices = None
         if 'site_boundaries' in data:
@@ -247,7 +261,7 @@ class SiteInfo(BaseClass):
                     data["site_details"].update({"y0":0.0})
                 polygon,vertices = self.make_site_polygon_from_shape(data["site_details"])
         return polygon,vertices
-        
+
     def make_site_polygon_from_shape(self,site_details:dict):
         """create site polygon and vertices if "site_details" provided in ``data``.
 
@@ -258,21 +272,53 @@ class SiteInfo(BaseClass):
             ValueError: if ``site_details["site_shape"]`` is not one of the following: "circle", "square", "rectangle", or "hexagon"
 
         Returns:
-            List[shapely.Polygon, np.ndarray(np.ndarray)]: polygon and vertices of site
+            2-element tuple containing
+
+            - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+            - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
         """
 
         if 'site_area_m2' in site_details and 'site_shape' in site_details:
             if site_details["site_shape"].lower()=="circle":
-                polygon, vertices = shape_tools.make_circle(site_details['site_area_m2'], x0 = site_details["x0"], y0 = site_details["y0"])
+                if "degrees_between_points" in site_details.keys():
+                    polygon, vertices = shape_tools.make_circle(
+                        site_details['site_area_m2'], 
+                        deg_diff = site_details["degrees_between_points"],
+                        x0 = site_details["x0"], 
+                        y0 = site_details["y0"]
+                    )
+                else:
+                    polygon, vertices = shape_tools.make_circle(
+                        site_details['site_area_m2'], 
+                        x0 = site_details["x0"], 
+                        y0 = site_details["y0"]
+                    )
             elif site_details["site_shape"].lower()=="square":
-                polygon, vertices = shape_tools.make_square(site_details['site_area_m2'], x0 = site_details["x0"], y0 = site_details["y0"])
+                polygon, vertices = shape_tools.make_square(
+                    site_details['site_area_m2'], 
+                    x0 = site_details["x0"], 
+                    y0 = site_details["y0"]
+                )
             elif site_details["site_shape"].lower()=="rectangle":
                 if "aspect_ratio" in site_details:
-                    polygon, vertices = shape_tools.make_rectangle(site_details['site_area_m2'],aspect_ratio = site_details["aspect_ratio"], x0 = site_details["x0"], y0 = site_details["y0"])
+                    polygon, vertices = shape_tools.make_rectangle(
+                        site_details['site_area_m2'],
+                        aspect_ratio = site_details["aspect_ratio"], 
+                        x0 = site_details["x0"], 
+                        y0 = site_details["y0"]
+                    )
                 else:
-                    polygon, vertices = shape_tools.make_rectangle(site_details['site_area_m2'],x0 = site_details["x0"], y0 = site_details["y0"])
+                    polygon, vertices = shape_tools.make_rectangle(
+                        site_details['site_area_m2'],
+                        x0 = site_details["x0"], 
+                        y0 = site_details["y0"]
+                    )
             elif site_details["site_shape"].lower()=="hexagon":
-                polygon, vertices = shape_tools.make_hexagon(site_details['site_area_m2'], x0 = site_details["x0"], y0 = site_details["y0"])
+                polygon, vertices = shape_tools.make_hexagon(
+                    site_details['site_area_m2'], 
+                    x0 = site_details["x0"], 
+                    y0 = site_details["y0"]
+                )
             else:
                 raise ValueError("invalid entry for `site_shape`, site_shape must be either 'circle', 'rectangle', 'square' or 'hexagon'")
             return polygon,vertices

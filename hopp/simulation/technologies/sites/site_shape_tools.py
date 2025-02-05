@@ -2,11 +2,33 @@ from shapely.geometry import Polygon, MultiPolygon, Point, shape, box
 import numpy as np
 
 def calc_dist_between_two_points_cartesian(x1,y1,x2,y2):
+    """Calculate the distance between two points.
+
+    Args:
+        x1 (float): x coordinate of first point.
+        y1 (float): y coordinate of first point.
+        x2 (float): x coordinate of second point.
+        y2 (float): y coordinate of second point.
+
+    Returns:
+        float: distance between two points
+    """
     dx = np.abs(x2-x1)
     dy = np.abs(y2-y1)
     return np.sqrt((dx**2) + (dy**2))
 
 def calc_angle_between_two_points_cartesian(x0, y0, x1, y1):
+    """Calculate angle between two points.
+
+    Args:
+        x0 (float): x coordinate of first point.
+        y0 (float): y coordinate of first point.
+        x1 (float): x coordinate of second point.
+        y1 (float): y coordinate of second point.
+
+    Returns:
+        float: angle between two points (degrees)
+    """
     dx = x1 - x0
     dy = y1 - y0
     angle_deg = np.rad2deg(np.arctan2(dx,dy))
@@ -16,6 +38,14 @@ def calc_angle_between_two_points_cartesian(x0, y0, x1, y1):
 
 
 def check_site_verts(verts):
+    """Check that vertices are valid and re-sort as needed.
+
+    Args:
+        verts (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+
+    Returns:
+        numpy.ndarray: vertices ordered so that no linear rings may cross each other.
+    """
     x_points = [v[0] for v in verts]
     y_points = [v[1] for v in verts]
     x0 = min(x_points)
@@ -52,8 +82,20 @@ def check_site_verts(verts):
     return organized_verts
 
 def make_square(area_m2,x0=0.0,y0=0.0):
+    """Generate square polygon shape of specified area.
+
+    Args:
+        area_m2 (float): area of shape in square meters.
+        x0 (float, Optional): left-most x coordinate of the shape. Defaults to 0.0.
+        y0 (float, Optional): bottom-most x coordinate of the shape. Defaults to 0.0.
+
+    Returns:
+        2-element tuple containing
+
+        - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+    """
     site_length = np.sqrt(area_m2)
-    center = site_length/2
     y1 = y0 + site_length
     x1 = x0 + site_length
     poly = box(x0,y0,x1,y1)
@@ -62,6 +104,23 @@ def make_square(area_m2,x0=0.0,y0=0.0):
     return poly, vertices
 
 def make_rectangle(area_m2,aspect_ratio=1.5,x0=0.0,y0=0.0):
+    """Generate rectangle polygon shape of specified area.
+
+    Args:
+        area_m2 (float): area of shape in square meters.
+        aspect_ratio (float, Optional): ratio of width/height. Defaults to 1.5.
+            (width corresponds to x coordinates, height corresponds to y coordinates)
+        x0 (float, Optional): left-most x coordinate of the shape. Defaults to 0.0.
+        y0 (float, Optional): bottom-most x coordinate of the shape. Defaults to 0.0.
+
+    Returns:
+        2-element tuple containing
+
+        - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+
+        
+    """
     #aspect ratio is width/height
     # width * height = area
     # width = aspect*height
@@ -75,6 +134,21 @@ def make_rectangle(area_m2,aspect_ratio=1.5,x0=0.0,y0=0.0):
     return poly,vertices
 
 def make_circle(area_m2,deg_diff = 10,x0=0.0,y0=0.0):
+    """Generate circle polygon shape of specified area.
+
+    Args:
+        area_m2 (float): area of shape in square meters.
+        deg_diff (float | int): difference in degrees for generating boundary. default to 10.
+            number of points generated is equal to ``360/deg_diff``
+        x0 (float, Optional): left-most x coordinate of the shape. Defaults to 0.0.
+        y0 (float, Optional): bottom-most x coordinate of the shape. Defaults to 0.0.
+
+    Returns:
+        2-element tuple containing
+
+        - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+    """
     r = np.sqrt(area_m2/np.pi)
     dx = np.deg2rad(deg_diff)
     rads = np.arange(0,2*np.pi,dx)
@@ -103,6 +177,19 @@ def make_circle(area_m2,deg_diff = 10,x0=0.0,y0=0.0):
     return poly, vertices
 
 def make_hexagon(area_m2,x0=0.0,y0=0.0):
+    """Generate hexagon polygon shape of specified area.
+
+    Args:
+        area_m2 (float): area of shape in square meters.
+        x0 (float, Optional): left-most x coordinate of the shape. Defaults to 0.0.
+        y0 (float, Optional): bottom-most x coordinate of the shape. Defaults to 0.0.
+
+    Returns:
+        2-element tuple containing
+
+        - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+    """
     s = np.sqrt(area_m2*(2/(3*np.sqrt(3))))
     rads = np.arange(0,2*np.pi,np.deg2rad(60))
     x_coords = s*np.cos(rads)
