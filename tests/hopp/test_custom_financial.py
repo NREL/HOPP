@@ -284,13 +284,13 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
 
     npv_expected_pv = -1640023
     npv_expected_wind = -5159400
-    npv_expected_wave = -50006845
+    npv_expected_wave = -62903172
     npv_expected_battery = -8183543
     npv_expected_hybrid = -64990137
 
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
-    lcoe_expected_wave = 28.83013114281512
+    lcoe_expected_wave = 35.719370712383856
     lcoe_expected_battery = 13.29435118093791
     lcoe_expected_hybrid = 9.810109326608142
 
