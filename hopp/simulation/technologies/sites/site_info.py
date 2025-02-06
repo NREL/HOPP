@@ -82,9 +82,9 @@ class SiteInfo(BaseClass):
         - **year** (*int*): year to get resource data for. Defaults to 2012.
         - **tz** (*int, Optional*): timezone of site
         - **elev** (*int, Optional*): elevation of site (m)
-        - site_boundaries (*dict,Optional*):
+        - **site_boundaries** (*dict,Optional*):
             - **verts** (*list[list[float]]*): vertices of site polygon. list of [x,y] coordinates in meters.
-        - site_details (*dict, Optional*):
+        - **site_details** (*dict, Optional*):
             - **site_area_m2** (*float*): area of site in square meters.
             - **site_area_km2** (*float*): area of site in square kilometers. required if ``site_area_m2`` is not provided.
             - **site_shape** (*str, Optional*): shape of site area. Options are "circle", "rectangle", "square" or "hexagon". Defaults to "square".
@@ -101,7 +101,7 @@ class SiteInfo(BaseClass):
         - **wind_lat** (*float, Optional*): latitude to get wind resource data if wind plant is in different location that lat/lon
         - **wind_lon** (*float, Optional*): longitude to get wind resource data for if wind plant is in different location that lat/lon
         - **wind_year** (*int, Optional*): resource year for wind data if wanting different resource than ``data["year"]``
-        - **urdb_label** (*str,Optional*): string corresponding to data from utility rate databse
+        - **urdb_label** (*str, Optional*): string corresponding to data from utility rate databse
     """
 
     
@@ -248,7 +248,7 @@ class SiteInfo(BaseClass):
         if 'site_boundaries' in data:
             if 'verts' in data['site_boundaries']:
                 vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
-                vertices = shape_tools.check_site_verts(vertices)
+                # vertices = shape_tools.check_site_verts(vertices)
                 polygon = Polygon(vertices)
         elif 'site_details' in data:
             if 'site_area_m2' in data["site_details"] or 'site_area_km2' in data["site_details"]:
