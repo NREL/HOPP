@@ -10,7 +10,12 @@ from floris import FlorisModel, TimeSeries
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.type_dec import resource_file_converter
-
+from pathlib import Path
+from hopp.utilities import load_yaml
+from hopp.tools.resource.wind_tools import (
+    calculate_air_density_for_elevation, 
+    parse_resource_data,
+)
 # avoid circular dep
 if TYPE_CHECKING:
     from hopp.simulation.technologies.wind.wind_plant import WindConfig
@@ -28,22 +33,32 @@ class Floris(BaseClass):
     fi: FlorisModel = field(init=False)
 
     def __attrs_post_init__(self):
-        # floris_input_file = resource_file_converter(self.config["simulation_input_file"])
-        floris_input_file = self.config.floris_config # DEBUG!!!!!
-
-        if floris_input_file is None:
+        # 1) check that floris config is provided
+        if self.config.floris_config is None:
             raise ValueError("A floris configuration must be provided")
         if self.config.timestep is None:
             raise ValueError("A timestep is required.")
 
+        # 2) load floris config if needed
+        if isinstance(self.config.floris_config,(str, Path)):
+            # floris_config = Core.from_file(self.config.floris_config)
+            floris_config = load_yaml(self.config.floris_config)
+        else:
+            floris_config = self.config.floris_config
         # the above change is a temporary patch to bridge to refactor floris
 
-        self.fi = FlorisModel(floris_input_file)
+        # 3) modify air density in floris config if needed
+        if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
+            rho = calculate_air_density_for_elevation(self.site.elev)
+            floris_config["flow_field"].update({"air_density":rho})
+        
+        #initialize floris model
+        self.fi = FlorisModel(floris_config)
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
-        self.wind_resource_data = self.site.wind_resource.data
-        self.speeds, self.wind_dirs = self.parse_resource_data()
+        self.wind_resource_data = self.site.wind_resource.data #isn't this unnecessary?
+        self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
@@ -75,9 +90,8 @@ class Floris(BaseClass):
         """
         Please populate all the wind farm parameters
         """
-        self.nTurbs = len(self.fi.layout_x)
+        self.nTurbs = len(self.fi.layout_x) #this is redundant
         self.wind_turbine_powercurve_powerout = [1] * 30    # dummy for now
-        pass
 
     def value(self, name: str, set_value=None):
         """
@@ -88,28 +102,8 @@ class Floris(BaseClass):
         else:
             return self.__getattribute__(name)
 
-    def parse_resource_data(self):
-
-        # extract data for simulation
-        speeds = np.zeros(len(self.wind_resource_data['data']))
-        wind_dirs = np.zeros(len(self.site.wind_resource.data['data']))
-        data_rows_total = 4
-        if np.shape(self.site.wind_resource.data['data'])[1] > data_rows_total:
-            height_entries = int(np.round(np.shape(self.site.wind_resource.data['data'])[1]/data_rows_total))
-            data_entries = np.empty((height_entries))
-            for j in range(height_entries):
-                data_entries[j] = int(j*data_rows_total)
-            data_entries = data_entries.astype(int)
-            for i in range((len(self.site.wind_resource.data['data']))):
-                data_array = np.array(self.site.wind_resource.data['data'][i])
-                speeds[i] = np.mean(data_array[2+data_entries])
-                wind_dirs[i] = np.mean(data_array[3+data_entries])
-        else:
-            for i in range((len(self.site.wind_resource.data['data']))):
-                speeds[i] = self.site.wind_resource.data['data'][i][2]
-                wind_dirs[i] = self.site.wind_resource.data['data'][i][3]
-
-        return speeds, wind_dirs
+    def set_floris_value(self,name,value):
+        self.fi.set(**{name:value})
 
     def execute(self, project_life):
         

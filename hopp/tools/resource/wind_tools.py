@@ -51,15 +51,25 @@ def calculate_elevation_air_density_losses(elevation_m:float):
 
     return loss_percent
 
-# def find_most_frequent_wind_direction(wind_resource: Union[HPCWindData,WindResource]):
-#     wind_resource.data
-#     pass
-
 def parse_resource_data(wind_resource):
+    """parse wind resource data into floris-friendly format.
+
+    Args:
+        wind_resource (HPCWindData | WindResource): wind resource data object
+
+    Returns:
+        2-element tuple containing
+
+        - **speeds** (:obj:`numpy.ndarray`): wind speed in m/s
+        - **wind_dirs** (:obj:`numpy.ndarray`): wind direction in deg from North (clockwise)
+    """
 
     speeds = np.zeros(len(wind_resource.data['data']))
     wind_dirs = np.zeros(len(wind_resource.data['data']))
     data_rows_total = 4
+    # if theres multiple hub-heights - average the data
+    # TODO: weight data entries based on height relative to turbine hub-height
+    # this method assumes that the turbine hub-height is in-between two resource heights
     if np.shape(wind_resource.data['data'])[1] > data_rows_total:
         height_entries = int(np.round(np.shape(wind_resource.data['data'])[1]/data_rows_total))
         data_entries = np.empty((height_entries))
@@ -70,6 +80,7 @@ def parse_resource_data(wind_resource):
             data_array = np.array(wind_resource.data['data'][i])
             speeds[i] = np.mean(data_array[2+data_entries])
             wind_dirs[i] = np.mean(data_array[3+data_entries])
+    # if theres only one hub-height, grab speed and direction data
     else:
         for i in range((len(wind_resource.data['data']))):
             speeds[i] = wind_resource.data['data'][i][2]
