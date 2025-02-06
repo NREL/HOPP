@@ -1,6 +1,7 @@
 from shapely.geometry import Polygon, MultiPolygon, Point, shape, box
 import numpy as np
 
+
 def calc_dist_between_two_points_cartesian(x1,y1,x2,y2):
     """Calculate the distance between two points.
 
@@ -117,13 +118,8 @@ def make_rectangle(area_m2,aspect_ratio=1.5,x0=0.0,y0=0.0):
         2-element tuple containing
 
         - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
-        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
-
-        
+        - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.        
     """
-    #aspect ratio is width/height
-    # width * height = area
-    # width = aspect*height
     height = np.sqrt(area_m2/aspect_ratio)
     width = area_m2/height
     x1 = x0 + width
@@ -215,4 +211,36 @@ def make_hexagon(area_m2,x0=0.0,y0=0.0):
     vertices = np.array([np.array(v) for v in coords])
     poly = Polygon(coords)
     return poly, vertices
+
+def rotate_shape(site_polygon,rotation_angle_deg):
+    # in degrees where 0 is north, increasing clockwise
+    # 90 degrees is east, 180 degrees is south, 270 degrees is wet
+    # get center points
+    xc,yc = site_polygon.centroid.coords.xy
+    xc = xc[0]
+    yc = yc[0]
+
+    vertices = [[x,y] for x,y in site_polygon.exterior.coords]
+    # translate coordinates to have origin at polygon center
+    xc_points = [v[0] - xc for v in vertices]
+    yc_points = [v[1] - yc for v in vertices]
+
+    theta = np.deg2rad(rotation_angle_deg)
+
+    xr_points = [None]*len(vertices)
+    yr_points = [None]*len(vertices)
+
+    # rotate clockwise about the origin
+    i = 0
+    for x,y in zip(xc_points,yc_points):
+        xr_points[i] = x*np.cos(theta) + y*np.sin(theta)
+        yr_points[i] = -1*x*np.sin(theta) + y*np.cos(theta)
+    # translate points back to original coordinate reference system
+    xf_points = [x + xc for x in xr_points]
+    yf_points = [y + yc for y in yr_points]
+    rotated_coords = [[x,y] for x,y in zip(xf_points,yf_points)]
+    rotated_polygon = Polygon(rotated_coords)
+    rotated_vertices = np.array([np.array(v) for v in rotated_coords])
+    return rotated_polygon,rotated_vertices
+
 
