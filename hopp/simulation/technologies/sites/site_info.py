@@ -250,6 +250,7 @@ class SiteInfo(BaseClass):
                 vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
                 # vertices = shape_tools.check_site_verts(vertices)
                 polygon = Polygon(vertices)
+                polygon = polygon.buffer(1e-8) #why is this needed?
         elif 'site_details' in data:
             if 'site_area_m2' in data["site_details"] or 'site_area_km2' in data["site_details"]:
                 if 'site_area_km2' in data["site_details"]:
