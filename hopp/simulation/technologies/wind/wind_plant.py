@@ -15,10 +15,8 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.tools.resource.wind_tools import (
-    calculate_air_density_for_elevation, 
-    calculate_elevation_air_density_losses,
-)
+from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
+
 
 @define
 class WindConfig(BaseClass):
@@ -38,8 +36,10 @@ class WindConfig(BaseClass):
         layout_params: layout configuration
         rating_range_kw: allowable kw range of turbines, default is 1000 - 3000 kW
         floris_config: Floris configuration, only used if `model_name` == 'floris'
+        adjust_air_density_for_elevation (bool): whether to adjust air density for elevation. Defaults to False.
+            Only used if True and ``site.elev`` is not None. 
         operational_losses: total percentage losses in addition to wake losses, defaults based on PySAM (only used for Floris model)
-        timestep: Timestep (required for floris runs, otherwise optional)
+        timestep: Timestep (required for floris runs, otherwise optional). Defaults to (0,8760)
         fin_model: Optional financial model. Can be any of the following:
 
             - a string representing an argument to `Singleowner.default`
