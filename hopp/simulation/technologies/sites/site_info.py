@@ -72,6 +72,7 @@ class SiteInfo(BaseClass):
             Options are "WTK" or "TAP".
         solar_resource (Optional): dictionary or object containing solar resource data
         wind_resource (Optional): dictionary or object containing wind resource data
+        site_buffer (Optional): value to buffer site polygon. Defaults to 1e-8.
     """
     # User provided
     data: dict
@@ -125,6 +126,8 @@ class SiteInfo(BaseClass):
     renewable_resource_origin: str = field(default="API", validator=contains(["API", "HPC"]))
     wind_resource_origin: str = field(default="WTK", validator=contains(["WTK", "TAP"]))
 
+    site_buffer: Optional[float] = field(default = 1e-8)
+
     # Set in post init hook
     n_timesteps: int = field(init=False, default=None)
     lat: hopp_float_type = field(init=False)
@@ -172,7 +175,7 @@ class SiteInfo(BaseClass):
         
         if 'kml_file' in data:
             self.kml_data, self.polygon, data['lat'], data['lon'] = self.kml_read(data['kml_file'])
-            self.polygon = self.polygon.buffer(1e-8)
+            self.polygon = self.polygon.buffer(self.site_buffer)
 
         if 'lat' not in data or 'lon' not in data:
             raise ValueError("SiteInfo requires lat and lon")
@@ -250,7 +253,7 @@ class SiteInfo(BaseClass):
                 vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
                 # vertices = shape_tools.check_site_verts(vertices)
                 polygon = Polygon(vertices)
-                polygon = polygon.buffer(1e-8) #why is this needed?
+                polygon = polygon.buffer(self.site_buffer) #why is this needed?
         elif 'site_details' in data:
             if 'site_area_m2' in data["site_details"] or 'site_area_km2' in data["site_details"]:
                 if 'site_area_km2' in data["site_details"]:
@@ -262,6 +265,7 @@ class SiteInfo(BaseClass):
                 if "y0" not in data["site_details"]:
                     data["site_details"].update({"y0":0.0})
                 polygon,vertices = self.make_site_polygon_from_shape(data["site_details"])
+                polygon = polygon.buffer(self.site_buffer)
         return polygon,vertices
 
     def make_site_polygon_from_shape(self,site_details:dict):
