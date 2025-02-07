@@ -265,3 +265,72 @@ definition, until the correct number of turbines are within the wind farm bounda
 each of the grid variables can change individually, however the discrete values remain fixed.
 
 """
+
+def find_most_square_layout_dimensions(n_turbs):
+    n_turbs_per_row = np.floor_divide(n_turbs,np.sqrt(n_turbs))
+    n_rows_min = n_turbs//n_turbs_per_row
+    remainder_turbs = n_turbs%n_turbs_per_row
+    if remainder_turbs>n_turbs_per_row:
+        n_extra_rows = np.ceil(remainder_turbs/n_turbs_per_row)
+    elif remainder_turbs==0:
+        n_extra_rows = 0
+    else:
+        n_extra_rows = 1
+
+    n_rows = n_rows_min + n_extra_rows
+
+    return n_turbs_per_row,n_rows
+
+def make_site_boundary_for_square_grid_layout(n_turbs,rotor_diam,row_spacing,turbine_spacing):
+    #distance between turbines in same row
+    intrarow_spacing = turbine_spacing*rotor_diam 
+    #distance between rows
+    interrow_spacing = row_spacing*rotor_diam 
+    
+    n_turbs_per_row,n_rows = find_most_square_layout_dimensions(n_turbs)
+
+    center_x = ((n_turbs_per_row/2)*intrarow_spacing)
+    center_y = ((n_rows/2)*interrow_spacing) + (interrow_spacing*0.25)
+    x_dist_m = 2*center_x
+    y_dist_m = 2*center_y
+    
+    p0 = [0.0,0.0]
+    p1 = [0.0,y_dist_m]
+    p2 = [x_dist_m,y_dist_m]
+    p3 = [x_dist_m,0.0]
+    verts = [p0,p1,p2,p3]
+    return {"site_boundaries":{"verts":verts,"verts_simple":verts}}
+
+def constrain_layout_for_site(layout_x,layout_y,site_boundaries:BaseGeometry):
+    x_coords = []
+    y_coords = []
+    for x,y in zip(layout_x,layout_y):
+        if site_boundaries.contains(Point(x,y)):
+            x_coords.append(x)
+            y_coords.append(y)
+    if len(x_coords) != len(layout_x):
+        site_x,site_y = site_boundaries.exterior.xy
+        x_shift = 0
+        y_shift = 0
+        if min(layout_x)<min(site_x):
+            x_shift = min(site_x) - min(layout_x)
+        if min(layout_y)<min(site_y):
+            y_shift = min(site_y) - min(layout_y)
+        if x_shift==0 and y_shift == 0:
+            return x_coords,y_coords
+        else:
+            x_coords2 = []
+            y_coords2 = []
+            for x0,y0 in zip(layout_x,layout_y):
+                x = x0 + x_shift
+                y = y0 + y_shift
+                if site_boundaries.contains(Point(x,y)):
+                    x_coords2.append(x)
+                    y_coords2.append(y)
+            if len(x_coords2)>len(x_coords):
+                return x_coords2,y_coords2
+            else:
+                return x_coords,y_coords
+    else:
+        return x_coords,y_coords
+

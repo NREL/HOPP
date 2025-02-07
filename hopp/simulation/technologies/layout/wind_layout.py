@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon
 from shapely.affinity import scale
 import PySAM.Windpower as windpower
-
+from attrs import define, field
+from typing import Optional
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.layout.wind_layout_tools import (
     get_best_grid,
@@ -13,13 +14,22 @@ from hopp.simulation.technologies.layout.wind_layout_tools import (
     subtract_turbine_exclusion_zone
     )
 from hopp.simulation.technologies.sites.site_info import SiteInfo
+from hopp.utilities.validators import gt_zero, contains, range_val
+
+@define
+class WindBasicGridParameters:
+    row_D_spacing: Optional[float] = field(default = 5.0)
+    turbine_D_spacing: Optional[float ]= field(default = 5.0)
+    grid_angle: Optional[float] = field(default = 0.0)
+    row_phase_offset: Optional[float] = field(default = 0.0, validator=range_val(0.0, 1.0))
+    site_boundary_constrained: Optional[bool] = field(default = False)
 
 
 class WindBoundaryGridParameters(NamedTuple):
     """
     border_spacing: spacing along border = (1 + border_spacing) * min spacing
     border_offset: turbine border spacing offset as ratio of border spacing  (0, 1)
-    grid_angle: turbine inner grid rotation (0, pi) [radians]
+    grid_angle: turbine inner grid rotation (0, 180) [degrees]
     grid_aspect_power: grid aspect ratio [cols / rows] = 2^grid_aspect_power
     row_phase_offset: inner grid phase offset (0,1)  (20% suggested)
     """
@@ -50,8 +60,17 @@ class WindLayout:
                  parameters: Union[WindBoundaryGridParameters, WindCustomParameters, None],
                  min_spacing: float = 200.,
                  ):
-        """
+        """_summary_
 
+        Args:
+            site_info (SiteInfo): _description_
+            wind_source (windpower.Windpower): _description_
+            layout_mode (str): layout choice:  "boundarygrid", "grid", "custom"
+            parameters (Union[WindBoundaryGridParameters, WindCustomParameters, None]): _description_
+            min_spacing (float, optional): minimu spacing between turbines in meters. Defaults to 200..
+
+        Raises:
+            ValueError: _description_
         """
         self.site: SiteInfo = site_info
         self._system_model: windpower.Windpower = wind_source
