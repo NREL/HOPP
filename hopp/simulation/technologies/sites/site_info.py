@@ -12,6 +12,8 @@ from shapely import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
+from suntimes import SunTimes
+from datetime import date, datetime, timedelta
 
 from hopp.simulation.technologies.resource import (
     SolarResource,
@@ -54,6 +56,8 @@ class SiteInfo(BaseClass):
         desired_schedule: Absolute desired load profile in MWe. Defaults to [].
         curtailment_value_type: whether to curtail power above grid interconnection limit or desired schedule. 
             Options "interconnect_kw" or "desired_schedule". Defaults to "interconnect_kw".
+        bat_curtailment: Dictionary with bat curtailment parameters. Defaults to []. - only relevant for wind
+        bat_curtailment_cut_in_speed: Cut in speed in m/s for bat curtailment.
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to False.
@@ -69,7 +73,7 @@ class SiteInfo(BaseClass):
     capacity_hours: NDArray = field(default=[], converter=converter(bool))
     desired_schedule: NDArrayFloat = field(default=[], converter=converter())
     curtailment_value_type: str = field(default="interconnect_kw", validator=contains(["interconnect_kw", "desired_schedule"]))
-
+    bat_curtailment: dict = field(default={})
     solar: bool = field(default=True)
     wind: bool = field(default=True)
     wave: bool = field(default=False)
@@ -88,6 +92,7 @@ class SiteInfo(BaseClass):
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
     follow_desired_schedule: bool = field(init=False)
+    use_bat_curtailment: bool = field(init=False)
     polygon: Union[Polygon, BaseGeometry] = field(init=False)
     vertices: NDArrayFloat = field(init=False)
     kml_data: Optional[KML] = field(init=False, default=None)
@@ -112,6 +117,7 @@ class SiteInfo(BaseClass):
             interval (int): Number of minutes per time interval.
             urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
             follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
+            use_bat_curtailment (bool): Indicates if a bat curtailment strategy was provided. Defaults to False.
         """
         set_nrel_key_dot_env()
 
@@ -164,6 +170,45 @@ class SiteInfo(BaseClass):
         if len(self.desired_schedule) > 0 and len(self.desired_schedule) != self.n_timesteps:
             raise ValueError('The provided desired schedule does not match length of the simulation horizon.')
             # FIXME: this a hack
+
+        self.use_bat_curtailment = bool(self.bat_curtailment)
+        if self.use_bat_curtailment:
+            self.bat_curtailment_cut_in_speed = self.bat_curtailment["bat_curtailment_cut_in_speed"] # Cut in speed in m/s
+            self.curtail_start_month = self.bat_curtailment["curtail_start"].split("-")[0]  # start month of the curtailment (e.g. 07-15)
+            self.curtail_start_day = self.bat_curtailment["curtail_start"].split("-")[1]  # start day of the curtailment (e.g. 07-15)
+            self.curtail_end_month = self.bat_curtailment["curtail_end"].split("-")[0]  # start month of the curtailment (e.g. 10-15)
+            self.curtail_end_day = self.bat_curtailment["curtail_end"].split("-")[1]  # start day of the curtailment (e.g. 10-15)
+            self.curtailment_type = self.bat_curtailment["curtailment_type"] # type of curtailment, currently only support blanket curtailment
+            # TODO: add smart curtailment and informed curtailment 
+            if self.curtailment_type == "blanket":
+                # calculate
+                sun2 = SunTimes(longitude=self.lon, latitude=self.lat)
+                self.curtailment_schedule = np.zeros(self.n_timesteps)  # Only useful for multiples of 8760, does not account for leap years
+
+                # calculate hours until you start curtailing 
+                year_start = datetime(self.year, 1, 1, 0, 0)
+                curtailment_start = datetime(self.year, int(self.curtail_start_month),int(self.curtail_start_day), 0, 0)
+                curtailment_end = datetime(self.year, int(self.curtail_end_month),int(self.curtail_end_day), 0, 0)
+                curtailment_date_list = [curtailment_start+timedelta(days=x) for x in range((curtailment_end-curtailment_start).days)]
+
+                time_before_curtailment = curtailment_start - year_start
+                time_before_curtailment = int(time_before_curtailment.total_seconds() / 3600)
+                curtailment_time = curtailment_end - curtailment_start
+                curtailment_end_time = time_before_curtailment + int(curtailment_time.total_seconds()/3600)
+                  # This loop assumes you're simulation a full year and starting at Jan 1
+                sunset = sun2.setlocal(date(self.year,int(self.curtail_start_month),int(self.curtail_start_day))).time().hour 
+
+                self.curtailment_schedule[(time_before_curtailment+sunset):time_before_curtailment+24] = self.bat_curtailment_cut_in_speed
+                current_time = time_before_curtailment+24
+                self.curtailment_schedule[current_time:curtailment_end_time-12] = self.bat_curtailment_cut_in_speed
+                for i in curtailment_date_list:
+                    sunrise = sun2.riselocal(i).time().hour
+                    sunset = sun2.setlocal(i).time().hour 
+                    self.curtailment_schedule[(current_time + sunrise+1):(current_time + sunset-1)] = 0
+                    current_time = current_time + 24
+
+            else:
+                raise ValueError("Only blanket bat curtailment supported at this time.")
 
         if self.wind:
             logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))

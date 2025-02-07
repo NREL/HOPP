@@ -138,6 +138,11 @@ class Floris(BaseClass):
         power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape((self.nTurbs, self.end_idx - self.start_idx))
         power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape((self.end_idx - self.start_idx))
 
+        if self.site.use_bat_curtailment:
+            wind_speed_difference = self.speeds[self.start_idx:self.end_idx] - self.site.curtailment_schedule[self.start_idx:self.end_idx]
+            ws_power_zip = zip(wind_speed_difference,power_farm[self.start_idx:self.end_idx])
+            power_farm[self.start_idx:self.end_idx] = [x[1]*0 if x[0]<0 else x[1] for x in ws_power_zip]
+
         # Adding losses from PySAM defaults (excluding turbine and wake losses)
         self.gen = power_farm * ((100 - self._operational_losses)/100) / 1000 # kW
 
