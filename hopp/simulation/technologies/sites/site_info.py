@@ -330,29 +330,22 @@ class SiteInfo(BaseClass):
         Returns:
             :obj:`hopp.simulation.technologies.resource.SolarResource` or :obj:`hopp.simulation.technologies.resource.HPCSolarData`: solar resource data class
         """
-        if "solar_lat" in data and "solar_lon" in data:
-            solar_lat = data["solar_lat"]
-            solar_lon = data["solar_lon"]
-        else:
-            solar_lat = data["lat"]
-            solar_lon = data["lon"]
-
-        if "solar_year" in data:
-            solar_year = data["solar_year"]
-        else:
-            solar_year = data["year"]
+        
+        solar_lat = data.setdefault("solar_lat", data["lat"])
+        solar_lon = data.setdefault("solar_lon", data["lon"])
+        solar_year = data.setdefault("solar_year", data["year"])
 
         if self.solar_resource is None:
-            if self.renewable_resource_origin=="API":
+            if self.renewable_resource_origin == "API":
                 solar_resource = SolarResource(solar_lat, solar_lon, solar_year, path_resource=self.path_resource, filepath=self.solar_resource_file)
             else:
                 solar_resource = HPCSolarData(solar_lat, solar_lon, solar_year,nsrdb_source_path = self.nsrdb_source_path, filepath=self.solar_resource_file)
             return solar_resource
-        elif isinstance(self.solar_resource,dict):
+        if isinstance(self.solar_resource,dict):
             solar_resource = SolarResource(solar_lat, solar_lon, solar_year,resource_data = self.solar_resource)
             return solar_resource
-        else:
-            return self.solar_resource
+        
+        return self.solar_resource
 
     def initialize_wind_resource(self,data:dict):
         """Download/load wind resource data
@@ -363,30 +356,24 @@ class SiteInfo(BaseClass):
         Returns:
             :obj:`hopp.simulation.technologies.resource.WindResource` or :obj:`hopp.simulation.technologies.resource.HPCWindData`: wind resource data class
         """
-        if "wind_lat" in data and "wind_lon" in data:
-            wind_lat = data["wind_lat"]
-            wind_lon = data["wind_lon"]
-        else:
-            wind_lat = data["lat"]
-            wind_lon = data["lon"]
+        wind_lat = data.setdefault("wind_lat", data["lat"])
+        wind_lon = data.setdefault("wind_lon", data["lon"])
+        wind_year = data.setdefault("wind_year", data["year"])
 
-        if "wind_year" in data:
-            wind_year = data["wind_year"]
-        else:
-            wind_year = data["year"]
         if self.wind_resource is None:
-            if self.renewable_resource_origin=="API":
+            if self.renewable_resource_origin == "API":
                 wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
                                             path_resource=self.path_resource, filepath=self.wind_resource_file, source=self.wind_resource_origin)
             else:
                 wind_resource = HPCWindData(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
                                                 wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
             return wind_resource
-        elif isinstance(self.wind_resource,dict):
+        if isinstance(self.wind_resource,dict):
             wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)
             return wind_resource
-        else:
-            return self.wind_resource
+        
+        return self.wind_resource
+        
     # TODO: determine if the below functions are obsolete
     @property
     def boundary(self) -> BaseGeometry:
