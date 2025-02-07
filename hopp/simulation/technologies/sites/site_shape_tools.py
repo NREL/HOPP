@@ -1,18 +1,18 @@
 from shapely.geometry import Polygon, MultiPolygon, Point, shape, box
 import numpy as np
-
+import pandas as pd
 
 def calc_dist_between_two_points_cartesian(x1,y1,x2,y2):
     """Calculate the distance between two points.
 
     Args:
-        x1 (float): x coordinate of first point.
-        y1 (float): y coordinate of first point.
-        x2 (float): x coordinate of second point.
-        y2 (float): y coordinate of second point.
+        x1 (np.ndarray | float): x coordinate of first point.
+        y1 (np.ndarray | float): y coordinate of first point.
+        x2 (np.ndarray | float): x coordinate of second point.
+        y2 (np.ndarray | float): y coordinate of second point.
 
     Returns:
-        float: distance between two points
+        np.ndarray | float: distance between two points
     """
     dx = np.abs(x2-x1)
     dy = np.abs(y2-y1)
@@ -22,20 +22,20 @@ def calc_angle_between_two_points_cartesian(x0, y0, x1, y1):
     """Calculate angle between two points.
 
     Args:
-        x0 (float): x coordinate of first point.
-        y0 (float): y coordinate of first point.
-        x1 (float): x coordinate of second point.
-        y1 (float): y coordinate of second point.
+        x0 (np.ndarray | float): x coordinate of first point.
+        y0 (np.ndarray | float): y coordinate of first point.
+        x1 (np.ndarray | float): x coordinate of second point.
+        y1 (np.ndarray | float): y coordinate of second point.
 
     Returns:
-        float: angle between two points (degrees)
+        np.ndarray | float: angle between two points (degrees)
     """
     dx = x1 - x0
     dy = y1 - y0
     angle_deg = np.rad2deg(np.arctan2(dx,dy))
-    if angle_deg<0:
-        angle_deg += 360
-    return angle_deg
+    if isinstance(angle_deg, float): 
+        return angle_deg if angle_deg >= 0 else angle_deg + 360 
+    return np.where(angle_deg < 0, angle_deg + 360, angle_deg)
 
 
 def check_site_verts(verts):
@@ -47,42 +47,43 @@ def check_site_verts(verts):
     Returns:
         numpy.ndarray: vertices ordered so that no linear rings may cross each other.
     """
-    x_points = [v[0] for v in verts]
-    y_points = [v[1] for v in verts]
-    x0 = min(x_points)
-    y0 = min(y_points)
+    x_points, y_points = verts.T
+    x0 = x_points.min()
+    y0 = y_points.min()
     
     dx = 0 - x0 #dx is positive if x0 is negative
     dy = 0 - y0 #dy is positive if y0 is negative
 
-    x_pos = [x+dx for x in x_points]
-    y_pos = [y+dy for y in y_points]
+    x_pos = x_points + dx
+    y_pos = y_points + dy
 
     x_center = (max(x_pos) - min(x_pos))/2
     y_center = (max(y_pos) - min(y_pos))/2
 
-    distances = [None]*len(x_points)
-    angles =  [None]*len(x_points)
-    i =0
-    for x,y in zip(x_pos,y_pos):
-        distances[i] = calc_dist_between_two_points_cartesian(x_center,y_center,x,y)
-        angles[i] = calc_angle_between_two_points_cartesian(x_center,y_center,x,y)
-        i +=1 
+    distances = calc_dist_between_two_points_cartesian(x_center,y_center,x_pos,y_pos)
+    angles = calc_angle_between_two_points_cartesian(x_center,y_center,x_pos,y_pos)
     
+    df = ( 
+        pd.DataFrame({"x_pos": x_pos, "y_pos": y_pos, "distances": distances, "angles": angles}) 
+        .sort_values(["angles", "distances"]) 
+    ) 
+    df.x_pos += dx 
+    df.y_pos += dy 
+    organized_verts = df[["x_pos", "y_pos"]].values # Note: if wanting a list just add a .tolist() at the end
     #1) sort based on angles from smallest to largest
-    angles, distances, x_pos, y_pos = (list(t) for t in zip(*sorted(zip(angles, distances, x_pos, y_pos))))
-    #2) sort any same angles based on distance:
-    unique_angle,angle_cnt = np.unique(angles,return_counts=True)
-    if any(a>1 for a in angle_cnt):
-        repeat_angles = [unique_angle[i] for i,cnt in enumerate(angle_cnt) if cnt>1]
-        for rep_ang in repeat_angles:
-            indx_rep = list(np.argwhere(angles==rep_ang).flatten())
-            # sort based on distance
-            distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep] = (list(t) for t in zip(*sorted(zip(distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep]))))
-    organized_verts = [[x+dx,y+dy] for x,y in zip(x_pos,y_pos)]
+    # angles, distances, x_pos, y_pos = (list(t) for t in zip(*sorted(zip(angles, distances, x_pos, y_pos))))
+    # #2) sort any same angles based on distance:
+    # unique_angle,angle_cnt = np.unique(angles,return_counts=True)
+    # if any(a>1 for a in angle_cnt):
+    #     repeat_angles = [unique_angle[i] for i,cnt in enumerate(angle_cnt) if cnt>1]
+    #     for rep_ang in repeat_angles:
+    #         indx_rep = list(np.argwhere(angles==rep_ang).flatten())
+    #         # sort based on distance
+    #         distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep] = (list(t) for t in zip(*sorted(zip(distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep]))))
+    # organized_verts = [[x+dx,y+dy] for x,y in zip(x_pos,y_pos)]
     return organized_verts
 
-def make_square(area_m2,x0=0.0,y0=0.0):
+def make_square(area_m2, x0=0.0, y0=0.0):
     """Generate square polygon shape of specified area.
 
     Args:
@@ -99,12 +100,11 @@ def make_square(area_m2,x0=0.0,y0=0.0):
     site_length = np.sqrt(area_m2)
     y1 = y0 + site_length
     x1 = x0 + site_length
-    poly = box(x0,y0,x1,y1)
-    verts = [[x0,x0],[x1,y0],[x1,y1],[x0,y1]]
-    vertices = np.array([np.array(v) for v in verts])
+    poly = box(x0, y0, x1, y1)
+    vertices = np.array([[x0,x0], [x1,y0], [x1,y1], [x0,y1]])
     return poly, vertices
 
-def make_rectangle(area_m2,aspect_ratio=1.5,x0=0.0,y0=0.0):
+def make_rectangle(area_m2, aspect_ratio=1.5, x0=0.0, y0=0.0):
     """Generate rectangle polygon shape of specified area.
 
     Args:
@@ -124,12 +124,11 @@ def make_rectangle(area_m2,aspect_ratio=1.5,x0=0.0,y0=0.0):
     width = area_m2/height
     x1 = x0 + width
     y1 = y0 + height
-    poly = box(x0,y0,x1,y1)
-    verts = [[x0,x0],[x1,y0],[x1,y1],[x0,y1]]
-    vertices = np.array([np.array(v) for v in verts])
+    poly = box(x0, y0, x1, y1)
+    vertices = np.array([[x0,x0], [x1,y0], [x1,y1], [x0,y1]])
     return poly,vertices
 
-def make_circle(area_m2,deg_diff = 10,x0=0.0,y0=0.0):
+def make_circle(area_m2, deg_diff = 10, x0=0.0, y0=0.0):
     """Generate circle polygon shape of specified area.
 
     Args:
@@ -147,32 +146,26 @@ def make_circle(area_m2,deg_diff = 10,x0=0.0,y0=0.0):
     """
     r = np.sqrt(area_m2/np.pi)
     dx = np.deg2rad(deg_diff)
-    rads = np.arange(0,2*np.pi,dx)
+    rads = np.arange(0, 2*np.pi, dx)
     x_coords = r*np.cos(rads)
     y_coords = r*np.sin(rads)
 
-    if any(x<x0 for x in x_coords):
-        x_diff = [x0-x for x in x_coords if x<x0]
-        x_adj = max(x_diff)
-        x_points = [x+x_adj for x in x_coords]
-    else:
-        x_points = [x for x in x_coords]
-    if any(y<y0 for y in y_coords):
-        y_diff = [y0-y for y in y_coords if y<y0]
-        y_adj = max(y_diff)
-        y_points = [y+y_adj for y in y_coords]
-    else:
-        y_points = [y for y in y_coords]
+    x_points = x_coords 
+    if any(x_coords < x0): 
+        x_diff = x0 - x_coords 
+        x_points += x_diff.max()
 
-    coords = []
-    for x,y in zip(x_points,y_points):
-        coords.append([x,y])
+    y_points = y_coords 
+    if any(y_coords < y0): 
+        y_diff = y0 - y_coords 
+        y_points += y_diff.max()
+    
+    vertices = np.vstack((x_points, y_points)).T
+    poly = Polygon(vertices)
 
-    poly = Polygon(coords)
-    vertices = np.array([np.array(v) for v in coords])
     return poly, vertices
 
-def make_hexagon(area_m2,x0=0.0,y0=0.0):
+def make_hexagon(area_m2, x0=0.0, y0=0.0):
     """Generate hexagon polygon shape of specified area.
 
     Args:
@@ -191,56 +184,45 @@ def make_hexagon(area_m2,x0=0.0,y0=0.0):
     x_coords = s*np.cos(rads)
     y_coords = s*np.sin(rads)
 
-    if any(x<x0 for x in x_coords):
-        x_diff = [x0-x for x in x_coords if x<x0]
-        x_adj = max(x_diff)
-        x_points = [x+x_adj for x in x_coords]
-    else:
-        x_points = [x for x in x_coords]
-    if any(y<y0 for y in y_coords):
-        y_diff = [y0-y for y in y_coords if y<y0]
-        y_adj = max(y_diff)
-        y_points = [y+y_adj for y in y_coords]
-    else:
-        y_points = [y for y in y_coords]
+    x_points = x_coords 
+    if any(x_coords < x0): 
+        x_diff = x0 - x_coords 
+        x_points += x_diff.max()
 
-    coords = []
-    for x,y in zip(x_points,y_points):
-        coords.append([x,y])
+    y_points = y_coords 
+    if any(y_coords < y0): 
+        y_diff = y0 - y_coords 
+        y_points += y_diff.max()
 
-    vertices = np.array([np.array(v) for v in coords])
-    poly = Polygon(coords)
+    vertices = np.vstack((x_points, y_points)).T
+    poly = Polygon(vertices)
+
     return poly, vertices
 
-def rotate_shape(site_polygon,rotation_angle_deg):
+def rotate_shape(site_polygon, rotation_angle_deg):
     # in degrees where 0 is north, increasing clockwise
-    # 90 degrees is east, 180 degrees is south, 270 degrees is wet
+    # 90 degrees is east, 180 degrees is south, 270 degrees is west
     # get center points
-    xc,yc = site_polygon.centroid.coords.xy
-    xc = xc[0]
-    yc = yc[0]
+    xc = site_polygon.centroid.x
+    yc = site_polygon.centroid.y
 
-    vertices = [[x,y] for x,y in site_polygon.exterior.coords]
+    vertices = np.array(site_polygon.exterior.coords)
+
     # translate coordinates to have origin at polygon center
-    xc_points = [v[0] - xc for v in vertices]
-    yc_points = [v[1] - yc for v in vertices]
+    xc_points, yc_points = (vertices - [xc, yc]).T
 
     theta = np.deg2rad(rotation_angle_deg)
 
-    xr_points = [None]*len(vertices)
-    yr_points = [None]*len(vertices)
-
     # rotate clockwise about the origin
-    i = 0
-    for x,y in zip(xc_points,yc_points):
-        xr_points[i] = x*np.cos(theta) + y*np.sin(theta)
-        yr_points[i] = -1*x*np.sin(theta) + y*np.cos(theta)
+    cos_theta = np.cos(theta) 
+    sin_theta = np.sin(theta) 
+    xr_points = (xc_points * cos_theta) + (yc_points * sin_theta)
+    yr_points = (-1 * xc_points * sin_theta) + (yc_points * cos_theta)
+    
     # translate points back to original coordinate reference system
-    xf_points = [x + xc for x in xr_points]
-    yf_points = [y + yc for y in yr_points]
-    rotated_coords = [[x,y] for x,y in zip(xf_points,yf_points)]
-    rotated_polygon = Polygon(rotated_coords)
-    rotated_vertices = np.array([np.array(v) for v in rotated_coords])
-    return rotated_polygon,rotated_vertices
+    rotated_vertices = np.vstack((xr_points, yr_points)).T + [xc, yc]
+    rotated_polygon = Polygon(rotated_vertices)
+    
+    return rotated_polygon, rotated_vertices
 
 
