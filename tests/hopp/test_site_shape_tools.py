@@ -6,22 +6,22 @@ import numpy as np
 def test_circle_area():
     area_m2 = 1e3
     polygon, vertices = shape_tools.make_circle(area_m2)
-    assert polygon.area == approx(area_m2,rel = 0.1)
+    assert polygon.area == approx(area_m2,rel = 1e-2)
 
 def test_square_area():
     area_m2 = 1e3
     polygon, vertices = shape_tools.make_square(area_m2)
-    assert polygon.area == approx(area_m2,rel = 0.1)
+    assert polygon.area == approx(area_m2,rel = 1e-3)
 
 def test_rectangle_area():
     area_m2 = 1e3
     polygon, vertices = shape_tools.make_rectangle(area_m2)
-    assert polygon.area == approx(area_m2,rel = 0.1)
+    assert polygon.area == approx(area_m2,rel = 1e-3)
 
 def test_hexagon_area():
     area_m2 = 1e3
     polygon, vertices = shape_tools.make_hexagon(area_m2)
-    assert polygon.area == approx(area_m2,rel = 0.1)
+    assert polygon.area == approx(area_m2,rel = 1e-3)
 
 def test_circle_vertices_default():
     area_m2 = 1e3
@@ -138,8 +138,8 @@ def test_rotate_site_center_area():
         site_polygon = polygon_original, 
         rotation_angle_deg = rotation_angle
     )
-    assert round(rotated_polygon.centroid.x,3) == round(polygon_original.centroid.x,3)
-    assert round(rotated_polygon.centroid.y,3) == round(polygon_original.centroid.y,3)
+    assert rotated_polygon.centroid.x == approx(polygon_original.centroid.x,abs = 1e-3)
+    assert rotated_polygon.centroid.y == approx(polygon_original.centroid.y,abs = 1e-3)
     assert rotated_polygon.area == polygon_original.area
 
 def test_rotate_site_vertices():
@@ -150,5 +150,5 @@ def test_rotate_site_vertices():
         site_polygon = polygon_original, 
         rotation_angle_deg = rotation_angle
     )
-    assert round(rotated_polygon.exterior.xy[0][0],3) == round(polygon_original.centroid.x,3)
-    assert round(rotated_polygon.exterior.xy[1][1],3) == round(polygon_original.centroid.y,3)
+    assert rotated_polygon.exterior.xy[0][0] == approx(polygon_original.centroid.x,abs = 1e-3)
+    assert rotated_polygon.exterior.xy[1][1] == approx(polygon_original.centroid.y,abs = 1e-3)

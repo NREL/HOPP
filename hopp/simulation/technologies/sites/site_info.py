@@ -201,9 +201,12 @@ class SiteInfo(BaseClass):
             self.solar_resource = self.initialize_solar_resource(data)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
             self.elev = self.solar_resource.data["elev"]
-            self.data.update({"elev": self.solar_resource.data["elev"]})
-            self.tz = self.solar_resource.data["tz"]
-            self.data.update({"tz": self.solar_resource.data["tz"]})
+            data.setdefault("elev",self.solar_resource.data["elev"])
+            data.setdefault("tz",self.solar_resource.data["tz"])
+            if self.tz is None:
+                self.tz = data['tz']
+            if self.elev is None:
+                self.evel = data['elev']
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
@@ -255,7 +258,6 @@ class SiteInfo(BaseClass):
         if 'site_boundaries' in data: 
             if 'verts' in data['site_boundaries']: 
                 vertices = np.array(data["site_boundaries"]["verts"])
-                # vertices = shape_tools.check_site_verts(vertices)
                 polygon = Polygon(vertices)
                 polygon = polygon.buffer(self.site_buffer) #why is this needed?
         elif 'site_details' in data:
@@ -377,7 +379,7 @@ class SiteInfo(BaseClass):
             return wind_resource
         
         return self.wind_resource
-        
+
     # TODO: determine if the below functions are obsolete
     @property
     def boundary(self) -> BaseGeometry:
