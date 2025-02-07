@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from shapely.geometry import Polygon, MultiPolygon, Point, shape
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
-from shapely import make_valid
+from shapely.validation import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
@@ -197,9 +197,9 @@ class SiteInfo(BaseClass):
             self.solar_resource = self.initialize_solar_resource(data)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
             self.elev = self.solar_resource.data["elev"]
-            self.data.update({"elev":self.solar_resource.data["elev"]})
+            self.data.update({"elev": self.solar_resource.data["elev"]})
             self.tz = self.solar_resource.data["tz"]
-            self.data.update({"tz":self.solar_resource.data["tz"]})
+            self.data.update({"tz": self.solar_resource.data["tz"]})
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
@@ -248,25 +248,22 @@ class SiteInfo(BaseClass):
         """
         polygon = None
         vertices = None
-        if 'site_boundaries' in data:
-            if 'verts' in data['site_boundaries']:
-                vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
+        if 'site_boundaries' in data: 
+            if 'verts' in data['site_boundaries']: 
+                vertices = np.array(data["site_boundaries"]["verts"])
                 # vertices = shape_tools.check_site_verts(vertices)
                 polygon = Polygon(vertices)
                 polygon = polygon.buffer(self.site_buffer) #why is this needed?
         elif 'site_details' in data:
             if 'site_area_m2' in data["site_details"] or 'site_area_km2' in data["site_details"]:
                 if 'site_area_km2' in data["site_details"]:
-                    data["site_details"].update({"site_area_m2":data["site_details"]["site_area_km2"]*1e6})
-                if 'site_shape' not in data["site_details"]:
-                    data["site_details"].update({"site_shape":"square"})
-                if "x0" not in data["site_details"]:
-                    data["site_details"].update({"x0":0.0})
-                if "y0" not in data["site_details"]:
-                    data["site_details"].update({"y0":0.0})
-                polygon,vertices = self.make_site_polygon_from_shape(data["site_details"])
+                    data["site_details"].update({"site_area_m2": data["site_details"]["site_area_km2"]*1e6})
+                data["site_details"].setdefault("site_shape", "square")
+                data["site_details"].setdefault("x0", 0.0)
+                data["site_details"].setdefault("y0", 0.0)
+                polygon, vertices = self.make_site_polygon_from_shape(data["site_details"])
                 polygon = polygon.buffer(self.site_buffer)
-        return polygon,vertices
+        return polygon, vertices
 
     def make_site_polygon_from_shape(self,site_details:dict):
         """create site polygon and vertices if "site_details" provided in ``data``.
@@ -283,53 +280,46 @@ class SiteInfo(BaseClass):
             - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
             - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
         """
-
-        if 'site_area_m2' in site_details and 'site_shape' in site_details:
-            if site_details["site_shape"].lower()=="circle":
-                if "degrees_between_points" in site_details.keys():
-                    polygon, vertices = shape_tools.make_circle(
-                        site_details['site_area_m2'], 
-                        deg_diff = site_details["degrees_between_points"],
-                        x0 = site_details["x0"], 
-                        y0 = site_details["y0"]
-                    )
-                else:
-                    polygon, vertices = shape_tools.make_circle(
-                        site_details['site_area_m2'], 
-                        x0 = site_details["x0"], 
-                        y0 = site_details["y0"]
-                    )
-            elif site_details["site_shape"].lower()=="square":
-                polygon, vertices = shape_tools.make_square(
-                    site_details['site_area_m2'], 
-                    x0 = site_details["x0"], 
-                    y0 = site_details["y0"]
-                )
-            elif site_details["site_shape"].lower()=="rectangle":
-                if "aspect_ratio" in site_details:
-                    polygon, vertices = shape_tools.make_rectangle(
-                        site_details['site_area_m2'],
-                        aspect_ratio = site_details["aspect_ratio"], 
-                        x0 = site_details["x0"], 
-                        y0 = site_details["y0"]
-                    )
-                else:
-                    polygon, vertices = shape_tools.make_rectangle(
-                        site_details['site_area_m2'],
-                        x0 = site_details["x0"], 
-                        y0 = site_details["y0"]
-                    )
-            elif site_details["site_shape"].lower()=="hexagon":
-                polygon, vertices = shape_tools.make_hexagon(
-                    site_details['site_area_m2'], 
-                    x0 = site_details["x0"], 
-                    y0 = site_details["y0"]
-                )
-            else:
-                raise ValueError("invalid entry for `site_shape`, site_shape must be either 'circle', 'rectangle', 'square' or 'hexagon'")
-            return polygon,vertices
-        else:
+        if (shape := site_details.get("site_shape", None)) is None:
             return None, None
+
+        shape = shape.lower()
+        if shape == "circle":
+            site_details.setdefault("degrees_between_points", 10.0)
+            polygon, vertices = shape_tools.make_circle(
+                area_m2 = site_details['site_area_m2'], 
+                deg_diff = site_details["degrees_between_points"],
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "square":
+            polygon, vertices = shape_tools.make_square(
+                area_m2 = site_details['site_area_m2'], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "rectangle":
+            site_details.setdefault("aspect_ratio", 1.5)
+            polygon, vertices = shape_tools.make_rectangle(
+                area_m2 = site_details['site_area_m2'],
+                aspect_ratio = site_details["aspect_ratio"], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "hexagon":
+            polygon, vertices = shape_tools.make_hexagon(
+                area_m2 = site_details['site_area_m2'], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        
+        raise ValueError("invalid entry for `site_shape`, site_shape must be either 'circle', 'rectangle', 'square' or 'hexagon'")
+        
+        
     
     def initialize_solar_resource(self,data:dict):
         """Download/load solar resource data
