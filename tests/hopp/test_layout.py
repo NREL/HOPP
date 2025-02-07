@@ -52,7 +52,7 @@ def test_create_grid(site):
     site.plot()
     turbine_positions = create_grid(bounding_shape,
                                     site.polygon.centroid,
-                                    np.pi / 4,
+                                    45.0,
                                     200,
                                     200,
                                     .5)
