@@ -201,8 +201,8 @@ class SiteInfo(BaseClass):
             self.solar_resource = self.initialize_solar_resource(data)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
             self.elev = self.solar_resource.data["elev"]
-            data.setdefault("elev",self.solar_resource.data["elev"])
-            data.setdefault("tz",self.solar_resource.data["tz"])
+            data.setdefault("elev", self.solar_resource.data["elev"])
+            data.setdefault("tz", self.solar_resource.data["tz"])
             if self.tz is None:
                 self.tz = data['tz']
             if self.elev is None:

@@ -69,18 +69,7 @@ def check_site_verts(verts):
     ) 
     df.x_pos += dx 
     df.y_pos += dy 
-    organized_verts = df[["x_pos", "y_pos"]].values # Note: if wanting a list just add a .tolist() at the end
-    #1) sort based on angles from smallest to largest
-    # angles, distances, x_pos, y_pos = (list(t) for t in zip(*sorted(zip(angles, distances, x_pos, y_pos))))
-    # #2) sort any same angles based on distance:
-    # unique_angle,angle_cnt = np.unique(angles,return_counts=True)
-    # if any(a>1 for a in angle_cnt):
-    #     repeat_angles = [unique_angle[i] for i,cnt in enumerate(angle_cnt) if cnt>1]
-    #     for rep_ang in repeat_angles:
-    #         indx_rep = list(np.argwhere(angles==rep_ang).flatten())
-    #         # sort based on distance
-    #         distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep] = (list(t) for t in zip(*sorted(zip(distances[indx_rep], angles[indx_rep], x_pos[indx_rep], y_pos[indx_rep]))))
-    # organized_verts = [[x+dx,y+dy] for x,y in zip(x_pos,y_pos)]
+    organized_verts = df[["x_pos", "y_pos"]].values
     return organized_verts
 
 def make_square(area_m2, x0=0.0, y0=0.0):
