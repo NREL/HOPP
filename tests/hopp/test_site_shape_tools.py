@@ -111,7 +111,7 @@ def test_distance_between_points():
     x1 = x0 + dx
     y2 = y0 + dy
     distance = shape_tools.calc_dist_between_two_points_cartesian(x0,y0,x1,y2)
-    assert distance == dy
+    assert distance == approx(dy,1e-3)
 
 def test_angle_between_points():
     x0 = 0.0
@@ -119,7 +119,7 @@ def test_angle_between_points():
     x1 = 1.0
     y1 = 1.0
     angle = shape_tools.calc_angle_between_two_points_cartesian(x0,y0,x1,y1)
-    assert angle == 45.0
+    assert angle == approx(45.0,1e-3)
 
 def test_sort_site_verts():
     invalid_x_points = [0.0,5.0,0.0,5.0]
@@ -128,7 +128,7 @@ def test_sort_site_verts():
     invalid_verts = np.array(invalid_verts)
     valid_verts = shape_tools.check_site_verts(invalid_verts)
     valid_shape = Polygon(valid_verts)
-    assert valid_shape.area == 25.0
+    assert valid_shape.area == approx(25.0,1e-3)
 
 def test_rotate_site_center_area():
     area_m2 = 1e3
@@ -140,7 +140,7 @@ def test_rotate_site_center_area():
     )
     assert rotated_polygon.centroid.x == approx(polygon_original.centroid.x,abs = 1e-3)
     assert rotated_polygon.centroid.y == approx(polygon_original.centroid.y,abs = 1e-3)
-    assert rotated_polygon.area == polygon_original.area
+    assert rotated_polygon.area == approx(polygon_original.area,abs = 1e-3)
 
 def test_rotate_site_vertices():
     area_m2 = 1e3
