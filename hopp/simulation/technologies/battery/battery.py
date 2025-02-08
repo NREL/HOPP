@@ -84,7 +84,7 @@ class BatteryConfig(BaseClass):
                 - "LeadAcid" 
                 - "NMCGraphite"
             HOPP options:
-                - "LDES"
+                - "AEF" Aqueous electrolyte flow battery
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -176,6 +176,8 @@ class Battery(PowerSource):
         """Executes Stateful Battery setup"""
         if self.config.system_model_source == "pysam":
             self._system_model.setup()
+        else:
+            pass
 
     @property
     def system_capacity_voltage(self) -> tuple:
