@@ -3,7 +3,7 @@ import copy
 from pathlib import Path
 
 import pytest
-from pytest import fixture
+from pytest import fixture, approx
 from shapely.geometry import Polygon
 import numpy as np
 from numpy.testing import assert_array_equal
@@ -229,3 +229,298 @@ def test_site_solar_resource_input_data_format():
     )
     assert site.solar_resource.data['tz']==-6
 
+def test_site_polygon_valid_verts():
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_boundaries":
+            {
+            "verts":
+            [[0.0,0.0],[500.0,0.0],[500.0,500.0],[0.0,500.0]]
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    assert site.polygon.area == approx(250000,rel = 1e-3)
+    
+
+def test_site_polygon_invalid_verts():
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_boundaries":
+            {
+            "verts":
+            [[0.0,0.0],[500.0,500.0],[500.0,0.0],[0.0,500.0]]
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    assert site.polygon.area != approx(250000,rel = 1e-3)
+
+def test_site_polygon_square_defaults():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"square",
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+
+
+def test_site_polygon_square_offset():
+    site_area_km2 = 2.5
+    x0 = 25.0
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"Square",
+            "x0": x0,
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    x_verts,y_verts = site.polygon.exterior.coords.xy
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+    assert min(x_verts) == approx(x0,rel=1e-3)
+    assert min(y_verts) == approx(0.0,abs=1e-8)
+    
+
+def test_site_polygon_rectangle_default():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"rectangle",
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    x_verts,y_verts = site.polygon.exterior.coords.xy
+    dx = max(x_verts) - min(x_verts)
+    dy = max(y_verts) - min(y_verts)
+    width_to_height = dx/dy
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+    assert width_to_height == approx(1.5,rel=1e-3)
+
+
+def test_site_polygon_rectangle_aspect_ratio():
+    site_area_km2 = 2.5
+    aspect_ratio = 2.0
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"rectangle",
+            "aspect_ratio": aspect_ratio,
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    x_verts,y_verts = site.polygon.exterior.coords.xy
+    dx = max(x_verts) - min(x_verts)
+    dy = max(y_verts) - min(y_verts)
+    width_to_height = dx/dy
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+    assert width_to_height == approx(aspect_ratio,rel=1e-3)
+    
+
+def test_site_polygon_circle_default():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"circle",
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-2)
+    assert len(site.vertices) == 36
+
+
+def test_site_polygon_circle_detail():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"circle",
+            "degrees_between_points":1.0
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+    assert len(site.vertices) == 360
+
+
+def test_site_polygon_hexagon_default():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"hexagon",
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+
+
+def test_site_polygon_hexagon_m2():
+    site_area_km2 = 2.5
+    site_area_m2 = site_area_km2*1e6
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_m2": site_area_m2,
+            "site_shape":"hexagon",
+            }
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+
+    assert site.polygon.area == approx(site_area_km2*1e6,rel=1e-3)
+
+
+def test_site_invalid_shape():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": site_area_km2,
+            "site_shape":"triangle",
+            }
+    }
+    with pytest.raises(ValueError) as err:
+        site =  SiteInfo(
+            site_data,
+            solar_resource_file=solar_resource_file,
+            wind_resource_file=wind_resource_file,
+            grid_resource_file=grid_resource_file
+        )
+    assert str(err.value) == "invalid entry for `site_shape`, site_shape must be either 'circle', 'rectangle', 'square' or 'hexagon'"
+    
+
+def test_site_none_shape():
+    site_area_km2 = 2.5
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2012,
+        "tz": -6,
+        "site_details": {}
+    }
+    site =  SiteInfo(
+        site_data,
+        solar_resource_file=solar_resource_file,
+        wind_resource_file=wind_resource_file,
+        grid_resource_file=grid_resource_file
+    )
+    assert site.polygon == None
