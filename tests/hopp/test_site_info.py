@@ -248,7 +248,12 @@ def test_site_polygon_valid_verts():
         wind_resource_file=wind_resource_file,
         grid_resource_file=grid_resource_file
     )
+    
     assert site.polygon.area == approx(250000,rel = 1e-3)
+    assert site.vertices[0][0] == 0.0
+    assert site.vertices[0][1] == 0.0
+    assert site.vertices[1][0] == 500.0
+    assert site.vertices[1][1] == 0.0
     
 
 def test_site_polygon_invalid_verts():
@@ -523,4 +528,4 @@ def test_site_none_shape():
         wind_resource_file=wind_resource_file,
         grid_resource_file=grid_resource_file
     )
-    assert site.polygon == None
+    assert site.polygon is None
