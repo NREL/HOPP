@@ -8,10 +8,15 @@ import PySAM.Windpower as windpower
 from shapely.prepared import (
     PreparedGeometry,
     )
+from shapely.geometry.base import BaseGeometry
+from shapely.geometry import Point, LineString, Polygon
+from shapely.prepared import prep
+from shapely.affinity import translate
+from typing import Optional
 
 from hopp.simulation.technologies.layout.layout_tools import *
 from hopp.simulation.technologies.sites.site_info import SiteInfo
-from hopp.simulation.technologies.layout.wind_layout_tools import *
+from hopp.simulation.technologies.layout.wind_layout_tools import make_grid_lines
 
 
 def find_best_gcr(
@@ -156,7 +161,7 @@ def place_solar_strands(max_num_modules: int,
     grid_lines = make_grid_lines(
         site_shape,
         translate(center, xoff=raw_phase_offset),
-        np.pi / 2,  # N-S orientation
+        np.rad2deg(np.pi / 2),  # N-S orientation
         interrow_spacing
         )
     

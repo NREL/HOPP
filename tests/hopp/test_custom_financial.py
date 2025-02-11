@@ -152,7 +152,7 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             }, 
@@ -193,10 +193,10 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
 
 def test_hybrid_detailed_pv_with_wind(site, subtests):
     # Test wind + detailed PV (pvsamv1) hybrid plant with custom financial model
-    annual_energy_expected_pv = 21565578 
+    annual_energy_expected_pv = 21541876
     annual_energy_expected_wind = 32296230
     annual_energy_expected_hybrid = 53838106
-    npv_expected_pv = -7835353 
+    npv_expected_pv = -7844643 
     npv_expected_wind = -11896652
     npv_expected_hybrid = -19733945
 
@@ -235,7 +235,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": np.deg2rad(0.5), 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
@@ -323,7 +323,7 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
@@ -476,7 +476,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
