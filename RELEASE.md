@@ -7,6 +7,7 @@
 * Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
 * Bug fix in load following heuristic method: only using beginning of variable load signals 
 * Feature add: added alternative method to defining site boundary.
+* Feature add: added function to adjust air density based on site elevation
 
 ## Version 3.1.1, Dec. 18, 2024
 
