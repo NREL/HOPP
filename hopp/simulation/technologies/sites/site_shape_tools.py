@@ -117,7 +117,7 @@ def make_rectangle(area_m2, aspect_ratio=1.5, x0=0.0, y0=0.0):
     vertices = np.array([[x0,x0], [x1,y0], [x1,y1], [x0,y1]])
     return poly,vertices
 
-def make_circle(area_m2, deg_diff = 10, x0=0.0, y0=0.0):
+def make_circle(area_m2, deg_diff = 5.0, x0=0.0, y0=0.0):
     """Generate circle polygon shape of specified area.
 
     Args:
