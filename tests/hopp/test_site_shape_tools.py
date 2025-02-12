@@ -5,8 +5,8 @@ import numpy as np
 
 def test_circle_area():
     area_m2 = 1e3
-    polygon, vertices = shape_tools.make_circle(area_m2)
-    assert polygon.area == approx(area_m2,rel = 1e-2)
+    polygon, vertices = shape_tools.make_circle(area_m2, deg_diff = 1.0)
+    assert polygon.area == approx(area_m2,rel = 1e-3)
 
 def test_square_area():
     area_m2 = 1e3
