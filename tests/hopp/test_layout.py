@@ -11,7 +11,11 @@ from shapely.geometry import Point, MultiLineString
 
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
-from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, WindBoundaryGridParameters, PVGridParameters, get_flicker_loss_multiplier
+from hopp.simulation.technologies.layout.wind_layout import (
+    WindLayout, 
+    WindBoundaryGridParameters, 
+    WindBasicGridParameters)
+from hopp.simulation.technologies.layout.hybrid_layout import HybridLayout, PVGridParameters, get_flicker_loss_multiplier
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_parameters, find_modules_per_string
 from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
@@ -72,7 +76,7 @@ def test_create_grid(site):
         assert(t.y == pytest.approx(expected_positions[n][1], 1e-1))
 
 
-def test_wind_layout(site):
+def test_wind_boundary_grid_layout_pysam(site):
     config = WindConfig.from_dict(technology['wind'])
     wind_model = WindPlant(site, config=config)
     xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
@@ -84,9 +88,46 @@ def test_wind_layout(site):
         assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
         assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
-    # wind_model.plot()
-    # plt.show()
+def test_wind_basic_grid_layout_pysam_default(site):
+    wind_technology = {
+    'num_turbines': 16,
+    'turbine_rating_kw': 2000,
+    'layout_mode': 'basicgrid',
+    'layout_params': WindBasicGridParameters()
+    }
+    config = WindConfig.from_dict(wind_technology)
+    wind_model = WindPlant(site, config=config)
+    xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
+    expected_xcoords = [1498, 867, 525, 3, 658]
+    expected_ycoords = [951, 265, 74, 288, 647]
+    for i in range(len(xcoords)):
+        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
+def test_wind_basic_grid_layout_pysam_with_row_offset(site):
+    wind_technology = {
+        'num_turbines': 16,
+        'turbine_rating_kw': 2000,
+        'layout_mode': 'basicgrid',
+        'layout_params': WindBasicGridParameters(row_D_spacing=5.0,
+                                                    turbine_D_spacing=5.0,
+                                                    grid_angle=0.0,
+                                                    row_phase_offset=0.5,
+                                                    site_boundary_constrained=False)
+    }
+    config = WindConfig.from_dict(wind_technology)
+    wind_model = WindPlant(site, config=config)
+    xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
+
+    # expected_xcoords = [1498, 867, 525, 3, 658]
+    # expected_ycoords = [951, 265, 74, 288, 647]
+
+    # for i in range(len(xcoords)):
+    #     assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
+    #     assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
+
+def test_wind_basic_grid_layout_site_constrained():
+    pass
 
 def test_solar_layout(site):
     config = PVConfig.from_dict(technology['pv'])
