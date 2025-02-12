@@ -12,7 +12,10 @@ from hopp.utilities.validators import gt_zero, contains, range_val
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.layout.wind_layout import WindLayout, WindBoundaryGridParameters
+from hopp.simulation.technologies.layout.wind_layout import (
+    WindLayout, 
+    WindBoundaryGridParameters, 
+    WindBasicGridParameters)
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
 
@@ -28,8 +31,9 @@ class WindConfig(BaseClass):
         rotor_diameter: turbine rotor diameter
         hub_height: turbine hub height
         layout_mode:
-            - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'params'
-            - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'params'
+            - 'boundarygrid': regular grid with boundary turbines, requires WindBoundaryGridParameters as 'layout_params'
+            - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'layout_params'
+            - 'basicgrid': most-square grid layout, requires WindBasicGridParameters as 'layout_params'
         model_name: which model to use. Options are 'floris' and 'pysam'
         model_input_file: file specifying a full PySAM input
         layout_params: layout configuration
@@ -50,7 +54,7 @@ class WindConfig(BaseClass):
     rotor_diameter: Optional[float] = field(default=None)
     layout_params: Optional[Union[dict, WindBoundaryGridParameters]] = field(default=None)
     hub_height: Optional[float] = field(default=None)
-    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid"]))
+    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom"]))
     model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
     model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
@@ -127,8 +131,10 @@ class WindPlant(PowerSource):
             else:
                 financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
 
-        if isinstance(self.config.layout_params, dict):
+        if isinstance(self.config.layout_params, dict) and self.config.layout_mode=="boundarygrid":
             layout_params = WindBoundaryGridParameters(**self.config.layout_params)
+        elif isinstance(self.config.layout_params, dict) and self.config.layout_mode=="basicgrid":
+            layout_params = WindBasicGridParameters(**self.config.layout_params)
         else:
             layout_params = self.config.layout_params
 

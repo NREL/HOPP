@@ -11,7 +11,10 @@ from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.layout.wind_layout_tools import (
     get_best_grid,
     get_evenly_spaced_points_along_border,
-    subtract_turbine_exclusion_zone
+    subtract_turbine_exclusion_zone,
+    make_site_boundary_for_square_grid_layout,
+    create_grid,
+    constrain_layout_for_site
     )
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.utilities.validators import gt_zero, contains, range_val
@@ -50,33 +53,31 @@ class WindCustomParameters(NamedTuple):
 
 
 class WindLayout:
-    """
-
-    """
     def __init__(self,
                  site_info: SiteInfo,
                  wind_source: windpower.Windpower,
                  layout_mode: str,
-                 parameters: Union[WindBoundaryGridParameters, WindCustomParameters, None],
+                 parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None],
                  min_spacing: float = 200.,
                  ):
-        """_summary_
+        """Class to manage wind farm layout.
 
         Args:
-            site_info (SiteInfo): _description_
-            wind_source (windpower.Windpower): _description_
-            layout_mode (str): layout choice:  "boundarygrid", "grid", "custom"
-            parameters (Union[WindBoundaryGridParameters, WindCustomParameters, None]): _description_
-            min_spacing (float, optional): minimu spacing between turbines in meters. Defaults to 200..
+            site_info (SiteInfo): site info object.
+            wind_source (windpower.Windpower): pysam wind power object
+            layout_mode (str): layout choice:  "boundarygrid", "grid", "custom", "basicgrid"
+            parameters (Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]): wind
+                layout parameters for the corresponding `layout_mode`
+            min_spacing (float, optional): minimum spacing between turbines in meters. Defaults to 200.
 
         Raises:
-            ValueError: _description_
+            ValueError: if given invalid layout_mode.
         """
         self.site: SiteInfo = site_info
         self._system_model: windpower.Windpower = wind_source
         self.min_spacing = max(min_spacing, self._system_model.value("wind_turbine_rotor_diameter") * 2)
 
-        if layout_mode not in ('boundarygrid', 'grid', 'custom'):
+        if layout_mode not in ('boundarygrid', 'grid', 'custom','basicgrid'):
             raise ValueError('Options for `layout_mode` are: "boundarygrid", "grid", "custom"')
         self._layout_mode = layout_mode
 
@@ -200,9 +201,57 @@ class WindLayout:
         self.turb_pos_x, self.turb_pos_y = xcoords, ycoords
         self._set_system_layout()
 
+    def reset_basic_grid(self,n_turbines,parameters:WindBasicGridParameters):
+        
+        self._get_system_config()
+
+        interrow_spacing = parameters.row_D_spacing*self.rotor_diameter
+        intrarow_spacing = parameters.turbine_D_spacing*self.rotor_diameter
+            
+        data = make_site_boundary_for_square_grid_layout(n_turbines,self.rotor_diameter,parameters.row_D_spacing,parameters.turbine_D_spacing)
+        vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
+        square_bounds = Polygon(vertices)
+        grid_position_square = create_grid(square_bounds,
+                square_bounds.centroid,
+                parameters.grid_angle,
+                intrarow_spacing,
+                interrow_spacing,
+                parameters.row_phase_offset,
+                int(n_turbines),
+        )
+       
+        if parameters.site_boundary_constrained:
+            xcoords_grid = [point.x for point in grid_position_square]
+            ycoords_grid = [point.y for point in grid_position_square]
+            grid_position_site = create_grid(self.site.polygon,
+                self.site.polygon.centroid,
+                parameters.grid_angle,
+                intrarow_spacing,
+                interrow_spacing,
+                parameters.row_phase_offset,
+                int(n_turbines),
+            )
+
+            xcoords_site = [point.x for point in grid_position_site]
+            ycoords_site = [point.y for point in grid_position_site]
+            xcoords = xcoords_site
+            ycoords = ycoords_site
+            if len(xcoords_site)<n_turbines:
+                if len(xcoords_site)<len(xcoords_grid):
+                    x_adj, y_adj = constrain_layout_for_site(xcoords_grid,ycoords_grid,self.site.polygon)
+                    if len(x_adj)>len(xcoords_site):
+                        xcoords = x_adj
+                        ycoords = y_adj
+        else:
+            xcoords = [point.x for point in grid_position_square]
+            ycoords = [point.y for point in grid_position_square]
+        
+        self.turb_pos_x, self.turb_pos_y = xcoords, ycoords
+        self._set_system_layout()
+
     def set_layout_params(self,
                           wind_kw,
-                          params: Union[WindBoundaryGridParameters, WindCustomParameters, None],
+                          params: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None],
                           exclusions: Polygon = None):
         self.parameters = params
         n_turbines = int(np.floor(wind_kw / max(self._system_model.Turbine.wind_turbine_powercurve_powerout)))
@@ -210,6 +259,8 @@ class WindLayout:
             self.reset_boundarygrid(n_turbines, params, exclusions)
         elif self._layout_mode == 'grid':
             self.reset_grid(n_turbines)
+        elif self._layout_mode == 'basicgrid':
+            self.reset_basic_grid(n_turbines,params)
         elif self._layout_mode == 'custom':
             self.turb_pos_x, self.turb_pos_y = self.parameters.layout_x, self.parameters.layout_y
             self._set_system_layout()
@@ -225,6 +276,8 @@ class WindLayout:
             self.reset_boundarygrid(n_turbines, self.parameters)
         elif self._layout_mode == 'grid':
             self.reset_grid(n_turbines)
+        elif self._layout_mode == 'basicgrid':
+            self.reset_basic_grid(n_turbines,self.parameters)
 
     def plot(self,
              figure=None,
