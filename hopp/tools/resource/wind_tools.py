@@ -1,6 +1,4 @@
 from scipy.constants import R, g, convert_temperature
-from hopp.simulation.technologies.resource import HPCWindData, WindResource
-from typing import Optional, Tuple, Union
 import numpy as np
 
 def calculate_air_density_for_elevation(elevation_m:float):
@@ -41,7 +39,7 @@ def calculate_elevation_air_density_losses(elevation_m:float):
         float: percentage loss associated with air density decrease at elevation.
     """
 
-    if elevation_m<0.0:
+    if elevation_m<=0.0:
         loss_percent = 0.0
     else:
         rho0 = 1.225
@@ -53,6 +51,13 @@ def calculate_elevation_air_density_losses(elevation_m:float):
 
 def parse_resource_data(wind_resource):
     """parse wind resource data into floris-friendly format.
+        average wind speed and wind direction if theres data for 
+        2 resource heights. this method assumes that the turbine hub-height 
+        is in-between two resource heights.
+
+        in ``wind_resource.data['fields']``, values correspond to:
+            - 3: Wind speed in meters per second (m/s)
+            - 4: Wind direction in degrees east of north (degrees).
 
     Args:
         wind_resource (HPCWindData | WindResource): wind resource data object
@@ -64,26 +69,86 @@ def parse_resource_data(wind_resource):
         - **wind_dirs** (:obj:`numpy.ndarray`): wind direction in deg from North (clockwise)
     """
 
-    speeds = np.zeros(len(wind_resource.data['data']))
-    wind_dirs = np.zeros(len(wind_resource.data['data']))
-    data_rows_total = 4
+    data = np.array(wind_resource.data['data'])
+    
+    # get indices of wind speed data
+    idx_ws = [ii for ii,field in enumerate(wind_resource.data['fields']) if field == 3]
+    
+    # get indices of wind direction data
+    idx_wd = [ii for ii,field in enumerate(wind_resource.data['fields']) if field == 4]
+    
     # if theres multiple hub-heights - average the data
-    # TODO: weight data entries based on height relative to turbine hub-height
-    # this method assumes that the turbine hub-height is in-between two resource heights
-    if np.shape(wind_resource.data['data'])[1] > data_rows_total:
-        height_entries = int(np.round(np.shape(wind_resource.data['data'])[1]/data_rows_total))
-        data_entries = np.empty((height_entries))
-        for j in range(height_entries):
-            data_entries[j] = int(j*data_rows_total)
-        data_entries = data_entries.astype(int)
-        for i in range((len(wind_resource.data['data']))):
-            data_array = np.array(wind_resource.data['data'][i])
-            speeds[i] = np.mean(data_array[2+data_entries])
-            wind_dirs[i] = np.mean(data_array[3+data_entries])
+    if len(idx_ws) > 1:
+        speeds = data[:,idx_ws].mean(axis = 1)
+        wind_dirs = data[:,idx_wd].mean(axis = 1)
+    
     # if theres only one hub-height, grab speed and direction data
     else:
-        for i in range((len(wind_resource.data['data']))):
-            speeds[i] = wind_resource.data['data'][i][2]
-            wind_dirs[i] = wind_resource.data['data'][i][3]
+        speeds = data[:,idx_ws[0]]
+        wind_dirs = data[:,idx_wd[0]]
+
+    return speeds, wind_dirs
+
+def weighted_parse_resource_data(wind_resource):
+    """parse wind resource data into floris-friendly format.
+        weighted average wind speed and wind direction if theres data for 
+        2 resource heights. weight wind resource data based on resource-height 
+        relative to turbine hub-height. 
+        
+        in ``wind_resource.data['fields']``, values correspond to:
+            - 3: Wind speed in meters per second (m/s)
+            - 4: Wind direction in degrees east of north (degrees).
+
+
+    Args:
+        wind_resource (HPCWindData | WindResource): wind resource data object
+
+    Returns:
+        2-element tuple containing
+
+        - **speeds** (:obj:`numpy.ndarray`): wind speed in m/s
+        - **wind_dirs** (:obj:`numpy.ndarray`): wind direction in deg from North (clockwise)
+    """
+
+    data = np.array(wind_resource.data['data'])
+    # get indices of wind speed data
+    idx_ws = [ii for ii,field in enumerate(wind_resource.data['fields']) if field == 3]
+    # get indices of wind direction data
+    idx_wd = [ii for ii,field in enumerate(wind_resource.data['fields']) if field == 4]
+    
+    # if theres multiple hub-heights - average the data
+    if len(idx_ws)>1:
+        # weights corresponding to difference of resource height and hub-height
+        hh1,hh2 = np.unique(wind_resource.data['heights'])
+        weight1 = np.abs(hh1 - wind_resource.hub_height_meters)
+        weight2 = np.abs(hh2 - wind_resource.hub_height_meters)
+        
+        # wind speed data indices for each resource height
+        idx_ws1 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh1][0]
+        idx_ws2 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh2][0]
+        
+        # wind speeds at the two resource heights
+        ws1 = data[:,idx_ws1]
+        ws2 = data[:,idx_ws2]
+
+        # weight wind speed data based on height relative to turbine hub-height
+        speeds = np.round(((weight1 * ws1) + (weight2 * ws2)) / (weight1 + weight2),3)
+
+        # wind direction data indices for each resource height
+        idx_wd1 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh1][0]
+        idx_wd2 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh2][0]
+        
+        # wind directions at the two resource heights
+        wd1 = data[:,idx_wd1]
+        wd2 = data[:,idx_wd2]
+        
+        # weight wind direction data based on height relative to turbine hub-height
+        wind_dirs = np.round(((weight1 * wd1) + (weight2 * wd2)) / (weight1 + weight2),3)
+    
+    # if theres only one hub-height, grab speed and direction data
+    else:
+        speeds = data[:,idx_ws[0]]
+        wind_dirs = data[:,idx_wd[0]]
+        
 
     return speeds, wind_dirs
