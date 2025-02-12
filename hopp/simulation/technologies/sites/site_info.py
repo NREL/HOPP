@@ -200,13 +200,12 @@ class SiteInfo(BaseClass):
         if self.solar:
             self.solar_resource = self.initialize_solar_resource(data)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
-            self.elev = self.solar_resource.data["elev"]
             data.setdefault("elev", self.solar_resource.data["elev"])
             data.setdefault("tz", self.solar_resource.data["tz"])
             if self.tz is None:
                 self.tz = data['tz']
             if self.elev is None:
-                self.evel = data['elev']
+                self.elev = data['elev']
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
