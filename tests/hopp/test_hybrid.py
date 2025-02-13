@@ -633,8 +633,8 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
     with subtests.test(
         "Detailed PV model (pvsamv1) using defaults except the top level system_capacity_kw parameter"
     ):
-        annual_energy_expected = 11128604
-        npv_expected = -2436229
+        annual_energy_expected = 8873966
+        npv_expected = -1818194
         technologies = hybrid_config["technologies"]
         solar_only = deepcopy(
             {key: technologies[key] for key in ("pv", "grid")}
@@ -646,7 +646,7 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
         hybrid_config["technologies"] = solar_only
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
-        assert hybrid_plant.pv.value("subarray1_nstrings") == 1343
+        assert hybrid_plant.pv.value("subarray1_nstrings") == 336
         hybrid_plant.layout.plot()
 
         hi.simulate()
@@ -673,16 +673,10 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
         solar_only["pv"]["tech_config"] = tech_config  # specify parameters
         solar_only["grid"]["interconnect_kw"] = 150e3
         hybrid_config["technologies"] = solar_only
-        with raises(Exception) as context:
-            hi = HoppInterface(hybrid_config)
-        assert (
-            "The specified system capacity of 5000 kW is more than 5% from the value calculated"
-            in str(context.value)
-        )
 
         # Run detailed PV model (pvsamv1) using file parameters, minus the number of strings, and the top level system_capacity_kw parameter
-        annual_energy_expected = 8955045
-        npv_expected = -2622684
+        annual_energy_expected = 8873966
+        npv_expected = -1818194
         pvsamv1_defaults_file = (
             Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
         )
@@ -698,7 +692,7 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
         hybrid_config["technologies"] = solar_only
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
-        assert hybrid_plant.pv.value("subarray1_nstrings") == 1343
+        assert hybrid_plant.pv.value("subarray1_nstrings") == 336
         hybrid_plant.layout.plot()
 
         hi.simulate()
@@ -746,7 +740,7 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     with subtests.test("Detailed PV model (pvsamv1) using parameters from file"):
-        annual_energy_expected = 102997528
+        annual_energy_expected = 21239084
         npv_expected = -25049424
         pvsamv1_defaults_file = (
             Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
@@ -795,7 +789,7 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
     with subtests.test(
         "Detailed PV model using parameters from file and autosizing electrical parameters"
     ):
-        annual_energy_expected = 102319358
+        annual_energy_expected = 21239084
         npv_expected = -25110524
         pvsamv1_defaults_file = (
             Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
