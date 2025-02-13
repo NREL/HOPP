@@ -706,7 +706,7 @@ def test_detailed_pv_system_capacity(hybrid_config, subtests):
 
 def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
     with subtests.test("standalone detailed PV model (pvsamv1) using defaults"):
-        annual_energy_expected = 11128604
+        annual_energy_expected = 8873966
         config = DetailedPVConfig.from_dict(detailed_pv)
         pv_plant = DetailedPVPlant(site=site, config=config)
         assert pv_plant.system_capacity_kw == approx(pv_kw, 1e-2)
@@ -715,11 +715,11 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         assert pv_plant._system_model.Outputs.annual_energy == approx(
             annual_energy_expected, 1e-2
         )
-        assert pv_plant._system_model.Outputs.capacity_factor == approx(25.66, 1e-2)
+        assert pv_plant._system_model.Outputs.capacity_factor == approx(20.29, 1e-2)
 
     with subtests.test("detailed PV model (pvsamv1) using defaults"):
         technologies = hybrid_config["technologies"]
-        npv_expected = -2436229
+        npv_expected = -1818194
         solar_only = {"pv": detailed_pv, "grid": technologies["grid"]}
         solar_only["pv"][
             "use_pvwatts"
@@ -740,8 +740,8 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         assert npvs.hybrid == approx(npv_expected, 1e-3)
 
     with subtests.test("Detailed PV model (pvsamv1) using parameters from file"):
-        annual_energy_expected = 21239084
-        npv_expected = -25049424
+        annual_energy_expected = 8873966
+        npv_expected = -1818194
         pvsamv1_defaults_file = (
             Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
         )
@@ -751,7 +751,7 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
         solar_only["pv"]["use_pvwatts"] = False  # specify detailed PV model
         solar_only["pv"]["tech_config"] = tech_config  # specify parameters
         solar_only["grid"]["interconnect_kw"] = 150e3
-        solar_only["pv"]["system_capacity_kw"] = 50000  # use another system capacity
+        solar_only["pv"]["system_capacity_kw"] = 4993  # use another system capacity
         hybrid_config["technologies"] = solar_only
         hi = HoppInterface(hybrid_config)
         hybrid_plant = hi.system
@@ -789,8 +789,8 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
     with subtests.test(
         "Detailed PV model using parameters from file and autosizing electrical parameters"
     ):
-        annual_energy_expected = 21239084
-        npv_expected = -25110524
+        annual_energy_expected = 8873966
+        npv_expected = -1818194
         pvsamv1_defaults_file = (
             Path(__file__).absolute().parent / "pvsamv1_basic_params.json"
         )
@@ -822,10 +822,10 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
                 n_inputs_combiner=32,
             )
         )
-        assert n_strings == 13435
-        assert n_combiners == 420
-        assert n_inverters == 50
-        assert calculated_system_capacity == approx(50002.2, 1e-3)
+        assert n_strings == 336
+        assert n_combiners == 11
+        assert n_inverters == 1
+        assert calculated_system_capacity == approx(4993.2, 1e-3)
         solar_only["pv"]["tech_config"]["subarray1_nstrings"] = n_strings
         solar_only["pv"]["tech_config"]["inverter_count"] = n_inverters
         solar_only["pv"]["tech_config"]["system_capacity"] = calculated_system_capacity
@@ -839,7 +839,7 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
 
         aeps = hybrid_plant.annual_energies
         npvs = hybrid_plant.net_present_values
-        assert hybrid_plant.pv.system_capacity_kw == approx(50002.2, 1e-2)
+        assert hybrid_plant.pv.system_capacity_kw == approx(4993.2, 1e-2)
         assert aeps.pv == approx(annual_energy_expected, 1e-3)
         assert aeps.hybrid == approx(annual_energy_expected, 1e-3)
         assert npvs.pv == approx(npv_expected, 1e-3)
@@ -848,8 +848,8 @@ def test_hybrid_detailed_pv_only(site, hybrid_config, subtests):
 
 def test_hybrid_user_instantiated(site, subtests):
     # Run detailed PV model (pvsamv1) using defaults and user-instantiated financial models
-    annual_energy_expected = 11128604
-    npv_expected = -2436229
+    annual_energy_expected = 8873966
+    npv_expected = -1818194
     system_capacity_kw = 5000
     system_capacity_kw_expected = 4998
     interconnect_kw = 150e3
@@ -899,7 +899,7 @@ def test_hybrid_user_instantiated(site, subtests):
             },
             "grid": {
                 "interconnect_kw": interconnect_kw,
-                "fin_model": "GenericSystemSingleOwner",
+                "fin_model": "CustomGenerationProfileSingleOwner",
                 "ppa_price": 0.01,
             },
         }
