@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from shapely.geometry import Polygon, MultiPolygon, Point, shape
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import transform
-from shapely import make_valid
+from shapely.validation import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
@@ -30,7 +30,7 @@ from hopp.type_dec import (
 )
 from hopp.simulation.base import BaseClass
 from hopp.utilities.validators import contains
-
+import hopp.simulation.technologies.sites.site_shape_tools as shape_tools
 from hopp import ROOT_DIR
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -51,15 +51,14 @@ class SiteInfo(BaseClass):
         data: Dictionary containing site-specific information.
         solar_resource_file: Path to solar resource file. Defaults to "".
         wind_resource_file: Path to wind resource file. Defaults to "".
+        wave_resource_file: Path to wave resource file. Defaults to "".
         grid_resource_file: Path to grid pricing data file. Defaults to "".
         path_resource: Path to folder to save resource files. 
-            Defaults to ROOT/simulation/resource_files
+            Defaults to ROOT/simulation/resource_files.
         wtk_source_path (Optional): directory of Wind Toolkit h5 files hosted on HPC.
-            Only used if renewable_resource_origin != "API"
+            Only used if renewable_resource_origin != "API".
         nsrdb_source_path (Optional): directory of NSRDB h5 files hosted on HPC.
-            Only used if renewable_resource_origin != "API"
-        renewable_resource_origin (str): whether to download resource data from API or load directly from datasets files.
-            Options are "API" or "HPC". Defaults to "API"
+            Only used if renewable_resource_origin != "API".
         hub_height: Turbine hub height for resource download in meters. Defaults to 97.0.
         capacity_hours: Boolean list indicating hours for capacity payments. Defaults to [].
         desired_schedule: Absolute desired load profile in MWe. Defaults to [].
@@ -68,10 +67,46 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to False.
-        wind_resource_origin: Which wind resource API to use, defaults to WIND Toolkit
+        renewable_resource_origin (str): whether to download resource data from API or load directly from datasets files.
+            Options are "API" or "HPC". Defaults to "API".
+        wind_resource_origin: Which wind resource API to use, defaults toto "WTK" for WIND Toolkit.
+            Options are "WTK" or "TAP".
+        site_buffer (Optional): value to buffer site polygon. Defaults to 1e-8.
+        solar_resource (Optional): dictionary or object containing solar resource data.
+        wind_resource (Optional): dictionary or object containing wind resource data.
     """
     # User provided
     data: dict
+    """dictionary of site info data with key as:
+
+        - **lat** (*float*): site latitude.
+        - **lon** (*float*): site longitude.
+        - **elev** (*int, Optional*): elevation of site (m).
+        - **year** (*int*): year to get resource data for. Defaults to 2012.
+        - **tz** (*int, Optional*): timezone of site.
+        - **site_boundaries** (*dict,Optional*):
+            - **verts** (*list[list[float]]*): vertices of site polygon. list of [x,y] coordinates in meters.
+            - **verts_simple** (*list[list[float]]*): TODO
+        - **site_details** (*dict, Optional*):
+            - **site_area_m2** (*float*): area of site in square meters.
+            - **site_area_km2** (*float*): area of site in square kilometers. required if ``site_area_m2`` is not provided.
+            - **site_shape** (*str, Optional*): shape of site area. Options are "circle", "rectangle", "square" or "hexagon". Defaults to "square".
+            - **x0** (*float, Optional*): left-most x coordinate of the site in meters. Defaults to 0.0.
+            - **y0** (*float, Optional*): bottom-most x coordinate of the site in meters. Defaults to 0.0.
+            - **aspect_ratio** (*float, Optional*): aspect ratio (width/height) 
+                Only used if ``site_shape`` is set as "rectangle". Defaults to 1.5.
+            - **degrees_between_points** (*float | int, Optional*): difference in degrees for generating circular boundary. 
+                Only used if ``site_shape`` is set as "circle". Defaults to 10.
+        - **solar_lat** (*float, Optional*): latitude to get solar resource data if solar plant is in a different location than lat/lon. Defaults to **lat** value above.
+        - **solar_lon** (*float, Optional*): longitude to get solar resource data if solar plant is in a different location than lat/lon. Defaults to **lon** value above.
+        - **solar_year** (*int, Optional*): resource year for solar data if wanting a different resource year than ``data["year"]``. Defaults to **year** value above.
+        - **wind_lat** (*float, Optional*): latitude to get wind resource data if wind plant is in a different location than lat/lon. Defaults to **lat** value above.
+        - **wind_lon** (*float, Optional*): longitude to get wind resource data if wind plant is in a different location than lat/lon. Defaults to **lon** value above.
+        - **wind_year** (*int, Optional*): resource year for wind data if wanting different resource than ``data["year"]``. Defaults to **year** value above.
+        - **urdb_label** (*str, Optional*): string corresponding to data from utility rate database. Defaults to None.
+    """
+
+    
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wave_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
@@ -92,21 +127,25 @@ class SiteInfo(BaseClass):
     renewable_resource_origin: str = field(default="API", validator=contains(["API", "HPC"]))
     wind_resource_origin: str = field(default="WTK", validator=contains(["WTK", "TAP"]))
 
+    site_buffer: Optional[float] = field(default = 1e-8)
+
     # Set in post init hook
-    n_timesteps: int = field(init=False, default=None)
     lat: hopp_float_type = field(init=False)
     lon: hopp_float_type = field(init=False)
+    elev: Optional[float] = field(init=False, default=None)
     year: int = field(init=False, default=2012)
     tz: Optional[int] = field(init=False, default=None)
+    vertices: NDArrayFloat = field(init=False)
+    polygon: Union[Polygon, BaseGeometry] = field(init=False)
     solar_resource: Optional[Union[SolarResource,HPCSolarData]] = field(default=None)
     wind_resource: Optional[Union[WindResource,HPCWindData]] = field(default=None)
     wave_resoure: Optional[WaveResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
+    n_timesteps: int = field(init=False, default=None)
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
+    urdb_label: str = field(init=False)
     follow_desired_schedule: bool = field(init=False)
-    polygon: Union[Polygon, BaseGeometry] = field(init=False)
-    vertices: NDArrayFloat = field(init=False)
     kml_data: Optional[KML] = field(init=False, default=None)
 
     # .. TODO: Can we get rid of verts_simple and simplify site_boundaries
@@ -116,10 +155,11 @@ class SiteInfo(BaseClass):
         The following are set in this post init hook:
             lat (numpy.float64): Site latitude in decimal degrees.
             lon (numpy.float64): Site longitude in decimal degrees.
-            tz (int, optional): Timezone code for metadata purposes only. Defaults to None.
+            elev (float, Optional): Elevation of the site in meters. Defaults to None.
+            year(int): Resource data year.
+            tz (int, Optional): Timezone code for metadata purposes only. Defaults to None.
             vertices (:obj:`NDArray`): Site boundary vertices in meters.
             polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
-            valid_region (:obj:`shapely.geometry.polygon.Polygon`): Tidy site polygon.
             solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
             wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
             wave_resoure (:obj:`hopp.simulation.technologies.resource.WaveResource`): Class containing wave resource data.
@@ -129,18 +169,17 @@ class SiteInfo(BaseClass):
             interval (int): Number of minutes per time interval.
             urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
             follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
+            kml_data (KML, Optional): KML data to be used when definining site boundaries.
         """
         if self.renewable_resource_origin=="API":
             set_nrel_key_dot_env()
 
         data = self.data
-        if 'site_boundaries' in data:
-            self.vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
-            self.polygon = Polygon(self.vertices)
-            self.polygon = self.polygon.buffer(1e-8)
+        self.polygon,self.vertices = self.create_site_polygon(data)
+        
         if 'kml_file' in data:
             self.kml_data, self.polygon, data['lat'], data['lon'] = self.kml_read(data['kml_file'])
-            self.polygon = self.polygon.buffer(1e-8)
+            self.polygon = self.polygon.buffer(self.site_buffer)
 
         if 'lat' not in data or 'lon' not in data:
             raise ValueError("SiteInfo requires lat and lon")
@@ -155,26 +194,25 @@ class SiteInfo(BaseClass):
         if 'tz' in data:
             self.tz = data['tz']
         
+        if 'elev' in data:
+            self.elev = data['elev']
+        
         if self.solar:
-            if self.solar_resource is None:
-                if self.renewable_resource_origin=="API":
-                    self.solar_resource = SolarResource(data['lat'], data['lon'], data['year'], path_resource=self.path_resource, filepath=self.solar_resource_file)
-                else:
-                    self.solar_resource = HPCSolarData(data['lat'], data['lon'], data['year'],nsrdb_source_path = self.nsrdb_source_path, filepath=self.solar_resource_file)
+            self.solar_resource = self.initialize_solar_resource(data)
             self.n_timesteps = len(self.solar_resource.data['gh']) // 8760 * 8760
+            data.setdefault("elev", self.solar_resource.data["elev"])
+            data.setdefault("tz", self.solar_resource.data["tz"])
+            if self.tz is None:
+                self.tz = data['tz']
+            if self.elev is None:
+                self.elev = data['elev']
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
 
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
-            if self.wind_resource is None:
-                if self.renewable_resource_origin=="API":
-                    self.wind_resource = WindResource(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                                path_resource=self.path_resource, filepath=self.wind_resource_file, source=self.wind_resource_origin)
-                else:
-                    self.wind_resource = HPCWindData(data['lat'], data['lon'], data['year'], wind_turbine_hub_ht=self.hub_height,
-                                                    wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
+            self.wind_resource = self.initialize_wind_resource(data)
             n_timesteps = len(self.wind_resource.data['data']) // 8760 * 8760
             if self.n_timesteps is None:
                 self.n_timesteps = n_timesteps
@@ -201,9 +239,147 @@ class SiteInfo(BaseClass):
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
         if self.wave:
             logger.info("Set up SiteInfo with wave resource files: {}".format(self.wave_resource.filename))
+    
+    def create_site_polygon(self,data:dict):
+        """function to create site polygon.
+
+        Args:
+            data (dict): dictionary of site info data
+
+        Returns:
+            2-element tuple containing
+
+            - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+            - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+        """
+        polygon = None
+        vertices = None
+        if 'site_boundaries' in data: 
+            if 'verts' in data['site_boundaries']: 
+                vertices = np.array(data["site_boundaries"]["verts"])
+                polygon = Polygon(vertices)
+                polygon = polygon.buffer(self.site_buffer) #why is this needed?
+        elif 'site_details' in data:
+            if 'site_area_m2' in data["site_details"] or 'site_area_km2' in data["site_details"]:
+                if 'site_area_km2' in data["site_details"]:
+                    data["site_details"].update({"site_area_m2": data["site_details"]["site_area_km2"]*1e6})
+                data["site_details"].setdefault("site_shape", "square")
+                data["site_details"].setdefault("x0", 0.0)
+                data["site_details"].setdefault("y0", 0.0)
+                polygon, vertices = self.make_site_polygon_from_shape(data["site_details"])
+                polygon = polygon.buffer(self.site_buffer)
+        return polygon, vertices
+
+    def make_site_polygon_from_shape(self,site_details:dict):
+        """create site polygon and vertices if "site_details" provided in ``data``.
+
+        Args:
+            site_details (dict): sub-dictionary of ``data``, equivalent to ``data["site_details"]``
+
+        Raises:
+            ValueError: if ``site_details["site_shape"]`` is not one of the following: "circle", "square", "rectangle", or "hexagon"
+
+        Returns:
+            2-element tuple containing
+
+            - **poly** (:obj:`shapely.geometry.Polygon`): site boundary polygon
+            - **vertices** (2D :obj:`numpy.ndarray`): vertices of site polygon. list of [x,y] coordinates in meters.
+        """
+        if (shape := site_details.get("site_shape", None)) is None:
+            return None, None
+
+        shape = shape.lower()
+        if shape == "circle":
+            site_details.setdefault("degrees_between_points", 10.0)
+            polygon, vertices = shape_tools.make_circle(
+                area_m2 = site_details['site_area_m2'], 
+                deg_diff = site_details["degrees_between_points"],
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "square":
+            polygon, vertices = shape_tools.make_square(
+                area_m2 = site_details['site_area_m2'], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "rectangle":
+            site_details.setdefault("aspect_ratio", 1.5)
+            polygon, vertices = shape_tools.make_rectangle(
+                area_m2 = site_details['site_area_m2'],
+                aspect_ratio = site_details["aspect_ratio"], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        if shape == "hexagon":
+            polygon, vertices = shape_tools.make_hexagon(
+                area_m2 = site_details['site_area_m2'], 
+                x0 = site_details["x0"], 
+                y0 = site_details["y0"]
+            )
+            return polygon, vertices
+        
+        raise ValueError("invalid entry for `site_shape`, site_shape must be either 'circle', 'rectangle', 'square' or 'hexagon'")
+        
+        
+    
+    def initialize_solar_resource(self,data:dict):
+        """Download/load solar resource data
+
+        Args:
+            data (dict): Dictionary containing site-specific information.
+
+        Returns:
+            :obj:`hopp.simulation.technologies.resource.SolarResource` or :obj:`hopp.simulation.technologies.resource.HPCSolarData`: solar resource data class
+        """
+        
+        solar_lat = data.setdefault("solar_lat", data["lat"])
+        solar_lon = data.setdefault("solar_lon", data["lon"])
+        solar_year = data.setdefault("solar_year", data["year"])
+
+        if self.solar_resource is None:
+            if self.renewable_resource_origin == "API":
+                solar_resource = SolarResource(solar_lat, solar_lon, solar_year, path_resource=self.path_resource, filepath=self.solar_resource_file)
+            else:
+                solar_resource = HPCSolarData(solar_lat, solar_lon, solar_year,nsrdb_source_path = self.nsrdb_source_path, filepath=self.solar_resource_file)
+            return solar_resource
+        if isinstance(self.solar_resource,dict):
+            solar_resource = SolarResource(solar_lat, solar_lon, solar_year,resource_data = self.solar_resource)
+            return solar_resource
+        
+        return self.solar_resource
+
+    def initialize_wind_resource(self,data:dict):
+        """Download/load wind resource data
+
+        Args:
+            data (dict): Dictionary containing site-specific information.
+
+        Returns:
+            :obj:`hopp.simulation.technologies.resource.WindResource` or :obj:`hopp.simulation.technologies.resource.HPCWindData`: wind resource data class
+        """
+        wind_lat = data.setdefault("wind_lat", data["lat"])
+        wind_lon = data.setdefault("wind_lon", data["lon"])
+        wind_year = data.setdefault("wind_year", data["year"])
+
+        if self.wind_resource is None:
+            if self.renewable_resource_origin == "API":
+                wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
+                                            path_resource=self.path_resource, filepath=self.wind_resource_file, source=self.wind_resource_origin)
+            else:
+                wind_resource = HPCWindData(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
+                                                wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
+            return wind_resource
+        if isinstance(self.wind_resource,dict):
+            wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)
+            return wind_resource
+        
+        return self.wind_resource
 
     # TODO: determine if the below functions are obsolete
-
     @property
     def boundary(self) -> BaseGeometry:
         # TODO: remove boundaries of interior holes
