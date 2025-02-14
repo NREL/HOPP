@@ -107,10 +107,10 @@ class WaveResource(Resource):
                 last_hour = data_df.index.max()
                 missing_hours = 8760 - len(data_df['energy_period'])
 
-                missing_time = pd.date_range(last_hour + pd.Timedelta(hours=1),periods=missing_hours, freq='H')
+                missing_time = pd.date_range(last_hour + pd.Timedelta(hours=1),periods=missing_hours, freq='h')
                 missing_rows = pd.DataFrame(index=missing_time, columns=df.columns)
                 data_df = pd.concat([data_df, missing_rows]).sort_index()
-                data_df = data_df.fillna(method='ffill') # forward fill
+                data_df = data_df.ffill() # forward fill
 
             data_df = data_df.reset_index()
             dic = dict()
