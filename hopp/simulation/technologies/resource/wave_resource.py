@@ -37,10 +37,10 @@ class WaveResource(Resource):
             The wave resource data should be in the format:
                 - Rows 1 and 2: Header rows with location info.
                 - Row 3: Column headings for time-series data 
-                (`Year`, `Month`, `Day`, `Hour`, `Minute`, `wave height`, `wave period`).
+                    - (`Year`, `Month`, `Day`, `Hour`, `Minute`, `wave height`, `wave period`).
                 - Rows 4+: Data values:
-                - `wave height` (significant wave height) in meters.
-                - `wave period` (energy period) in seconds.
+                    - `wave height` (significant wave height) in meters.
+                    - `wave period` (energy period) in seconds.
 
             Example file: 
             `hopp/simulation/resource_files/wave/Wave_resource_timeseries.csv`
