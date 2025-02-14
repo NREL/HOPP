@@ -420,6 +420,8 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     wind_only["wind"]["model_name"] = "floris"
     wind_only["wind"]["floris_config"] = floris_config_path
     wind_only["wind"]["timestep"] = [0, 8760]
+    wind_only["wind"]["num_turbines"] = 4
+    wind_only["wind"]["turbine_rating_kw"] = 5000
 
     hybrid_config["technologies"] = wind_only
     hi = HoppInterface(hybrid_config)
@@ -436,9 +438,9 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     with subtests.test("hybrid aep"):
         assert aeps.hybrid == approx(68271657, 1e-3)
     with subtests.test("wind npv"):
-        assert npvs.wind == approx(3592293, 1e-3)
+        assert npvs.wind == approx(-11865534, 1e-3)
     with subtests.test("hybrid npv"):
-        assert npvs.hybrid == approx(2108687, 1e-3)
+        assert npvs.hybrid == approx(-13349140, 1e-3)
 
 def test_hybrid_pv_only(hybrid_config, subtests):
     technologies = hybrid_config["technologies"]
