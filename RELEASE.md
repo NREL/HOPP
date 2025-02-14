@@ -3,8 +3,10 @@
 ## Unreleased, TBD
 * Added option and functionality to load wind and solar resource data from NSRDB and Wind Toolkit data files if user-specified.
 * Fixed a bug in site_info that set resource year to 2012 even if otherwise specified.
-+ minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
-+ bug fix in load following heuristic method: only using beginning of variable load signals
+* Minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
+* Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
+* Bug fix in load following heuristic method: only using beginning of variable load signals 
+* Feature add: added alternative method to defining site boundary.
 * Update deprecated methods in wave_resource.py 
 
 ## Version 3.1.1, Dec. 18, 2024
