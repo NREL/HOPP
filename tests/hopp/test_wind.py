@@ -137,12 +137,13 @@ def test_floris_num_turbines(site):
     f_config = load_yaml(floris_config_path)
     floris_n_turbines = len(f_config["farm"]["layout_x"])
     config = WindConfig.from_dict({'num_turbines': 20, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(UserWarning) as err:
         model = WindPlant(site, config=config)
     assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
    
-   
+
 def test_changing_rotor_diam_recalc_floris(site):
+    # this will fail now
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
@@ -156,6 +157,7 @@ def test_changing_rotor_diam_recalc_floris(site):
         assert model.rotor_diameter == d, "rotor diameter should be " + str(d)
 
 def test_changing_turbine_rating_floris(site):
+    # this will fail now
     
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
@@ -168,6 +170,7 @@ def test_changing_turbine_rating_floris(site):
         assert model.system_capacity_kw == model.turb_rating * n_turbs, "system size error when rating is " + str(n)
 
 def test_changing_system_capacity_floris(site):
+    # this will fail now
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )

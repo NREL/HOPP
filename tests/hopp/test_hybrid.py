@@ -410,7 +410,7 @@ def test_hybrid_wind_only(hybrid_config, subtests):
         assert npvs.hybrid == approx(-7256658, 1e-3)
 
 def test_hybrid_wind_only_floris(hybrid_config, subtests):
-
+    # this is going to fail now :)
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
