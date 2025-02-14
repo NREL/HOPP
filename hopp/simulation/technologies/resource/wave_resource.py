@@ -99,7 +99,7 @@ class WaveResource(Resource):
             df['energy_period'] = wavefile_model.Outputs.energy_period
 
             # Resample data and linearly interpolate to hourly data
-            data_df = df.resample("H").mean()
+            data_df = df.resample("h").mean()
             data_df = data_df.interpolate(method='linear')
 
             # If data cannot interpolate last hours
