@@ -50,7 +50,7 @@ class Grid(PowerSource):
     schedule_curtailed: NDArrayFloat = field(init=False)
     schedule_curtailed_percentage: float = field(init=False, default=0.)
     total_gen_max_feasible_year1: NDArrayFloat = field(init=False)
-    config_name: Optional[str] = field(default="GenericSystemSingleOwner")
+    config_name: Optional[str] = field(default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
         """

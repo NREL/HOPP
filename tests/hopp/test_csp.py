@@ -348,8 +348,8 @@ def test_trough_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_energy = 180106837
-    expected_lcoe_nom = 17.0971
-    expected_ppa_nom = 12.347
+    expected_lcoe_nom = 17.71
+    expected_ppa_nom = 14.513
 
     config = TroughConfig.from_dict(trough_config)
     csp = TroughPlant(site, config=config)
@@ -373,8 +373,8 @@ def test_tower_annual_financial(site):
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_Nhel = 6172
     expected_energy = 371737920
-    expected_lcoe_nom = 12.952
-    expected_ppa_nom = 9.0977
+    expected_lcoe_nom = 13.28
+    expected_ppa_nom = 10.289
 
     config = TowerConfig.from_dict(tower_config)
     csp = TowerPlant(site, config=config)

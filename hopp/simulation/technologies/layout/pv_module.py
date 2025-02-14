@@ -38,18 +38,33 @@ def get_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, di
     Returns the module attributes for either the PVsamv1 or PVWattsv8 models, see:
     https://nrel-pysam.readthedocs.io/en/main/modules/Pvsamv1.html#module-group
 
-    :param model: PVsamv1 or PVWattsv8 model or parameter dictionary
-    :param only_ref_vals: if True, only return the reference values (e.g., I_sc_ref)
-    :return: dict, with keys (if only_ref_values is True, otherwise will include all model-specific parameters):
-        area            [m2]
-        aspect_ratio    [-]
-        length          [m]
-        I_mp_ref        [A]
-        I_sc_ref        [A]
-        P_mp_ref        [kW]
-        V_mp_ref        [V]
-        V_oc_ref        [V]
-        width           [m]
+    This function extracts module attributes from a given PV model or parameter dictionary. 
+    If `only_ref_vals` is set to True, only the reference values (e.g., `I_sc_ref`, `V_mp_ref`) 
+    are returned; otherwise, all model-specific parameters are included.
+
+    Args:
+        model (Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, dict]): 
+            The PV model (PVsamv1 or PVWattsv8) or a dictionary of parameters.
+        only_ref_vals (bool, optional): 
+            If True, only returns the reference values. If False, includes all model-specific parameters. 
+            Defaults to True.
+
+    Returns:
+        dict: A dictionary containing module attributes. If `only_ref_vals` is True, the dictionary includes:
+            - `area` (float): Module area [m²].
+            - `aspect_ratio` (float): Module aspect ratio [-].
+            - `length` (float): Module length [m].
+            - `width` (float): Module width [m].
+            - `I_mp_ref` (float): Reference current at maximum power point [A].
+            - `I_sc_ref` (float): Reference short-circuit current [A].
+            - `P_mp_ref` (float): Reference power at maximum power point [kW].
+            - `V_mp_ref` (float): Reference voltage at maximum power point [V].
+            - `V_oc_ref` (float): Reference open-circuit voltage [V].
+            
+            If `only_ref_vals` is False, additional model-specific attributes are included.
+
+    Raises:
+        Exception: If the module model number is not recognized.
     """
     MODEL_PREFIX = ['spe', 'cec', '6par', 'snl', 'sd11par', 'mlm']
 
@@ -153,10 +168,21 @@ def get_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1, di
 def set_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1], params: dict):
     """
     Sets the module model parameters for either the PVsamv1 or PVWattsv8 models.
-    Will raise exception if not all required parameters are provided.
-    
-    :param model: PVWattsv8 or PVsamv1 model
-    :param params: dictionary of parameters
+
+    This function assigns the required parameters to the given model. It verifies that all 
+    necessary parameters are provided based on the selected module type and raises an 
+    exception if any required parameters are missing.
+
+    Args:
+        model (Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1]): 
+            The PVWattsv8 or PVsamv1 model instance.
+        params (dict): 
+            Dictionary containing parameter key-value pairs required for the respective 
+            module model.
+
+    Raises:
+        Exception: If not all required parameters are provided or if the module model 
+            number is unrecognized.
     """
 
     if isinstance(model, pv_simple.Pvwattsv8):
@@ -193,7 +219,6 @@ def set_module_attribs(model: Union[pv_simple.Pvwattsv8, pv_detailed.Pvsamv1], p
                 'cec_adjust',
                 'cec_alpha_sc',
                 'cec_beta_oc',
-                'cec_gamma_r',
                 'cec_i_l_ref',
                 'cec_i_mp_ref',
                 'cec_i_o_ref',
