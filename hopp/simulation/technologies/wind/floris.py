@@ -43,6 +43,9 @@ class Floris(BaseClass):
     gen: List[float] = field(init = False)
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
+    annual_energy_pre_curtailment_ac: float = field(init = False)
+    #TODO: add option to store turbine-powers and velocities or not
+
 
     def __attrs_post_init__(self):
         # 1) check that floris config is provided
