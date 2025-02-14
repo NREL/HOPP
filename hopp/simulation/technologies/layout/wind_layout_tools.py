@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import Optional
 
 from shapely.affinity import rotate, translate
@@ -6,9 +7,9 @@ from shapely.geometry import Point, LineString, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.prepared import prep
 from shapely.ops import unary_union
-
+from shapely.geometry import Polygon, MultiPoint
 from hopp.simulation.technologies.layout.layout_tools import binary_search_float
-
+from hopp.simulation.technologies.sites.site_shape_tools import calc_dist_between_two_points_cartesian, rotate_shape
 
 def get_evenly_spaced_points_along_border(boundary: BaseGeometry,
                                           spacing: float,
@@ -41,7 +42,7 @@ def make_grid_lines(site_shape: BaseGeometry,
                     interrow_spacing: float
                     ) -> list:
     """
-    Place parallel lines inside a site
+    Place parallel lines inside a site. 
     :param site_shape: Polygon
     :param center: where to center the grid
     :param grid_angle: in degrees where 0 is east
@@ -53,13 +54,17 @@ def make_grid_lines(site_shape: BaseGeometry,
     
     grid_angle = np.deg2rad(grid_angle)
     grid_angle = (grid_angle + np.pi) % (2 * np.pi) - np.pi  # reset grid_angle to (-pi, pi)
-    bounds = site_shape.bounds
+    bounds = site_shape.bounds #(xmin,ymin,xmax,ymax)
     
+    #line from (xmin,ymin) to (xmax,ymax)
     bounding_box_line = LineString([(bounds[0], bounds[1]), (bounds[2], bounds[3])])
+    #at y=0, x goes from negative to positive bounding_box_line.length
     base_line = LineString([(-bounding_box_line.length, 0), (bounding_box_line.length, 0)])
+    # line_length = 2x(bounding_box_line.length) = 2*(sqrt[(xmax-xmin)^2 + (ymax-ymin)^2])
     line_length = base_line.length
     
     base_line = rotate(base_line, -grid_angle, use_radians=True)
+    #shift baseline so ymax,ymin = center.y and (xmax - xmin)/2 = center.x
     base_line = translate(base_line, center.x, center.y)
     
     row_offset = Point(
@@ -301,36 +306,57 @@ def make_site_boundary_for_square_grid_layout(n_turbs,rotor_diam,row_spacing,tur
     verts = [p0,p1,p2,p3]
     return {"site_boundaries":{"verts":verts,"verts_simple":verts}}
 
-def constrain_layout_for_site(layout_x,layout_y,site_boundaries:BaseGeometry):
+def make_bounding_box_for_wind_layout(layout_x,layout_y):
+    #shapely.remove_repeated_points
+    coords = [[x,y] for x,y in zip(layout_x,layout_y)]
+    multip = MultiPoint(coords)
+    return multip.convex_hull
+
+
+def check_turbines_in_site(layout_x,layout_y,site_boundaries:BaseGeometry,tol=1e-3):
+    n_decimals = len(str(int(1/tol)).split("1")[-1])
     x_coords = []
     y_coords = []
     for x,y in zip(layout_x,layout_y):
         if site_boundaries.contains(Point(x,y)):
             x_coords.append(x)
             y_coords.append(y)
-    if len(x_coords) != len(layout_x):
-        site_x,site_y = site_boundaries.exterior.xy
-        x_shift = 0
-        y_shift = 0
-        if min(layout_x)<min(site_x):
-            x_shift = min(site_x) - min(layout_x)
-        if min(layout_y)<min(site_y):
-            y_shift = min(site_y) - min(layout_y)
-        if x_shift==0 and y_shift == 0:
-            return x_coords,y_coords
         else:
-            x_coords2 = []
-            y_coords2 = []
-            for x0,y0 in zip(layout_x,layout_y):
-                x = x0 + x_shift
-                y = y0 + y_shift
-                if site_boundaries.contains(Point(x,y)):
-                    x_coords2.append(x)
-                    y_coords2.append(y)
-            if len(x_coords2)>len(x_coords):
-                return x_coords2,y_coords2
-            else:
-                return x_coords,y_coords
-    else:
-        return x_coords,y_coords
+            if site_boundaries.distance(Point(x,y))<tol:
+                x_coords.append(np.round(x,n_decimals))
+                y_coords.append(np.round(y,n_decimals))
+    return x_coords,y_coords
 
+
+def adjust_site_for_box_grid_layout(site_polygon,nturbs,interrow_spacing,intrarow_spacing,row_phase_offset,grid_angle):
+    # NOTE: only works if row_phase_offset and grid_angle are both zero!
+    # shift params for y coordinates
+    # center_shift_y = site_polygon.centroid.y%interrow_spacing
+    if row_phase_offset!=0 and grid_angle!=0:
+        print("warning - this function is not validated for nonzero `row_phase_offset` and `grid_angle` (in `adjust_site_for_box_grid_layout()`)")
+    site_polygon,site_verts = rotate_shape(site_polygon,rotation_angle_deg=grid_angle)
+
+    diagonal_distance = calc_dist_between_two_points_cartesian(*site_polygon.bounds)
+    center_shift_y = site_polygon.centroid.y%interrow_spacing #-diagonal_distance/interrow_spacing
+    center_shift_x = -diagonal_distance/intrarow_spacing
+    center_point = Point(site_polygon.centroid.x + center_shift_x, site_polygon.centroid.y + center_shift_y)
+
+    site_polygon_adj = site_polygon.buffer(max([interrow_spacing,intrarow_spacing])/2)
+    turbine_locs = create_grid(site_polygon_adj,
+            center_point,
+            grid_angle,
+            intrarow_spacing,
+            interrow_spacing,
+            row_phase_offset,
+            nturbs
+            )
+    xcoords_grid = [point.x for point in turbine_locs]
+    ycoords_grid = [point.y for point in turbine_locs]
+    
+    site_boundaries = site_polygon_adj = site_polygon.buffer(min([interrow_spacing,intrarow_spacing])/2)
+    x,y = check_turbines_in_site(xcoords_grid,ycoords_grid,site_boundaries)
+    return x,y
+
+def check_layout_for_unique_points(layout_x,layout_y):
+    df = pd.DataFrame({"x": layout_x, "y": layout_y}).drop_duplicates()
+    return df["x"].to_list(),df["y"].to_list()
