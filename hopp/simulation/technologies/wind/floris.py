@@ -39,7 +39,8 @@ class Floris(BaseClass):
     wind_farm_xCoordinates: List[float] = field(init = False)
     wind_farm_yCoordinates: List[float] = field(init = False)
     turb_rating: float = field(init = False)
-
+    system_capacity: float = field(init = False)
+    
     gen: List[float] = field(init = False)
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
@@ -121,11 +122,12 @@ class Floris(BaseClass):
         self.wind_farm_yCoordinates = floris_config["farm"]["layout_y"]
         self.nTurbs = len(self.wind_farm_xCoordinates)
         
-        if self.config.turbine_rating_kw is not None:
-            self.turb_rating = self.config.turbine_rating_kw
-        else:
-            self.turb_rating = max(self.wind_turbine_powercurve_powerout)
         
+            
+        self.turb_rating = max(self.wind_turbine_powercurve_powerout)
+        if self.config.turbine_rating_kw is not None:
+            if self.config.turbine_rating_kw != self.turb_rating:
+                raise UserWarning(f"input turbine rating ({self.config.turbine_rating_kw} kW) does not match rating from floris power-curve ({self.turb_rating} kW)")
         # check if user-input num_turbines equals number of turbines in layout
         if self.config.num_turbines is not None:
             # raise warning if discrepancy in number of turbines
