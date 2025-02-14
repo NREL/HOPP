@@ -9,6 +9,8 @@
 * Feature add: added alternative method to defining site boundary.
 * Feature add: added function to adjust air density based on site elevation
 * Update deprecated methods in wave_resource.py 
+* Feature add: new wind layout method called `basicgrid`.
+* Update wind layout methods and floris initialization.
 
 ## Version 3.1.1, Dec. 18, 2024
 
