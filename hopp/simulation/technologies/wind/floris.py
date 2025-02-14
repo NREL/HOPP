@@ -2,11 +2,11 @@
 from attrs import define, field
 from dataclasses import dataclass, asdict
 import csv
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, List
 import numpy as np
 
 from floris import FlorisModel, TimeSeries
-
+from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.type_dec import resource_file_converter
@@ -26,11 +26,24 @@ class Floris(BaseClass):
     site: SiteInfo = field()
     config: "WindConfig" = field()
     verbose: bool = field(default = True)
+    
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
     annual_energy_pre_curtailment_ac: float = field(init=False)
     fi: FlorisModel = field(init=False)
+    
+    turbine_name: str = field(init = False)
+    wind_turbine_rotor_diameter: float = field(init = False)
+    # turbine power curve (array of kW power outputs)
+    wind_turbine_powercurve_powerout: List[float] = field(init = False)
+    wind_farm_xCoordinates: List[float] = field(init = False)
+    wind_farm_yCoordinates: List[float] = field(init = False)
+    turb_rating: float = field(init = False)
+
+    gen: List[float] = field(init = False)
+    annual_energy: float = field(init = False)
+    capacity_factor: float = field(init = False)
 
     def __attrs_post_init__(self):
         # 1) check that floris config is provided
@@ -51,7 +64,9 @@ class Floris(BaseClass):
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
             rho = calculate_air_density_for_elevation(self.site.elev)
             floris_config["flow_field"].update({"air_density":rho})
+        floris_config = self.set_floris_config_values_from_wind_config(floris_config)
         
+        floris_config = self.initialize_from_floris(floris_config)
         #initialize floris model
         self.fi = FlorisModel(floris_config)
         self._timestep = self.config.timestep
@@ -60,16 +75,14 @@ class Floris(BaseClass):
         self.wind_resource_data = self.site.wind_resource.data #isn't this unnecessary?
         self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
 
-        self.wind_farm_xCoordinates = self.fi.layout_x
-        self.wind_farm_yCoordinates = self.fi.layout_y
+        # self.wind_farm_xCoordinates = self.fi.layout_x
+        # self.wind_farm_yCoordinates = self.fi.layout_y
         self.nTurbs = len(self.wind_farm_xCoordinates)
-        self.turb_rating = self.config.turbine_rating_kw
+        # self.turb_rating = self.config.turbine_rating_kw
         
-        self.wind_turbine_rotor_diameter = self.fi.core.farm.rotor_diameters[0]
+        # self.wind_turbine_rotor_diameter = self.fi.core.farm.rotor_diameters[0]
         self.system_capacity = self.nTurbs * self.turb_rating
 
-        # turbine power curve (array of kW power outputs)
-        self.wind_turbine_powercurve_powerout = []
 
         # time to simulate
         if len(self.config.timestep) > 0:
@@ -80,19 +93,33 @@ class Floris(BaseClass):
             self.end_idx = 8759
 
         # results
-        self.gen = []
-        self.annual_energy = None
-        self.capacity_factor = None
+        # self.gen = []
+        # self.annual_energy = None
+        # self.capacity_factor = None
 
-        self.initialize_from_floris()
+        
 
-    def initialize_from_floris(self):
+    def initialize_from_floris(self,floris_config):
         """
         Please populate all the wind farm parameters
         """
-        self.nTurbs = len(self.fi.layout_x) #this is redundant
-        self.wind_turbine_powercurve_powerout = [1] * 30    # dummy for now
-
+        if self.config.turbine_rating_kw is not None:
+            self.turb_rating = self.config.turbine_rating_kw
+        if self.config.turbine_name is None:
+            self.turbine_name = floris_config["farm"]["turbine_type"][0]
+            # load file from internal floris library
+            if isinstance(floris_config["farm"]["turbine_type"][0],str):
+                turb_dict = load_yaml(INTERNAL_LIBRARY / "{}.yaml".format(floris_config["farm"]["turbine_type"][0]))
+                floris_config["farm"]["turbine_type"][0] = turb_dict
+        self.wind_turbine_rotor_diameter = floris_config["farm"]["turbine_type"][0]["rotor_diameter"]
+        self.wind_turbine_powercurve_powerout = floris_config["farm"]["turbine_type"][0]["power_thrust_table"]["power"]
+        self.wind_farm_xCoordinates = floris_config["farm"]["layout_x"]
+        self.wind_farm_yCoordinates = floris_config["farm"]["layout_y"]
+        self.nTurbs = len(self.wind_farm_xCoordinates)
+        if self.config.num_turbines is not None:
+            if self.nTurbs != self.config.num_turbines:
+                raise UserWarning(f"num_turbines input ({self.config.num_turbines}) does not equal number of turbines in floris layout ({self.nTurbs})")
+        return floris_config
     def value(self, name: str, set_value=None):
         """
         if set_value = None, then retrieve value; otherwise overwrite variable's value
@@ -103,7 +130,15 @@ class Floris(BaseClass):
             return self.__getattribute__(name)
 
     def set_floris_value(self,name,value):
-        self.fi.set(**{name:value})
+        if value is not None:
+            self.fi.set(**{name:value})
+    
+    def set_floris_param(self,param,value):
+        if value is not None:
+            self.fi.set_param(param,value)
+    
+    def get_floris_param(self,param):
+        return self.fi.get_param(param)
 
     def execute(self, project_life):
         
@@ -145,3 +180,12 @@ class Floris(BaseClass):
             'annual_energy': self.annual_energy,
         }
         return config
+    
+    def set_floris_config_values_from_wind_config(self,floris_config):
+        if self.config.rotor_diameter is not None:
+            floris_config["farm"]["turbine_type"][0].set_default("rotor_diameter",self.config.rotor_diameter)
+        if self.config.hub_height is not None:
+            floris_config["farm"]["turbine_type"][0].set_default("hub_height",self.config.hub_height)
+        
+        return floris_config
+    

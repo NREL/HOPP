@@ -57,6 +57,7 @@ class WindConfig(BaseClass):
     rotor_diameter: Optional[float] = field(default=None)
     layout_params: Optional[Union[dict, WindBoundaryGridParameters]] = field(default=None)
     hub_height: Optional[float] = field(default=None)
+    turbine_name: Optional[str] = field(default=None)
     layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom"]))
     model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
     model_input_file: Optional[str] = field(default=None)
@@ -145,7 +146,7 @@ class WindPlant(PowerSource):
         super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
-        self._layout = WindLayout(self.site, system_model, self.config.layout_mode, layout_params)
+        self._layout = WindLayout(self.site.polygon, system_model, self.config.layout_mode, layout_params)
 
         self._dispatch = None
 
