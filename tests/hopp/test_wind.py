@@ -2,10 +2,10 @@ from pytest import fixture, approx
 import math
 
 import PySAM.Windpower as windpower
-
+import pytest
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from tests.hopp.utils import create_default_site_info
-
+from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
 
 @fixture
@@ -130,7 +130,18 @@ def test_changing_system_capacity_pysam(site):
         assert model.system_capacity_kw == approx(n)
 
 #################### FLORIS tests ################
-
+def test_floris_num_turbines(site):
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    f_config = load_yaml(floris_config_path)
+    floris_n_turbines = len(f_config["farm"]["layout_x"])
+    config = WindConfig.from_dict({'num_turbines': 20, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
+    with pytest.raises(ValueError) as err:
+        model = WindPlant(site, config=config)
+    assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
+   
+   
 def test_changing_rotor_diam_recalc_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
@@ -155,12 +166,15 @@ def test_changing_turbine_rating_floris(site):
     for n in range(1000, 3000, 150):
         model.turb_rating = n
         assert model.system_capacity_kw == model.turb_rating * n_turbs, "system size error when rating is " + str(n)
+
 def test_changing_system_capacity_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
+    
     config = WindConfig.from_dict({'num_turbines': 20, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
+    
     rating = model.turb_rating
     for n in range(1000, 20000, 1000):
         model.system_capacity_by_num_turbines(n)
@@ -172,3 +186,4 @@ def test_changing_system_capacity_floris(site):
     for n in range(40000, 60000, 1000):
         model.system_capacity_by_rating(n)
         assert model.system_capacity_kw == approx(n)
+
