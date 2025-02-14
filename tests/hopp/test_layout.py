@@ -91,43 +91,26 @@ def test_wind_boundary_grid_layout_pysam(site):
 def test_wind_basic_grid_layout_pysam_default(site):
     wind_technology = {
     'num_turbines': 16,
-    'turbine_rating_kw': 2000,
+    'rotor_diameter': 40.0,
+    'turbine_rating_kw': 600,
     'layout_mode': 'basicgrid',
     'layout_params': WindBasicGridParameters()
     }
     config = WindConfig.from_dict(wind_technology)
     wind_model = WindPlant(site, config=config)
     xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
-    expected_xcoords = [1498, 867, 525, 3, 658]
-    expected_ycoords = [951, 265, 74, 288, 647]
-    for i in range(len(xcoords)):
-        assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
-        assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
+    unique_x_coords = np.unique(xcoords)
+    unique_y_coords = np.unique(ycoords)
 
-def test_wind_basic_grid_layout_pysam_with_row_offset(site):
-    wind_technology = {
-        'num_turbines': 16,
-        'turbine_rating_kw': 2000,
-        'layout_mode': 'basicgrid',
-        'layout_params': WindBasicGridParameters(row_D_spacing=5.0,
-                                                    turbine_D_spacing=5.0,
-                                                    grid_angle=0.0,
-                                                    row_phase_offset=0.5,
-                                                    site_boundary_constrained=False)
-    }
-    config = WindConfig.from_dict(wind_technology)
-    wind_model = WindPlant(site, config=config)
-    xcoords, ycoords = wind_model._layout.turb_pos_x, wind_model._layout.turb_pos_y
+    expected_unique_x_coords = [196, 396, 596, 796]
+    expected_unique_y_coords = [50, 250, 450, 650]
+    assert len(xcoords) == wind_technology["num_turbines"]
+    assert len(unique_x_coords) == len(unique_y_coords)
+    for i in range(len(unique_x_coords)):
+        assert unique_x_coords[i] == pytest.approx(expected_unique_x_coords[i], abs=1)
+    for i in range(len(unique_y_coords)):
+        assert unique_y_coords[i] == pytest.approx(expected_unique_y_coords[i], abs=1)
 
-    # expected_xcoords = [1498, 867, 525, 3, 658]
-    # expected_ycoords = [951, 265, 74, 288, 647]
-
-    # for i in range(len(xcoords)):
-    #     assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
-    #     assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
-
-def test_wind_basic_grid_layout_site_constrained():
-    pass
 
 def test_solar_layout(site):
     config = PVConfig.from_dict(technology['pv'])
