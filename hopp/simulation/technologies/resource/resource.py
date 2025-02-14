@@ -3,6 +3,7 @@ import os
 import json
 import requests
 import time
+from pathlib import Path
 from hopp import ROOT_DIR
 
 class Resource(metaclass=ABCMeta):
@@ -45,22 +46,27 @@ class Resource(metaclass=ABCMeta):
         # update any passed in
         self.__dict__.update(kwargs)
 
-        self.filename = None
+        self.filename = None #: filepath of resource data file, defaults to None
         self._data = dict()
 
     def check_download_dir(self):
+        """Creates directory for the resource file if it does not exist.
+        """
+        if not isinstance(self.filename,str):
+            self.filename = str(self.filename)
         if not os.path.isdir(os.path.dirname(self.filename)):
             os.makedirs(os.path.dirname(self.filename))
 
     @staticmethod
     def call_api(url, filename):
         """
-        Parameters
-        ---------
-        url: string
-            The API endpoint to return data from
-        filename: string
-            The filename where data should be written
+        Args:
+            url (str): The API endpoint to return data from
+            filename (str): The filename where data should be written
+        
+        Returns:
+            True if downloaded file successfully, False if encountered error in downloading
+            
         """
 
         n_tries = 0

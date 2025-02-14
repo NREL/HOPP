@@ -50,3 +50,4 @@ parts:
   chapters:
   - file: api/technology/flicker
   - file: api/cost_calculator
+  - file: api/tools/site_shape_tools
