@@ -272,6 +272,18 @@ each of the grid variables can change individually, however the discrete values 
 """
 
 def find_most_square_layout_dimensions(n_turbs):
+    """Calculate dimensions of the most-square shaped layout for
+        a given number of turbines.
+
+    Args:
+        n_turbs (int): number of wind turbines.
+
+    Returns:
+        2-element tuple containing
+
+        - **n_turbs_per_row** (int): number of turbines per row
+        - **n_rows** (int): number of rows in layout (rows are parallel to x-axis)
+    """
     n_turbs_per_row = np.floor_divide(n_turbs,np.sqrt(n_turbs))
     n_rows_min = n_turbs//n_turbs_per_row
     remainder_turbs = n_turbs%n_turbs_per_row
@@ -287,6 +299,20 @@ def find_most_square_layout_dimensions(n_turbs):
     return n_turbs_per_row,n_rows
 
 def make_site_boundary_for_square_grid_layout(n_turbs,rotor_diam,row_spacing,turbine_spacing):
+    """Generate coordinates for shape that would result in the most-square turbine layout.
+
+    Args:
+        n_turbs (int): number of wind turbines
+        rotor_diam (float): rotor diameter of turbine in meters
+        row_spacing (int | float): spacing between rows as multiplier for rotor diameter
+        turbine_spacing (int | float): spacing between turbines in the same row
+            as multiplier for rotor diameter.
+
+    Returns:
+       dict: coordinates for wind layout boundary, formatted as ``site_boundaries`` entry in ``site["data"]``
+    """
+
+
     #distance between turbines in same row
     intrarow_spacing = turbine_spacing*rotor_diam 
     #distance between rows
@@ -307,13 +333,36 @@ def make_site_boundary_for_square_grid_layout(n_turbs,rotor_diam,row_spacing,tur
     return {"site_boundaries":{"verts":verts,"verts_simple":verts}}
 
 def make_bounding_box_for_wind_layout(layout_x,layout_y):
-    #shapely.remove_repeated_points
+    """Get convex hull of wind layout.
+
+    Args:
+        layout_x (List[float]): x-coordinates of turbines
+        layout_y (List[float]): y-coordinates of turbines
+
+    Returns:
+        shapely.MultiPoint: convex hull of wind farm layout.
+    """
+    
     coords = [[x,y] for x,y in zip(layout_x,layout_y)]
     multip = MultiPoint(coords)
     return multip.convex_hull
 
 
 def check_turbines_in_site(layout_x,layout_y,site_boundaries:BaseGeometry,tol=1e-3):
+    """Check that turbines are within site boundaries for a given tolerance.
+
+    Args:
+        layout_x (List[float]): x-coordinates of turbines
+        layout_y (List[float]): y-coordinates of turbines
+        site_boundaries (BaseGeometry): Site polygon.
+        tol (float, Optional): distance tolerance in meters. Defaults to 1e-3.
+
+    Returns:
+        2-element tuple containing
+
+        - **x_coords** (List[float]): x-coordinates of turbines within site boundaries.
+        - **y_coords** (List[float]): y-coordinates of turbines within site boundaries.
+    """
     n_decimals = len(str(int(1/tol)).split("1")[-1])
     x_coords = []
     y_coords = []
@@ -329,6 +378,24 @@ def check_turbines_in_site(layout_x,layout_y,site_boundaries:BaseGeometry,tol=1e
 
 
 def adjust_site_for_box_grid_layout(site_polygon,nturbs,interrow_spacing,intrarow_spacing,row_phase_offset,grid_angle):
+    """Calculate gridded wind-turbine layout with turbines starting at bottom left corner of
+        site (xmin, ymin) and able to be placed along boundary.
+
+    Args:
+        site_polygon (BaseGeometry): Site polygon.
+        nturbs (int): number of wind turbines
+        interrow_spacing (float): distance between rows in meters
+        intrarow_spacing (float): distance between turbines along same row in meters
+        row_phase_offset (float): offset ratio of turbines along row from one row to the next.
+            Must be within range (0,1).
+        grid_angle (float | int): grid rotation angle in degrees where 0 is North, increasing clockwise. 
+
+    Returns:
+        2-element tuple containing
+
+        - **x** (List[float]): x-coordinates of turbines within site boundaries.
+        - **y** (List[float]): y-coordinates of turbines within site boundaries.
+    """
     # NOTE: only works if row_phase_offset and grid_angle are both zero!
     # shift params for y coordinates
     # center_shift_y = site_polygon.centroid.y%interrow_spacing
@@ -358,5 +425,17 @@ def adjust_site_for_box_grid_layout(site_polygon,nturbs,interrow_spacing,intraro
     return x,y
 
 def check_layout_for_unique_points(layout_x,layout_y):
+    """Remove duplicate coordinates.
+
+    Args:
+        layout_x (List[float]): x-coordinates of turbines
+        layout_y (List[float]): y-coordinates of turbines
+
+    Returns:
+        2-element tuple containing
+
+        - **x_coords** (List[float]): x-coordinates of turbines with unique coordinates.
+        - **y_coords** (List[float]): y-coordinates of turbines with unique coordinates.
+    """
     df = pd.DataFrame({"x": layout_x, "y": layout_y}).drop_duplicates()
     return df["x"].to_list(),df["y"].to_list()

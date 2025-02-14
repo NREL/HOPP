@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union, NamedTuple
+from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon
@@ -50,15 +50,19 @@ class WindBoundaryGridParameters:
     """ Configuration class for 'boundarygrid' wind layout.
 
     Args:
-        border_spacing: 
+        border_spacing (float): border spacing ratio for turbines placed along border. Defaults to 0.0
             spacing along border = (1 + border_spacing) * min spacing
-        border_spacing_m:
-        min_spacing_m
-        border_offset: turbine border spacing offset as ratio of border spacing  (0, 1)
-        
-        grid_angle: turbine inner grid rotation (0, 180) [degrees]
-        grid_aspect_power: grid aspect ratio [cols / rows] = 2^grid_aspect_power
-        row_phase_offset: inner grid phase offset (0,1)  (20% suggested)
+        border_offset (float): turbine border spacing offset as ratio of border spacing  (0, 1). Defaults to 0.0
+        border_spacing_m (float, Optional): spacing along border in meters. Is used to calculate ``border_spacing`` 
+            if ``min_spacing_m`` is also input.
+        min_spacing_m (float, Optional): minimum spacing between turbines in meters.
+        grid_angle (float): turbine inner grid rotation (0, 180) [degrees]
+        grid_aspect_power (float, Optional): used to calculate grid_aspect_ratio.
+            grid aspect ratio [cols / rows] = 2^grid_aspect_power. ``grid_aspect_ratio = np.exp(grid_aspect_power)``
+        grid_aspect_ratio (float, Optional): cols / rows of turbine grid. Defaults to 1.0 if neither ``grid_aspect_ratio``
+            or ``grid_aspect_power`` are provided.
+        row_phase_offset (float): inner grid phase offset (0,1). 20% suggested
+            Value must be between 0 and 1. Defaults to 0.2
     """
 
     #TODO: rename to border_spacing_ratio?
@@ -86,7 +90,11 @@ class WindBoundaryGridParameters:
 @define
 class WindCustomParameters:
     """
-    direct user input of the x and y coordinates
+    Configuration class for 'custom' wind layout.
+
+    Args:
+        layout_x (List[float]): x-coordinates of turbines
+        layout_y (List[float]): y-coordinates of turbines
     """
 
     layout_x: List[float]
@@ -99,11 +107,10 @@ class WindLayout(BaseClass):
 
     Args:
         site_polygon (Polygon | BaseGeometry): site polygon shape.
-        _system_model (windpower.Windpower | Floris): pysam wind power object
+        _system_model (windpower.Windpower | Floris): pysam wind power object. Not currently tested to work with floris.
         layout_mode (str): layout choice:  "boundarygrid", "grid", "custom", "basicgrid"
-        parameters (Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]): wind
+        parameters (Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None, dict]): wind
             layout parameters for the corresponding `layout_mode`
-
         min_spacing_meters (float, Optional): minimum spacing between turbines in meters. Defaults to 0.0.
         max_spacing_meters (float, Optional): maximum spacing between turbines in meters. Defaults to 2e6.
         min_rotor_diameter_multiplier (float, Optional): minimum spacing between turbines as multiplier of rotor diameter. Defaults to 2.0
@@ -114,6 +121,7 @@ class WindLayout(BaseClass):
     _system_model: windpower.Windpower
     layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']))
     parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]
+    # TODO: convert min_spacing and max_spacing to be within the parameter class that uses it.
     min_spacing_meters: Optional[float] = field(default = 0.0)
     max_spacing_meters: Optional[float] = field(default = 2e6)
 
@@ -129,6 +137,19 @@ class WindLayout(BaseClass):
     max_spacing: float = field(init = False)
     
     def __attrs_post_init__(self):
+        """The following are initialized in this post init hook:
+            
+            - min_spacing (float): minimum spacing between turbines in meters. 
+                Only used if layout_mode is `grid` or `boundarygrid`.
+            - max_spacing (float): maximum spacing between turbines in meters. 
+                Only used if layout_mode is `grid` or `boundarygrid`.
+            - turb_pos_x (List[float]): x-coordinates of turbines
+            - turb_pos_y (List[float]): x-coordinates of turbines
+        
+        Note: these calculations are based on the default values of rotor diamter and turbine layout.
+            `min_spacing` and `max_spacing` are re-calculated in _get_system_config(). `turb_pos_x` and `turb_pos_y`
+            are reset in layout-specific functions.
+        """
         self.min_spacing = max(
             self.min_spacing_meters, 
             self._system_model.value("wind_turbine_rotor_diameter") * self.min_rotor_diameter_multiplier
@@ -150,6 +171,13 @@ class WindLayout(BaseClass):
             self.parameters = WindCustomParameters(**self.parameters)
 
     def _get_system_config(self):
+        """The following are re-calculated based on the actual rotor diameter of the wind turbine.
+        
+        - min_spacing (float): minimum spacing between turbines in meters. 
+            Only used if layout_mode is `grid` or `boundarygrid`.
+        - max_spacing (float): maximum spacing between turbines in meters. 
+            Only used if layout_mode is `grid` or `boundarygrid`.
+        """
         self.min_spacing = max(
             self.min_spacing,
             self.min_spacing_meters, 
@@ -162,6 +190,9 @@ class WindLayout(BaseClass):
 
 
     def _set_system_layout(self):
+        """Set the number of turbines. System capacity gets modified as a result.
+        """
+
         self._system_model.value("wind_farm_xCoordinates", self.turb_pos_x)
         self._system_model.value("wind_farm_yCoordinates", self.turb_pos_y)
 
@@ -181,7 +212,12 @@ class WindLayout(BaseClass):
     def reset_boundarygrid(self,
                            n_turbines,
                            exclusions: Polygon = None):
+        """Create `boundarygrid` layout for input number of turbines.
 
+        Args:
+            n_turbines (int): number of turbines to include in layout.
+            exclusions (Polygon, Optional): exclusion area shape. Defaults to None.
+        """
         self._get_system_config()
 
         wind_shape = Polygon(self.site_polygon.exterior)
@@ -229,11 +265,11 @@ class WindLayout(BaseClass):
 
     def reset_grid(self,
                    n_turbines):
-        """
-        Set the number of turbines. System capacity gets modified as a result.
-        Wind turbines will be placed in a grid
+        """Create a `grid` layout for specified number of turbines within the `site_polygon`.
+        Spacing turbines based on `min_spacing` attribute. Does not use `parameters` attribute.
 
-        :param n_turbines: int
+        Args:
+            n_turbines (int): number of turbines to include in layout.
         """
         self._get_system_config()
 
@@ -272,6 +308,12 @@ class WindLayout(BaseClass):
         self._set_system_layout()
 
     def reset_basic_grid(self,n_turbines):
+        """Create a most-square `basicgrid` layout for specified number of turbines.
+        requires parameters are `WindBasicGridParameters`.
+
+        Args:
+            n_turbines (int): number of turbines to include in layout.
+        """
         
         self._get_system_config()
 
@@ -321,11 +363,27 @@ class WindLayout(BaseClass):
             
     def set_layout_params(self,
                           wind_kw,
-                          params: Optional[WindBoundaryGridParameters],
+                          params: Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]],
                           exclusions: Polygon = None):
+        """Set wind farm layout to accomodate input wind capacity.
+
+        Args:
+            wind_kw (float): wind farm capacity in kW
+            params (Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]]): wind farm parameters.
+            exclusions (Polygon, optional): exclusions in site. Only used if layout_mode is 'boundarygrid'. Defaults to None.
+        """
         if params:
             self.parameters = params
+            if isinstance(params,WindBoundaryGridParameters):
+                self.layout_mode = "boundarygrid"
+            elif isinstance(params,WindCustomParameters):
+                self.layout_mode = "custom"
+            elif isinstance(params,WindBasicGridParameters):
+                self.layout_mode = "basicgrid"
+        
+        # below is not floris-friendly
         n_turbines = int(np.floor(wind_kw / max(self._system_model.Turbine.wind_turbine_powercurve_powerout)))
+        
         if self.layout_mode == 'boundarygrid':
             self.reset_boundarygrid(n_turbines, exclusions)
         elif self.layout_mode == 'grid':
@@ -338,8 +396,10 @@ class WindLayout(BaseClass):
 
     def set_num_turbines(self,
                          n_turbines: int):
-        """
-        Changes number of turbines in the existing layout
+        """Set number of turbines and wind farm layout.
+
+        Args:
+            n_turbines (int): number of turbines to include in layout.
         """
         self._get_system_config()
 
