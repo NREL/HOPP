@@ -410,7 +410,6 @@ def test_hybrid_wind_only(hybrid_config, subtests):
         assert npvs.hybrid == approx(-7256658, 1e-3)
 
 def test_hybrid_wind_only_floris(hybrid_config, subtests):
-    # this is going to fail now :)
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
@@ -432,7 +431,10 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     cf = hybrid_plant.capacity_factors
-
+    with subtests.test("floris farm capacity"):
+        assert hybrid_plant.wind._system_model.system_capacity == 20000.0
+    with subtests.test("windplant farm capacity"):
+        assert hybrid_plant.wind.system_capacity_kw == 20000.0
     with subtests.test("wind aep"):
         assert aeps.wind == approx(74149945, 1e-3)
     with subtests.test("hybrid aep"):
