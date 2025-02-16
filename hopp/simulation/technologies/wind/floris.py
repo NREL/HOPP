@@ -57,7 +57,6 @@ class Floris(BaseClass):
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
-        self.wind_resource_data = self.site.wind_resource.data #isn't this unnecessary?
         self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
@@ -69,7 +68,7 @@ class Floris(BaseClass):
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # turbine power curve (array of kW power outputs)
-        self.wind_turbine_powercurve_powerout = []
+        self.wind_turbine_powercurve_powerout = [1] * 30    # dummy for now
 
         # time to simulate
         if len(self.config.timestep) > 0:
@@ -83,15 +82,6 @@ class Floris(BaseClass):
         self.gen = []
         self.annual_energy = None
         self.capacity_factor = None
-
-        self.initialize_from_floris()
-
-    def initialize_from_floris(self):
-        """
-        Please populate all the wind farm parameters
-        """
-        self.nTurbs = len(self.fi.layout_x) #this is redundant
-        self.wind_turbine_powercurve_powerout = [1] * 30    # dummy for now
 
     def value(self, name: str, set_value=None):
         """
