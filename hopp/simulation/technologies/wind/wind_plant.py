@@ -15,7 +15,8 @@ from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.layout.wind_layout import (
     WindLayout, 
     WindBoundaryGridParameters, 
-    WindBasicGridParameters)
+    WindBasicGridParameters,
+    WindCustomParameters)
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
@@ -57,10 +58,10 @@ class WindConfig(BaseClass):
     num_turbines: int = field(validator=gt_zero)
     turbine_rating_kw: float = field(validator=gt_zero)
     rotor_diameter: Optional[float] = field(default=None)
-    layout_params: Optional[Union[dict, WindBoundaryGridParameters]] = field(default=None)
+    layout_params: Optional[Union[dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]] = field(default=None)
     hub_height: Optional[float] = field(default=None)
     turbine_name: Optional[str] = field(default=None)
-    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom"]))
+    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]))
     model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
     model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
@@ -96,7 +97,8 @@ class WindPlant(PowerSource):
             config: Wind plant configuration
         """
         self._rating_range_kw = self.config.rating_range_kw
-
+        layout_params = self.config.layout_params
+        layout_mode = self.config.layout_mode
         # Parse input for a financial model
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config_name)
@@ -108,6 +110,18 @@ class WindPlant(PowerSource):
         if self.config.model_name == 'floris':
             print('FLORIS is the system model...')
             system_model = Floris(self.site, self.config)
+            # x_coords,y_coords = system_model.wind_farm_layout
+            if self.config.num_turbines == len(system_model.wind_farm_xCoordinates) and self.config.layout_mode == "floris_layout":
+                # use layout in floris config by using "floris_layout" layout params
+                x_coords,y_coords = system_model.wind_farm_layout
+                layout_params = WindCustomParameters(
+                    layout_x = x_coords,
+                    layout_y = y_coords
+                )
+                # modify to custom for WindLayout
+                layout_mode = "custom"
+                    
+
 
             if financial_model is None:
                 # default
@@ -138,18 +152,10 @@ class WindPlant(PowerSource):
             else:
                 financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
         
-        # below is unnecessary now - this functionality exists in WindLayout.
-        if isinstance(self.config.layout_params, dict) and self.config.layout_mode=="boundarygrid":
-            layout_params = WindBoundaryGridParameters(**self.config.layout_params)
-        elif isinstance(self.config.layout_params, dict) and self.config.layout_mode=="basicgrid":
-            layout_params = WindBasicGridParameters(**self.config.layout_params)
-        else:
-            layout_params = self.config.layout_params
-
         super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
-        self._layout = WindLayout(self.site.polygon, system_model, self.config.layout_mode, layout_params)
+        self._layout = WindLayout(self.site.polygon, system_model, layout_mode, layout_params)
 
         self._dispatch = None
 
@@ -199,6 +205,10 @@ class WindPlant(PowerSource):
 
     @num_turbines.setter
     def num_turbines(self, n_turbines: int):
+        
+        if self._layout.layout_mode == "custom" and n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
+            n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
+            raise UserWarning(f"using custom layout and input number of turbines ({n_turbines}) does not equal length of layout ({n_turbs_layout})")
         self._layout.set_num_turbines(n_turbines)
 
     @property

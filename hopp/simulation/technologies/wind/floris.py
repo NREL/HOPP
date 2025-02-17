@@ -19,6 +19,7 @@ from hopp.tools.resource.wind_tools import (
 # avoid circular dep
 if TYPE_CHECKING:
     from hopp.simulation.technologies.wind.wind_plant import WindConfig
+from hopp.utilities.log import hybrid_logger as logger
 
 
 @define
@@ -131,11 +132,10 @@ class Floris(BaseClass):
         if self.config.turbine_rating_kw is not None:
             if self.config.turbine_rating_kw != self.turb_rating:
                 raise UserWarning(f"input turbine rating ({self.config.turbine_rating_kw} kW) does not match rating from floris power-curve ({self.turb_rating} kW)")
+        
         # check if user-input num_turbines equals number of turbines in layout
-        if self.config.num_turbines is not None:
-            # raise warning if discrepancy in number of turbines
-            if self.nTurbs != self.config.num_turbines:
-                print(f"num_turbines input ({self.config.num_turbines}) does not equal number of turbines in floris layout ({self.nTurbs})")
+        if self.nTurbs != self.config.num_turbines:
+            logger.warning(f"num_turbines in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris config layout ({self.nTurbs})")
         return floris_config
     
     def value(self, name: str, set_value=None):
@@ -173,6 +173,13 @@ class Floris(BaseClass):
         if self.verbose:
             print('Simulating wind farm output in FLORIS...')
 
+        # check if user-input num_turbines equals number of turbines in layout
+        if self.nTurbs != self.config.num_turbines:
+            # log warning if discrepancy in number of turbines
+            # not raising a warning since wind farm capacity can be modified before simulation begins
+            logger.warning(f"num_turbines input in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris model ({self.nTurbs})")
+        logger.info(f"simulating {self.nTurbs} turbines using FLORIS")
+        
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
