@@ -106,10 +106,10 @@ class Floris(BaseClass):
             
         # see if rotor diameter was input in config but not set in floris config
         if self.config.rotor_diameter is not None:
-            floris_config["farm"]["turbine_type"][0].set_default("rotor_diameter",self.config.rotor_diameter)
+            floris_config["farm"]["turbine_type"][0].setdefault("rotor_diameter",self.config.rotor_diameter)
         # see if hub-height was input in config but not set in floris config
         if self.config.hub_height is not None:
-            floris_config["farm"]["turbine_type"][0].set_default("hub_height",self.config.hub_height)
+            floris_config["farm"]["turbine_type"][0].setdefault("hub_height",self.config.hub_height)
         # NOTE: hub-height should also be checked against wind resource hub-height
         
         # set attributes:
