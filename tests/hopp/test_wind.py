@@ -140,7 +140,7 @@ def test_floris_num_turbines(site):
     model = WindPlant(site, config=config)
     xcoords, ycoords = model._system_model.wind_farm_layout
     assert len(xcoords) == config.num_turbines
-    assert len(xcoords) == model.num_turbines
+    assert len(ycoords) == model.num_turbines
     assert model._system_model.nTurbs == model.num_turbines
     # with pytest.raises(UserWarning) as err:
     # assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"

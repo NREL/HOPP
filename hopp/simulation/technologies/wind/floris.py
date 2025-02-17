@@ -55,8 +55,6 @@ class Floris(BaseClass):
     turb_velocities: np.ndarray = field(init = False)
     turb_powers: np.ndarray = field(init = False)
 
-    model_name: str = "floris"
-
     def __attrs_post_init__(self):
         # 1) check that floris config is provided
         if self.config.floris_config is None:

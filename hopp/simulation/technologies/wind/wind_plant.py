@@ -110,7 +110,6 @@ class WindPlant(PowerSource):
         if self.config.model_name == 'floris':
             print('FLORIS is the system model...')
             system_model = Floris(self.site, self.config)
-            # x_coords,y_coords = system_model.wind_farm_layout
             if self.config.num_turbines == len(system_model.wind_farm_xCoordinates) and self.config.layout_mode == "floris_layout":
                 # use layout in floris config by using "floris_layout" layout params
                 x_coords,y_coords = system_model.wind_farm_layout
