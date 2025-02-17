@@ -8,6 +8,7 @@
 * Bug fix in load following heuristic method: only using beginning of variable load signals 
 * Feature add: added alternative method to defining site boundary.
 * Update deprecated methods in wave_resource.py 
+* Updated PySAM version from 4.2.0 to 6.0.0. Main changes noted in [PR #425](https://github.com/NREL/HOPP/pull/425)
 
 ## Version 3.1.1, Dec. 18, 2024
 
