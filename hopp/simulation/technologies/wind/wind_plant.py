@@ -151,9 +151,10 @@ class WindPlant(PowerSource):
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
         
-        if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-            air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
-            self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
+        if self.config.model_name == "pysam":
+            if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
+                air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
+                self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
 
     @property
     def wake_model(self) -> str:
