@@ -7,7 +7,10 @@
 * Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
 * Bug fix in load following heuristic method: only using beginning of variable load signals 
 * Feature add: added alternative method to defining site boundary.
+* Feature add: added function to adjust air density based on site elevation
 * Update deprecated methods in wave_resource.py 
+* Feature add: new wind layout method called `basicgrid`.
+* Update wind layout methods and floris initialization.
 
 ## Version 3.1.1, Dec. 18, 2024
 

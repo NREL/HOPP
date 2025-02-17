@@ -7,7 +7,7 @@ from hopp.simulation.technologies.financial.custom_financial_model import Custom
 
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 import copy
-
+import numpy as np
 DEFAULT_FIN_CONFIG_LOCAL = copy.deepcopy(DEFAULT_FIN_CONFIG)
 DEFAULT_FIN_CONFIG_LOCAL.pop("revenue") # these tests were written before the revenue section was added to the default financial config
 
@@ -152,7 +152,7 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             }, 
@@ -196,7 +196,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
     annual_energy_expected_pv = 21541876
     annual_energy_expected_wind = 32296230
     annual_energy_expected_hybrid = 53838106
-    npv_expected_pv = -7844643
+    npv_expected_pv = -7844643 
     npv_expected_wind = -11896652
     npv_expected_hybrid = -19733945
 
@@ -235,7 +235,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
@@ -265,8 +265,8 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
     with subtests.test("with minimal params"):
         assert sizes.pv == approx(10000, 1e-3)
         assert sizes.wind == approx(wind_kw, 1e-3)
-        assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
         assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+        assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
         assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
         assert npvs.pv == approx(npv_expected_pv, 1e-3)
         assert npvs.wind == approx(npv_expected_wind, 1e-3)
@@ -323,7 +323,7 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
@@ -476,7 +476,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
             'layout_params': {
                 "border_spacing": 2, 
                 "border_offset": 0.5, 
-                "grid_angle": 0.5, 
+                "grid_angle": np.rad2deg(0.5), 
                 "grid_aspect_power": 0.5, 
                 "row_phase_offset": 0.5
             },
