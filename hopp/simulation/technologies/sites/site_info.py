@@ -17,6 +17,7 @@ from hopp.simulation.technologies.resource import (
     SolarResource,
     WindResource,
     WaveResource,
+    TidalResource,
     ElectricityPrices,
     HPCWindData,
     HPCSolarData,
@@ -52,6 +53,7 @@ class SiteInfo(BaseClass):
         solar_resource_file: Path to solar resource file. Defaults to "".
         wind_resource_file: Path to wind resource file. Defaults to "".
         wave_resource_file: Path to wave resource file. Defaults to "".
+        tidal_resource_file: Path to tidal resource file. Defaults to "".
         grid_resource_file: Path to grid pricing data file. Defaults to "".
         path_resource: Path to folder to save resource files. 
             Defaults to ROOT/simulation/resource_files.
@@ -67,6 +69,7 @@ class SiteInfo(BaseClass):
         solar: Whether to set solar data for this site. Defaults to True.
         wind: Whether to set wind data for this site. Defaults to True.
         wave: Whether to set wave data for this site. Defaults to False.
+        tidal: Whether to set tidal data for this site. Defaults to False.
         renewable_resource_origin (str): whether to download resource data from API or load directly from datasets files.
             Options are "API" or "HPC". Defaults to "API".
         wind_resource_origin: Which wind resource API to use, defaults toto "WTK" for WIND Toolkit.
@@ -110,6 +113,7 @@ class SiteInfo(BaseClass):
     solar_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wind_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     wave_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
+    tidal_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
     grid_resource_file: Union[Path, str] = field(default="", converter=resource_file_converter)
 
     path_resource: Optional[Union[Path, str]] = field(default=ROOT_DIR / "simulation" / "resource_files")
@@ -124,6 +128,7 @@ class SiteInfo(BaseClass):
     solar: bool = field(default=True)
     wind: bool = field(default=True)
     wave: bool = field(default=False)
+    tidal: bool = field(default=False)
     renewable_resource_origin: str = field(default="API", validator=contains(["API", "HPC"]))
     wind_resource_origin: str = field(default="WTK", validator=contains(["WTK", "TAP"]))
 
@@ -139,7 +144,8 @@ class SiteInfo(BaseClass):
     polygon: Union[Polygon, BaseGeometry] = field(init=False)
     solar_resource: Optional[Union[SolarResource,HPCSolarData]] = field(default=None)
     wind_resource: Optional[Union[WindResource,HPCWindData]] = field(default=None)
-    wave_resoure: Optional[WaveResource] = field(init=False, default=None)
+    wave_resource: Optional[WaveResource] = field(init=False, default=None)
+    tidal_resource: Optional[TidalResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
     n_timesteps: int = field(init=False, default=None)
     n_periods_per_day: int = field(init=False)
@@ -162,7 +168,8 @@ class SiteInfo(BaseClass):
             polygon (:obj:`shapely.geometry.polygon.Polygon`): Site polygon.
             solar_resource (:obj:`hopp.simulation.technologies.resource.SolarResource`): Class containing solar resource data.
             wind_resource (:obj:`hopp.simulation.technologies.resource.WindResource`): Class containing wind resource data.
-            wave_resoure (:obj:`hopp.simulation.technologies.resource.WaveResource`): Class containing wave resource data.
+            wave_resource (:obj:`hopp.simulation.technologies.resource.WaveResource`): Class containing wave resource data.
+            tidal_resource (:obj:`hopp.simulation.technologies.resource.TidalResource`): Class containing tidal resource data.
             elec_prices (:obj:`hopp.simulation.technologies.resource.ElectricityPrices`): Class containing electricity prices.
             n_timesteps (int): Number of timesteps in resource data.
             n_periods_per_day (int): Number of time periods per day.
@@ -209,7 +216,9 @@ class SiteInfo(BaseClass):
         if self.wave:
             self.wave_resource = WaveResource(data['lat'], data['lon'], data['year'], filepath = self.wave_resource_file)
             self.n_timesteps = 8760
-
+        if self.tidal:
+            self.tidal_resource = TidalResource(data['lat'], data['lon'], data['year'], filepath = self.tidal_resource_file)
+            self.n_timesteps = 8760
         if self.wind:
             # TODO: allow hub height to be used as an optimization variable
             self.wind_resource = self.initialize_wind_resource(data)
@@ -239,7 +248,8 @@ class SiteInfo(BaseClass):
             logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
         if self.wave:
             logger.info("Set up SiteInfo with wave resource files: {}".format(self.wave_resource.filename))
-    
+        if self.tidal:
+            logger.info("Set up SiteInfo with tidal resource files: {}".format(self.tidal_resource.filename))
     def create_site_polygon(self,data:dict):
         """function to create site polygon.
 
