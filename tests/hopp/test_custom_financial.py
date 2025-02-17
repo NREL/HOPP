@@ -205,11 +205,6 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
 
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    
-    # NOTE: PV array shrunk to avoid problem associated with flicker calculation
-    # tech_config['system_capacity'] = 10000
-    # tech_config['inverter_count'] = 10
-    # tech_config['subarray1_nstrings'] = 2687
 
     layout_params = {
         "x_position": 0.5, 
@@ -448,11 +443,6 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
 
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    
-    # NOTE: PV array shrunk to avoid problem associated with flicker calculation
-    # tech_config['system_capacity'] = 10000
-    # tech_config['inverter_count'] = 10
-    # tech_config['subarray1_nstrings'] = 2687
 
     power_sources = {
         'pv': {
