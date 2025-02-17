@@ -1085,7 +1085,7 @@ class HybridSimulation(BaseClass):
             outputs['Grid Capacity Factor at Interconnect (%)'] = self.grid.capacity_factor_at_interconnect
             if self.site.follow_desired_schedule:
                 outputs['Missed Load year 1 (MWh)'] = sum(self.grid.missed_load[0:8760])/1.e3
-                outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage * 100
+                outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage
                 outputs['Schedule Curtailment year 1 (MWh)'] = sum(self.grid.schedule_curtailed[0:8760])/1.e3
                 outputs['Schedule Curtailment (%)'] = self.grid.schedule_curtailed_percentage * 100
 
