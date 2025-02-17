@@ -136,10 +136,14 @@ def test_floris_num_turbines(site):
     )
     f_config = load_yaml(floris_config_path)
     floris_n_turbines = len(f_config["farm"]["layout_x"])
-    config = WindConfig.from_dict({'num_turbines': 20, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
-    with pytest.raises(UserWarning) as err:
-        model = WindPlant(site, config=config)
-    assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
+    config = WindConfig.from_dict({'num_turbines': 16, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
+    model = WindPlant(site, config=config)
+    xcoords, ycoords = model._system_model.wind_farm_layout
+    assert len(xcoords) == config.num_turbines
+    assert len(xcoords) == model.num_turbines
+    assert model._system_model.nTurbs == model.num_turbines
+    # with pytest.raises(UserWarning) as err:
+    # assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
    
 
 def test_changing_rotor_diam_recalc_floris(site):
@@ -175,11 +179,15 @@ def test_changing_system_capacity_floris(site):
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     
+    new_num_turbs = 16
+    new_capacity_kW = new_num_turbs*config.turbine_rating_kw
     rating = model._system_model.turb_rating
     
     assert model._system_model.nTurbs == 4
     assert model._system_model.turb_rating == rating
     assert model._system_model.system_capacity == 20000
-    model.system_capacity_by_num_turbines(1000)
-    assert model._system_model.system_capacity == 0.0 #weird
+    
+    model.system_capacity_by_num_turbines(new_capacity_kW)
+    assert model._system_model.nTurbs == new_num_turbs
+    assert model._system_model.system_capacity == new_capacity_kW 
 
