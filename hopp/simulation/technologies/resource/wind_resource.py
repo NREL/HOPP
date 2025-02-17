@@ -58,7 +58,6 @@ class WindResource(Resource):
         # if resource_data is input as a dictionary then set_data   
         if isinstance(resource_data,dict):
             self.data = resource_data
-            self.__dict__.update(kwargs)
             self.hub_height_meters = wind_turbine_hub_ht
             return 
         
@@ -69,9 +68,6 @@ class WindResource(Resource):
             self.path_resource = path_resource
         if path_resource.parts[-1]!="wind":
             self.path_resource = self.path_resource / 'wind'
-        
-        # Force override any internal definitions if passed in
-        self.__dict__.update(kwargs)
 
         self.file_resource_heights = None
         self.update_height(wind_turbine_hub_ht)

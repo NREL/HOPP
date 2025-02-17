@@ -1562,3 +1562,32 @@ def test_hybrid_financials(hybrid_config, subtests):
     with subtests.test("wind om total"):
         assert hi.system.om_total_expenses['wind'][1] == approx(493903.4397049556, rel=5e-2)
 
+def test_hybrid_wind_only_floris_elevation_adjusted(hybrid_config, subtests):
+
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    technologies = hybrid_config["technologies"]
+    wind_only = {key: technologies[key] for key in ("wind", "grid")}
+
+    wind_only["wind"]["model_name"] = "floris"
+    wind_only["wind"]["floris_config"] = floris_config_path
+    wind_only["wind"]["timestep"] = [0, 8760]
+    wind_only["wind"]["num_turbines"] = 4
+
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hi.simulate(25)
+    hybrid_plant = hi.system
+    aeps_default = hybrid_plant.annual_energies
+
+    wind_only["wind"].update({"adjust_air_density_for_elevation": True})
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hi.simulate(25)
+    hybrid_plant = hi.system
+    aeps_adjusted = hybrid_plant.annual_energies
+ 
+
+    with subtests.test("wind aep"):
+        assert aeps_adjusted.wind < aeps_default.wind

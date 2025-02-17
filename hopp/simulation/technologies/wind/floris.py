@@ -57,11 +57,9 @@ class Floris(BaseClass):
 
         # 2) load floris config if needed
         if isinstance(self.config.floris_config,(str, Path)):
-            # floris_config = Core.from_file(self.config.floris_config)
             floris_config = load_yaml(self.config.floris_config)
         else:
             floris_config = self.config.floris_config
-        # the above change is a temporary patch to bridge to refactor floris
 
         # 3) modify air density in floris config if needed
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
@@ -76,7 +74,6 @@ class Floris(BaseClass):
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
-        self.wind_resource_data = self.site.wind_resource.data #isn't this unnecessary?
         self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
 
         self.system_capacity = self.nTurbs * self.turb_rating

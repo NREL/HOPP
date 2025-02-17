@@ -160,7 +160,7 @@ class WindPlant(PowerSource):
             
         # below only is applicable if using PySAM
         if self.config.model_name=="pysam":
-            if self.config.hub_height is not None and self.config.model_name=="pysam":
+            if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
             if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
                 air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
