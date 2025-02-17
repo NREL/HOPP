@@ -6,6 +6,7 @@ These are the primary methods for accessing wind and solar resource data.
 - [Wind Resource (API)](resource:wind-resource)
 - [Solar Resource (NSRDB Dataset on NREL HPC)](resource:nsrdb-data)
 - [Wind Resource (Wind Toolkit Dataset on NREL HPC)](resource:wtk-data)
+- [Wave Resource (Data)](resource:wave-resource)
 
 ## NREL API Keys
 
