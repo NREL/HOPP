@@ -1574,6 +1574,7 @@ def test_hybrid_wind_only_floris_elevation_adjusted(hybrid_config, subtests):
     wind_only["wind"]["floris_config"] = floris_config_path
     wind_only["wind"]["timestep"] = [0, 8760]
     wind_only["wind"]["num_turbines"] = 4
+    wind_only["wind"]["turbine_rating_kw"] = 5000
 
     hybrid_config["technologies"] = wind_only
     hi = HoppInterface(hybrid_config)
