@@ -22,6 +22,7 @@ from hopp.utilities.validators import contains, range_val
 from hopp.simulation.technologies.sites.site_shape_tools import plot_site_polygon
 from hopp.simulation.base import BaseClass
 from typing import List
+from hopp.simulation.technologies.wind.floris import Floris
 
 @define
 class WindBasicGridParameters:
@@ -118,7 +119,7 @@ class WindLayout(BaseClass):
         turbine_rating_kW (float, Optional): rating of a single turbine in kW. if not provided, turbine power is estimated from the power-curve.
     """
     site_polygon: Union[Polygon, BaseGeometry] 
-    _system_model: windpower.Windpower
+    _system_model: Union[windpower.Windpower,Floris]
     layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']))
     parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]
     # TODO: convert min_spacing and max_spacing to be within the parameter class that uses it.
@@ -160,8 +161,11 @@ class WindLayout(BaseClass):
         )
 
         # turbine layout values
-        self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
-        self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
+        if isinstance(self._system_model,Floris):
+            self.turb_pos_x,self.turb_pos_y = self._system_model.wind_farm_layout
+        else:
+            self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
+            self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
 
         if self.layout_mode == 'boundarygrid' and isinstance(self.parameters,dict):
             self.parameters = WindBoundaryGridParameters(**self.parameters)
@@ -193,17 +197,23 @@ class WindLayout(BaseClass):
         """Set the number of turbines. System capacity gets modified as a result.
         """
 
-        self._system_model.value("wind_farm_xCoordinates", self.turb_pos_x)
-        self._system_model.value("wind_farm_yCoordinates", self.turb_pos_y)
+        if isinstance(self._system_model,Floris):
+            self._system_model.set_wind_farm_layout(self.turb_pos_x,self.turb_pos_y)
+        else:
+            self._system_model.value("wind_farm_xCoordinates", self.turb_pos_x)
+            self._system_model.value("wind_farm_yCoordinates", self.turb_pos_y)
 
         n_turbines = len(self.turb_pos_x)
         if self.turbine_rating_kW is None:
             turb_rating = max(self._system_model.value("wind_turbine_powercurve_powerout"))
             self._system_model.value("system_capacity", n_turbines * turb_rating)
+            logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(n_turbines,
+                                                                                        n_turbines * turb_rating))
         else:
             self._system_model.value("system_capacity", n_turbines * self.turbine_rating_kW)
-        logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(n_turbines,
-                                                                                        n_turbines * turb_rating))
+            logger.info("Wind Layout set with {} turbines for {} kw system capacity".format(n_turbines,
+                                                                                        n_turbines * self.turbine_rating_kW))
+        
 
     @property
     def rotor_diameter(self):
@@ -356,9 +366,16 @@ class WindLayout(BaseClass):
             else:
                 self.reset_grid(n_turbines)
         else:
+            # center on the site
             xcoords_grid = [point.x for point in grid_position_square]
             ycoords_grid = [point.y for point in grid_position_square]
-            self.turb_pos_x, self.turb_pos_y = xcoords_grid,ycoords_grid
+            x_center = (max(xcoords_grid) - min(xcoords_grid))/2
+            y_center = (max(ycoords_grid) - min(ycoords_grid))/2
+            x_shift = self.site_polygon.centroid.x - x_center
+            y_shift = self.site_polygon.centroid.y - y_center
+            xcoords = [x+x_shift for x in xcoords_grid]
+            ycoords = [y+y_shift for y in ycoords_grid]
+            self.turb_pos_x, self.turb_pos_y = xcoords,ycoords
             self._set_system_layout()
             
     def set_layout_params(self,
@@ -381,8 +398,10 @@ class WindLayout(BaseClass):
             elif isinstance(params,WindBasicGridParameters):
                 self.layout_mode = "basicgrid"
         
-        # below is not floris-friendly
-        n_turbines = int(np.floor(wind_kw / max(self._system_model.Turbine.wind_turbine_powercurve_powerout)))
+        if self.turbine_rating_kW is None:
+            self.turbine_rating_kW = max(self._system_model.value("wind_turbine_powercurve_powerout"))
+        
+        n_turbines = int(np.floor(wind_kw / self.turbine_rating_kW))
         
         if self.layout_mode == 'boundarygrid':
             self.reset_boundarygrid(n_turbines, exclusions)

@@ -274,9 +274,13 @@ class WindPlant(PowerSource):
         """
         if len(xcoords) != len(ycoords):
             raise ValueError("WindPlant turbine coordinate arrays must have same length")
-        self._system_model.value("wind_farm_xCoordinates", xcoords)
-        self._system_model.value("wind_farm_yCoordinates", ycoords)
-        self._system_model.value("system_capacity", self.turb_rating * len(xcoords))
+        if self.config.model_name=="floris":
+            self._system_model.wind_farm_layout(xcoords,ycoords)
+        else:
+            self._system_model.value("wind_farm_xCoordinates", xcoords)
+            self._system_model.value("wind_farm_yCoordinates", ycoords)
+            self._system_model.value("system_capacity", self.turb_rating * len(xcoords))
+        
         logger.debug("WindPlant set xcoords to {}".format(xcoords))
         logger.debug("WindPlant set ycoords to {}".format(ycoords))
         logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))

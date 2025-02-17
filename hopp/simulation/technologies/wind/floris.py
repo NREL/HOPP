@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
 @define
 class Floris(BaseClass):
+    
     site: SiteInfo = field()
     config: "WindConfig" = field()
     verbose: bool = field(default = True)
@@ -52,6 +53,8 @@ class Floris(BaseClass):
     #TODO: add option to store turbine-powers and velocities or not
     turb_velocities: np.ndarray = field(init = False)
     turb_powers: np.ndarray = field(init = False)
+
+    model_name: str = "floris"
 
     def __attrs_post_init__(self):
         # 1) check that floris config is provided
@@ -111,10 +114,10 @@ class Floris(BaseClass):
             
         # see if rotor diameter was input in config but not set in floris config
         if self.config.rotor_diameter is not None:
-            floris_config["farm"]["turbine_type"][0].set_default("rotor_diameter",self.config.rotor_diameter)
+            floris_config["farm"]["turbine_type"][0].setdefault("rotor_diameter",self.config.rotor_diameter)
         # see if hub-height was input in config but not set in floris config
         if self.config.hub_height is not None:
-            floris_config["farm"]["turbine_type"][0].set_default("hub_height",self.config.hub_height)
+            floris_config["farm"]["turbine_type"][0].setdefault("hub_height",self.config.hub_height)
         # NOTE: hub-height should also be checked against wind resource hub-height
         
         # set attributes:
@@ -132,7 +135,7 @@ class Floris(BaseClass):
         if self.config.num_turbines is not None:
             # raise warning if discrepancy in number of turbines
             if self.nTurbs != self.config.num_turbines:
-                raise UserWarning(f"num_turbines input ({self.config.num_turbines}) does not equal number of turbines in floris layout ({self.nTurbs})")
+                print(f"num_turbines input ({self.config.num_turbines}) does not equal number of turbines in floris layout ({self.nTurbs})")
         return floris_config
     
     def value(self, name: str, set_value=None):
@@ -211,8 +214,7 @@ class Floris(BaseClass):
         xcoords,ycoords = self.fi.get_turbine_layout()
         return xcoords,ycoords
     
-    @wind_farm_layout.setter
-    def wind_farm_layout(self,xcoords,ycoords):
+    def set_wind_farm_layout(self,xcoords,ycoords):
         if len(xcoords) != len(ycoords):
             raise ValueError("WindPlant turbine coordinate arrays must have same length")
         self.fi.set(
@@ -222,4 +224,5 @@ class Floris(BaseClass):
         self.nTurbs = len(xcoords)
         self.system_capacity = len(xcoords)*self.turb_rating
         self.value("wind_farm_xCoordinates", xcoords)
-        self.value("wind_farm_yCoordinates", ycoords)
+        self.value("wind_farm_yCoordinates", ycoords)     
+    
