@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import Union
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, Point, MultiPolygon
@@ -7,7 +6,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.affinity import scale
 import PySAM.Windpower as windpower
 from attrs import define, field
-from typing import Optional
+from typing import Optional, Union, List
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.layout.wind_layout_tools import (
     get_best_grid,
@@ -21,7 +20,6 @@ from hopp.simulation.technologies.layout.wind_layout_tools import (
 from hopp.utilities.validators import contains, range_val
 from hopp.simulation.technologies.sites.site_shape_tools import plot_site_polygon
 from hopp.simulation.base import BaseClass
-from typing import List
 from hopp.simulation.technologies.wind.floris import Floris
 
 @define
@@ -56,7 +54,14 @@ class WindBoundaryGridParameters:
         border_offset (float): turbine border spacing offset as ratio of border spacing  (0, 1). Defaults to 0.0
         border_spacing_m (float, Optional): spacing along border in meters. Is used to calculate ``border_spacing`` 
             if ``min_spacing_m`` is also input.
-        min_spacing_m (float, Optional): minimum spacing between turbines in meters.
+        min_spacing_m (float, Optional): minimum spacing between turbines in meters. 
+            Defaults to 0.0.
+        min_spacing_D (float, Optional): minimum spacing between turbines as a multiplier of rotor diameter.
+            Defaults to 2.0.
+        max_spacing_m (float, Optional): maximum spacing between turbines in meters.
+            Defaults to 2e6.
+        max_spacing_D (float, Optional): maximum spacing between turbines as a multiplier of rotor diameter. 
+            Defaults to 20.0.
         grid_angle (float): turbine inner grid rotation (0, 180) [degrees]
         grid_aspect_power (float, Optional): used to calculate grid_aspect_ratio.
             grid aspect ratio [cols / rows] = 2^grid_aspect_power. ``grid_aspect_ratio = np.exp(grid_aspect_power)``
@@ -71,13 +76,28 @@ class WindBoundaryGridParameters:
     #TODO: rename to border_offset_ratio?
     border_offset: float = field(default = 0.0, validator = range_val(0.0, 1.0)) 
     border_spacing_m: Optional[float] = field(default = None)
-    min_spacing_m: Optional[float] = field(default = None)
+
+    min_spacing_m: Optional[float] = field(default = 0.0)
+    min_spacing_D: Optional[float] = field(default = 2.0)
+    max_spacing_m: Optional[float] = field(default = 2e6)
+    max_spacing_D: Optional[float] = field(default = 20.0)
 
     grid_angle: float = field(default = 0.0, validator = range_val(0.0, 180.0))
     grid_aspect_power: Optional[float] = field(default = None)
     grid_aspect_ratio: Optional[float] = field(default = None)
     row_phase_offset: float = field(default = 0.2, validator = range_val(0.0, 1.0))
+    
+    min_spacing: float = field(init = False) #min spacing in meters
+    max_spacing: float = field(init = False) #max spacing in meters
     def __attrs_post_init__(self):
+        """The following are initialized in this post init hook:
+            - grid_aspect_ratio (float): cols / rows of turbine grid.
+            - border_spacing (float): turbine border spacing offset as ratio of border spacing  (0, 1). Defaults to 0.0
+            - min_spacing (float): minimum spacing between turbines in meters. Takes the max of 
+                min_spacing_m and min_spacing_D*rotor_diameter
+            - max_spacing (float): maximum spacing between turbines in meters. Takes the max of 
+                max_spacing_m and max_spacing_D*rotor_diameter
+        """
         
         if self.grid_aspect_power is not None and self.grid_aspect_ratio is None:
             #NOTE: unsure if this equation is correct given doc strong
@@ -87,6 +107,81 @@ class WindBoundaryGridParameters:
             
         if self.min_spacing_m is not None and self.border_spacing_m is not None:
             self.border_spacing = (self.border_spacing_m/self.min_spacing_m) - 1
+    
+    def update_min_spacing_with_rotor_diameter(self,rotor_diameter: float):
+        """update min_spacing based on rotor diameter. Sets min_spacing as the maximum
+            of min_spacing_m and rotor_diameter*min_spacing_D.
+
+        Args:
+            rotor_diameter (float): rotor diameter in meters.
+        """
+        self.min_spacing = max(
+            self.min_spacing_m, 
+            rotor_diameter * self.min_spacing_D
+        )
+    
+    def update_max_spacing_with_rotor_diameter(self,rotor_diameter: float):
+        """update max_spacing based on rotor diameter. Sets max_spacing as the maximum
+            of max_spacing_m and rotor_diameter*max_spacing_D.
+
+        Args:
+            rotor_diameter (float): rotor diameter in meters.
+        """
+        self.max_spacing = max(
+            self.max_spacing_m, 
+            rotor_diameter * self.max_spacing_D
+        )
+
+    def override_min_spacing(self,min_spacing: float):
+        """set min_spacing to user-specified value
+
+        Args:
+            min_spacing (float): minimum spacing between turbines in meters. 
+        """
+        self.min_spacing = min_spacing
+    
+    def override_max_spacing(self,max_spacing: float):
+        """set max_spacing to user-specified value
+
+        Args:
+            max_spacing (float): maximum spacing between turbines in meters. 
+        """
+        self.max_spacing = max_spacing
+
+
+@define
+class WindGridParameters:
+    """Configuration class for 'grid' wind layout.
+
+    Args:
+        min_spacing_m (float, Optional): minimum spacing between turbines in meters. 
+            Defaults to 0.0.
+        min_spacing_D (float, Optional): minimum spacing between turbines as a multiplier of rotor diameter.
+            Defaults to 2.0
+    """
+    min_spacing_m: Optional[float] = field(default = 0.0)
+    min_spacing_D: Optional[float] = field(default = 2.0)
+    min_spacing: float = field(init = False) #min spacing in meters
+    
+    def update_min_spacing_with_rotor_diameter(self,rotor_diameter: float):
+        """update min_spacing based on rotor diameter. Sets min_spacing as the maximum
+            of min_spacing_m and rotor_diameter*min_spacing_D.
+
+        Args:
+            rotor_diameter (float): rotor diameter in meters.
+        """
+        self.min_spacing = max(
+            self.min_spacing_m, 
+            rotor_diameter * self.min_spacing_D
+        )
+    
+    def override_min_spacing(self,min_spacing: float):
+        """set min_spacing to user-specified value
+
+        Args:
+            min_spacing (float): minimum spacing between turbines in meters. 
+        """
+        self.min_spacing = min_spacing
 
 @define
 class WindCustomParameters:
@@ -110,56 +205,34 @@ class WindLayout(BaseClass):
         site_polygon (Polygon | BaseGeometry): site polygon shape.
         _system_model (windpower.Windpower | Floris): pysam wind power object. Not currently tested to work with floris.
         layout_mode (str): layout choice:  "boundarygrid", "grid", "custom", "basicgrid"
-        parameters (Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None, dict]): wind
+        parameters (Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, WindGridParameters, dict]): wind
             layout parameters for the corresponding `layout_mode`
-        min_spacing_meters (float, Optional): minimum spacing between turbines in meters. Defaults to 0.0.
-        max_spacing_meters (float, Optional): maximum spacing between turbines in meters. Defaults to 2e6.
-        min_rotor_diameter_multiplier (float, Optional): minimum spacing between turbines as multiplier of rotor diameter. Defaults to 2.0
-        max_rotor_diameter_multiplier (float, Optional): maximum spacing between turbines as multiplier of rotor diameter. Defaults to 20.0
         turbine_rating_kW (float, Optional): rating of a single turbine in kW. if not provided, turbine power is estimated from the power-curve.
     """
     site_polygon: Union[Polygon, BaseGeometry] 
     _system_model: Union[windpower.Windpower,Floris]
     layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']))
-    parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]
-    # TODO: convert min_spacing and max_spacing to be within the parameter class that uses it.
-    min_spacing_meters: Optional[float] = field(default = 0.0)
-    max_spacing_meters: Optional[float] = field(default = 2e6)
-
-    min_rotor_diameter_multiplier: Optional[float] = field(default = 2.0)
-    max_rotor_diameter_multiplier: Optional[float] = field(default = 20.0)
+    parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, WindGridParameters, dict]
     
     turbine_rating_kW: Optional[float] = field(default = None)
 
     turb_pos_x: List[float] = field(init=False)
     turb_pos_y: List[float] = field(init=False)
-
-    min_spacing: float = field(init = False)
-    max_spacing: float = field(init = False)
     
     def __attrs_post_init__(self):
         """The following are initialized in this post init hook:
             
-            - min_spacing (float): minimum spacing between turbines in meters. 
-                Only used if layout_mode is `grid` or `boundarygrid`.
-            - max_spacing (float): maximum spacing between turbines in meters. 
-                Only used if layout_mode is `grid` or `boundarygrid`.
             - turb_pos_x (List[float]): x-coordinates of turbines
             - turb_pos_y (List[float]): x-coordinates of turbines
+            - parameters.min_spacing (float): minimum spacing between turbines in meters. 
+                Only used if layout_mode is `grid` or `boundarygrid`.
+            - parameters.max_spacing (float): maximum spacing between turbines in meters. 
+                Only used if layout_mode is `boundarygrid`.
         
         Note: these calculations are based on the default values of rotor diamter and turbine layout.
             `min_spacing` and `max_spacing` are re-calculated in _get_system_config(). `turb_pos_x` and `turb_pos_y`
             are reset in layout-specific functions.
         """
-        self.min_spacing = max(
-            self.min_spacing_meters, 
-            self._system_model.value("wind_turbine_rotor_diameter") * self.min_rotor_diameter_multiplier
-        )
-        self.max_spacing = max(
-            self.max_spacing_meters, 
-            self._system_model.value("wind_turbine_rotor_diameter") * self.max_rotor_diameter_multiplier
-        )
-
         # turbine layout values
         if isinstance(self._system_model,Floris):
             self.turb_pos_x,self.turb_pos_y = self._system_model.wind_farm_layout
@@ -173,24 +246,27 @@ class WindLayout(BaseClass):
             self.parameters = WindBasicGridParameters(**self.parameters)
         elif self.layout_mode == 'custom' and isinstance(self.parameters,dict):
             self.parameters = WindCustomParameters(**self.parameters)
+        elif self.layout_mode == 'grid' and isinstance(self.parameters,dict):
+            self.parameters = WindGridParameters(**self.parameters)
+        else:
+            self.parameters = WindGridParameters()
+            
+        if self.layout_mode == "boundarygrid" or self.layout_mode == "grid":
+            rotor_diameter = self._system_model.value("wind_turbine_rotor_diameter")
+            self.parameters.update_min_spacing_with_rotor_diameter(rotor_diameter)
+            if self.layout_mode == "boundarygrid":
+                self.parameters.update_max_spacing_with_rotor_diameter(rotor_diameter)
 
     def _get_system_config(self):
-        """The following are re-calculated based on the actual rotor diameter of the wind turbine.
-        
-        - min_spacing (float): minimum spacing between turbines in meters. 
-            Only used if layout_mode is `grid` or `boundarygrid`.
-        - max_spacing (float): maximum spacing between turbines in meters. 
-            Only used if layout_mode is `grid` or `boundarygrid`.
+        """Update min and max spacing constraints in `parameters` based on actual rotor diameter of the wind turbine.
+            Only required if layout_mode is `grid` or `boundarygrid`.
         """
-        self.min_spacing = max(
-            self.min_spacing,
-            self.min_spacing_meters, 
-            self._system_model.value("wind_turbine_rotor_diameter") * self.min_rotor_diameter_multiplier
-        )
-        self.max_spacing = max(
-            self.max_spacing_meters, 
-            self._system_model.value("wind_turbine_rotor_diameter") * self.max_rotor_diameter_multiplier
-        )
+    
+        if self.layout_mode == "boundarygrid" or self.layout_mode == "grid":
+            rotor_diameter = self._system_model.value("wind_turbine_rotor_diameter")
+            self.parameters.update_min_spacing_with_rotor_diameter(rotor_diameter)
+            if self.layout_mode == "boundarygrid":
+                self.parameters.update_max_spacing_with_rotor_diameter(rotor_diameter)
 
 
     def _set_system_layout(self):
@@ -239,7 +315,7 @@ class WindLayout(BaseClass):
         if not isinstance(wind_shape, MultiPolygon):
             wind_shape = MultiPolygon([wind_shape, ])
 
-        border_spacing = (self.parameters.border_spacing + 1) * self.min_spacing
+        border_spacing = (self.parameters.border_spacing + 1) * self.parameters.min_spacing
         for bounding_shape in wind_shape.geoms:
             turbine_positions.extend(
                 get_evenly_spaced_points_along_border(
@@ -249,10 +325,9 @@ class WindLayout(BaseClass):
                     n_turbines - len(turbine_positions),
                 ))
 
-        valid_wind_shape = subtract_turbine_exclusion_zone(self.min_spacing, wind_shape, turbine_positions)
+        valid_wind_shape = subtract_turbine_exclusion_zone(self.parameters.min_spacing, wind_shape, turbine_positions)
 
         # place interior grid turbines
-        print(f"grid aspect power: {self.parameters.grid_aspect_power}")
         max_num_interior_turbines = n_turbines - len(turbine_positions)
         intrarow_spacing, grid_sites = get_best_grid(
             valid_wind_shape,
@@ -260,8 +335,8 @@ class WindLayout(BaseClass):
             self.parameters.grid_angle,
             self.parameters.grid_aspect_ratio,
             self.parameters.row_phase_offset,
-            self.max_spacing,
-            self.min_spacing,
+            self.parameters.max_spacing,
+            self.parameters.min_spacing,
             max_num_interior_turbines,
         )
         turbine_positions.extend(grid_sites)
@@ -291,7 +366,7 @@ class WindLayout(BaseClass):
         if n_turbines > 0:
             spacing = np.sqrt(
                 self.site_polygon.area / n_turbines) * self.site_polygon.envelope.area / self.site_polygon.area
-            spacing = max(spacing, self.min_spacing)
+            spacing = max(spacing, self.parameters.min_spacing)
             coords = []
             while len(coords) < n_turbines:
 
@@ -364,6 +439,11 @@ class WindLayout(BaseClass):
                 self._set_system_layout()
                 return 
             else:
+                # just use `grid`` method
+                max_min_spacing_D = max(self.parameters.row_D_spacing,self.parameters.turbine_D_spacing)
+                max_min_spacing_m = max(interrow_spacing,intrarow_spacing)
+                self.parameters = WindGridParameters(min_spacing_D = max_min_spacing_D,min_spacing_m=max_min_spacing_m)
+                self.parameters.update_min_spacing_with_rotor_diameter(self.rotor_diameter)
                 self.reset_grid(n_turbines)
         else:
             # center on the site
@@ -397,6 +477,8 @@ class WindLayout(BaseClass):
                 self.layout_mode = "custom"
             elif isinstance(params,WindBasicGridParameters):
                 self.layout_mode = "basicgrid"
+            elif isinstance(params,WindGridParameters):
+                self.layout_mode = "grid"
         
         if self.turbine_rating_kW is None:
             self.turbine_rating_kW = max(self._system_model.value("wind_turbine_powercurve_powerout"))
