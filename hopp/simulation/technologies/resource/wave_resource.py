@@ -7,7 +7,11 @@ from hopp.simulation.technologies.resource.resource import *
 
 class WaveResource(Resource):
     """
-    Class to manage Wave Resource data
+    Class to manage Wave Resource data.
+
+    This class loads, processes, and formats wave energy resource data, 
+    either from a file or a provided dataset, for compatibility with 
+    PySAM's wave energy models.
     """
     def __init__(
         self, 
@@ -19,20 +23,27 @@ class WaveResource(Resource):
         **kwargs
     ):
         """
-        lat (float): latitude
-        lon (float): longitude
-        year (int): year
-        path_resource (str): directory where to save downloaded files
-        filepath (str): file path of resource file to load
+        Initializes the WaveResource object.
 
-        see 'hopp/simulation/resource_files/wave/Wave_resource_timeseries.csv' for example wave resource file
-        file format for time series for wave energy resource data
-            rows 1 and 2: header rows containing info about location
-            row 3: headings for time series wave data 
-                (month, day, hour, minute, wave height, wave period)
-            row 4 and higher: contains data itself
-                (significant) wave height in meters
-                wave (energy) period in seconds
+        Args:
+            lat (float): Latitude of the resource location.
+            lon (float): Longitude of the resource location.
+            year (int): Year of the resource data.
+            path_resource (str, optional): Directory where downloaded files are saved. Defaults to "".
+            filepath (str, optional): File path of the resource file to load. Defaults to "".
+            **kwargs: Additional keyword arguments.
+
+        Notes:
+            The wave resource data should be in the format:
+                - Rows 1 and 2: Header rows with location info.
+                - Row 3: Column headings for time-series data 
+                    - (`Year`, `Month`, `Day`, `Hour`, `Minute`, `wave height`, `wave period`).
+                - Rows 4+: Data values:
+                    - `wave height` (significant wave height) in meters.
+                    - `wave period` (energy period) in seconds.
+
+            Example file: 
+            `hopp/simulation/resource_files/wave/Wave_resource_timeseries.csv`
         """
         super().__init__(lat, lon, year)
 
@@ -50,13 +61,24 @@ class WaveResource(Resource):
         logger.info("WaveResource: {}".format(self.filename))
 
     def download_resource(self):
-        #TODO: Add ability to use MHKit for resource downloads
-        # https://mhkit-software.github.io/MHKiT/
+        """
+        Placeholder for downloading wave resource data.
+
+        Raises:
+            NotImplementedError: Currently, downloading functionality is not implemented.
+        
+        TODO:
+            Implement resource downloads using MHKit: 
+            https://mhkit-software.github.io/MHKiT/
+        """
         raise NotImplementedError
 
     def format_data(self):
         """
-        Format as 'wave_resource_data' dictionary for use in PySAM.
+        Formats wave resource data as a dictionary for PySAM.
+
+        Raises:
+            FileNotFoundError: If the specified resource file does not exist.
         """
         if not os.path.isfile(self.filename):
             raise FileNotFoundError(self.filename + " does not exist.")
@@ -66,14 +88,25 @@ class WaveResource(Resource):
     @Resource.data.setter
     def data(self, data_file):
         """
-        Sets the wave resource data to a dictionary in the SAM Wave format:
-            - significant_wave_height: wave height time series data [m]
-            - energy period: wave period time series data [s]
-            - year
-            - month
-            - day
-            - hour
-            - minute
+        Sets the wave resource data in PySAM's wave energy format.
+
+        Args:
+            data_file (str): File path to the wave resource data.
+
+        Raises:
+            ValueError: If the resource time series contains sub-hourly data.
+
+        The output dictionary includes:
+            - `significant_wave_height` (list[float]): Wave height time series data [m].
+            - `energy_period` (list[float]): Wave period time series data [s].
+            - `year` (list[int]): Year timestamps.
+            - `month` (list[int]): Month timestamps.
+            - `day` (list[int]): Day timestamps.
+            - `hour` (list[int]): Hour timestamps.
+            - `minute` (list[int]): Minute timestamps.
+
+        If the time series is incomplete (less than 8760 hours), the function 
+        linearly interpolates missing values to create a complete hourly dataset.
         """
         wavefile_model = wavefile.new()
         #Load resource file
@@ -99,7 +132,7 @@ class WaveResource(Resource):
             df['energy_period'] = wavefile_model.Outputs.energy_period
 
             # Resample data and linearly interpolate to hourly data
-            data_df = df.resample("H").mean()
+            data_df = df.resample("h").mean()
             data_df = data_df.interpolate(method='linear')
 
             # If data cannot interpolate last hours
@@ -107,10 +140,10 @@ class WaveResource(Resource):
                 last_hour = data_df.index.max()
                 missing_hours = 8760 - len(data_df['energy_period'])
 
-                missing_time = pd.date_range(last_hour + pd.Timedelta(hours=1),periods=missing_hours, freq='H')
+                missing_time = pd.date_range(last_hour + pd.Timedelta(hours=1),periods=missing_hours, freq='h')
                 missing_rows = pd.DataFrame(index=missing_time, columns=df.columns)
                 data_df = pd.concat([data_df, missing_rows]).sort_index()
-                data_df = data_df.fillna(method='ffill') # forward fill
+                data_df = data_df.ffill() # forward fill
 
             data_df = data_df.reset_index()
             dic = dict()
