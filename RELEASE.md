@@ -11,6 +11,7 @@
 * Update deprecated methods in wave_resource.py 
 * Feature add: new wind layout method called `basicgrid`.
 * Update wind layout methods and floris initialization.
+* Integrated wind layout functionality when using floris
 
 ## Version 3.1.1, Dec. 18, 2024
 
