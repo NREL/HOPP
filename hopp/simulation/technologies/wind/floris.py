@@ -29,24 +29,29 @@ class Floris(BaseClass):
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
-    annual_energy_pre_curtailment_ac: float = field(init=False)
     fi: FlorisModel = field(init=False)
     
+    # turbine parameters
     turbine_name: str = field(init = False)
     wind_turbine_rotor_diameter: float = field(init = False)
+    turb_rating: float = field(init = False)
     # turbine power curve (array of kW power outputs)
     wind_turbine_powercurve_powerout: List[float] = field(init = False)
+    # wind farm layout
     wind_farm_xCoordinates: List[float] = field(init = False)
     wind_farm_yCoordinates: List[float] = field(init = False)
-    turb_rating: float = field(init = False)
+    # wind farm capacity
     system_capacity: float = field(init = False)
     
+    # results
     gen: List[float] = field(init = False)
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
+    
     #TODO: add option to store turbine-powers and velocities or not
-
+    turb_velocities: np.ndarray = field(init = False)
+    turb_powers: np.ndarray = field(init = False)
 
     def __attrs_post_init__(self):
         # 1) check that floris config is provided
@@ -117,9 +122,7 @@ class Floris(BaseClass):
         self.wind_turbine_powercurve_powerout = floris_config["farm"]["turbine_type"][0]["power_thrust_table"]["power"]
         self.wind_farm_xCoordinates = floris_config["farm"]["layout_x"]
         self.wind_farm_yCoordinates = floris_config["farm"]["layout_y"]
-        self.nTurbs = len(self.wind_farm_xCoordinates)
-        
-        
+        self.nTurbs = len(self.wind_farm_xCoordinates)  
             
         self.turb_rating = max(self.wind_turbine_powercurve_powerout)
         if self.config.turbine_rating_kw is not None:
@@ -203,3 +206,20 @@ class Floris(BaseClass):
         }
         return config
     
+    @property
+    def wind_farm_layout(self):
+        xcoords,ycoords = self.fi.get_turbine_layout()
+        return xcoords,ycoords
+    
+    @wind_farm_layout.setter
+    def wind_farm_layout(self,xcoords,ycoords):
+        if len(xcoords) != len(ycoords):
+            raise ValueError("WindPlant turbine coordinate arrays must have same length")
+        self.fi.set(
+            layout_x = xcoords,
+            layout_y = ycoords
+            )
+        self.nTurbs = len(xcoords)
+        self.system_capacity = len(xcoords)*self.turb_rating
+        self.value("wind_farm_xCoordinates", xcoords)
+        self.value("wind_farm_yCoordinates", ycoords)
