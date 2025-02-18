@@ -1,6 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import copy
+
+def plot_power_curve(wind_speeds_ms,cp_curve,ct_curve):
+    fig1 = plt.figure()
+    plt.plot(wind_speeds_ms, ct_curve, label="Coeff of Thrust")
+    plt.plot(wind_speeds_ms, cp_curve, label = "Coeff of Power")
+    plt.legend()
+    plt.xlabel("Wind Speed [m/s]")
+    plt.show()
+
+
 def pad_power_curve(wind_speed,curve,v_min = 0.0,v_max = 50.0):
     wind_speeds_ms = copy.deepcopy(wind_speed)
     if isinstance(wind_speeds_ms,list):
@@ -44,7 +54,6 @@ def calculate_power_from_cp(wind_speeds_ms,cp_curve,rotor_diameter,rated_power_k
     return list(power_kW)
 
 def estimate_thrust_coefficient(wind_speeds_ms,cp_curve, plot=False, print_output=False):
-    # def calc_thrust_curve(turbine_name, wind_speed, coefficient_of_power, plot=False, print_output=False):
 
     # Check that the wind speed and the coefficient of power are the same length
     if len(wind_speeds_ms) != len(cp_curve):
@@ -76,12 +85,7 @@ def estimate_thrust_coefficient(wind_speeds_ms,cp_curve, plot=False, print_outpu
   
 
     if plot:
-        fig1 = plt.figure()
-        plt.plot(wind_speeds_ms, ct_curve, label="Coeff of Thrust")
-        plt.plot(wind_speeds_ms, cp_curve, label = "Coeff of Power")
-        plt.legend()
-        plt.xlabel("Wind Speed [m/s]")
-        plt.show()
+        plot_power_curve(wind_speeds_ms,cp_curve,ct_curve)
 
     if print_output:
         print("Coefficient of Thrust: ")

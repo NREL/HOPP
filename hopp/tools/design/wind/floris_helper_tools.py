@@ -1,36 +1,29 @@
-# this file could include things like:
-# 1) write turbine file in floris format
 import os
 import numpy as np
 from hopp.utilities.utilities import write_yaml
-from hopp.simulation.technologies.layout.wind_layout_tools import (
-    make_site_boundary_for_square_grid_layout,
-    create_grid,
-    constrain_layout_for_site
-)
-from hopp.simulation.technologies.layout.wind_layout import WindBasicGridParameters
-from shapely.geometry import Polygon
-from hopp.simulation.technologies.sites.site_info import SiteInfo
+from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
+from hopp.utilities import load_yaml
+
 def check_output_formatting(orig_dict):
     for key, val in orig_dict.items():
-        if isinstance(val,dict):
+        if isinstance(val, dict):
             tmp = check_output_formatting(orig_dict.get(key, { }))
             orig_dict[key] = tmp
         else:
-            if isinstance(key,list):
+            if isinstance(key, list):
                 for i,k in enumerate(key):
-                    if isinstance(orig_dict[k],str):
+                    if isinstance(orig_dict[k], str):
                         orig_dict[k] = (orig_dict.get(key, []) + val[i])
-                    elif isinstance(orig_dict[k],bool):
+                    elif isinstance(orig_dict[k], bool):
                         orig_dict[k] = (orig_dict.get(key, []) + val[i])
-                    elif isinstance(orig_dict[k],(list,np.ndarray)):
+                    elif isinstance(orig_dict[k], (list, np.ndarray)):
                         new_val = [float(v) for v in val[i]]
                         orig_dict[k] = new_val
                     else:
                         orig_dict[k] = float(val[i])
             elif isinstance(key,str):
-                if not isinstance(orig_dict[key],(str,bool)):
-                    if isinstance(orig_dict[key],(list,np.ndarray)):
+                if not isinstance(orig_dict[key], (str, bool)):
+                    if isinstance(orig_dict[key], (list, np.ndarray)):
                         new_val = [float(v) for v in val]
                         orig_dict[key] = new_val
                     else:
@@ -52,51 +45,17 @@ def write_turbine_to_floris_file(turbine_dict,output_dir):
     new_dict = check_output_formatting(turbine_dict)
     write_yaml(output_fpath,new_dict)
 
-def make_default_layout(n_turbines,rotor_diameter,parameters,site = None):
-    if isinstance(parameters,dict):
-        parameters = WindBasicGridParameters(**parameters)
-    elif parameters is None:
-        parameters = WindBasicGridParameters()
-    
-    interrow_spacing = parameters.row_D_spacing*rotor_diameter
-    intrarow_spacing = parameters.turbine_D_spacing*rotor_diameter
-        
-    data = make_site_boundary_for_square_grid_layout(n_turbines,rotor_diameter,parameters.row_D_spacing,parameters.turbine_D_spacing)
-    vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
-    square_bounds = Polygon(vertices)
-    grid_position_square = create_grid(square_bounds,
-            square_bounds.centroid,
-            parameters.grid_angle,
-            intrarow_spacing,
-            interrow_spacing,
-            parameters.row_phase_offset,
-            int(n_turbines),
-    )
-    
-
-    if parameters.site_boundary_constrained and site is not None:
-        xcoords_grid = [point.x for point in grid_position_square]
-        ycoords_grid = [point.y for point in grid_position_square]
-        grid_position_site = create_grid(site.polygon,
-            site.polygon.centroid,
-            parameters.grid_angle,
-            intrarow_spacing,
-            interrow_spacing,
-            parameters.row_phase_offset,
-            int(n_turbines),
-        )
-        xcoords_site = [point.x for point in grid_position_site]
-        ycoords_site = [point.y for point in grid_position_site]
-        xcoords = xcoords_site
-        ycoords = ycoords_site
-        if len(xcoords_site)<n_turbines:
-            if len(xcoords_site)<len(xcoords_grid):
-                x_adj, y_adj = constrain_layout_for_site(xcoords_grid,ycoords_grid,site.polygon)
-                if len(x_adj)>len(xcoords_site):
-                    xcoords = x_adj
-                    ycoords = y_adj
+def check_floris_library_for_turbine(turbine_name):
+    floris_library_fpath = INTERNAL_LIBRARY / "{}.yaml".format(turbine_name)
+    if os.path.isfile(floris_library_fpath):
+        return True
     else:
-        xcoords = [point.x for point in grid_position_square]
-        ycoords = [point.y for point in grid_position_square]
-    
-    return xcoords, ycoords
+        return False
+
+def load_turbine_from_floris_library(turbine_name):
+    floris_library_fpath = INTERNAL_LIBRARY / "{}.yaml".format(turbine_name)
+    if os.path.isfile(floris_library_fpath):
+        turb_dict = load_yaml(floris_library_fpath)
+        return turb_dict
+    else:
+        raise FileNotFoundError("Floris library file for turbine {} does not exist.".format(turbine_name))

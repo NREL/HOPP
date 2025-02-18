@@ -1,12 +1,63 @@
 from turbine_models.parser import Turbines
-import PySAM.Windpower as Windpower
-import PySAM.Singleowner as Singleowner
-# from hopp.simulation.technologies.wind import WindPlant
 import hopp.tools.design.wind.power_curve_tools as curve_tools
 from hopp.utilities.log import hybrid_logger as logger
 import numpy as np
 from floris.turbine_library import build_cosine_loss_turbine_dict
-# this file will contain interfacing options with turbine library
+from difflib import SequenceMatcher
+
+def extract_power_curve(turbine_specs: dict, model_name: str):
+    turbine_name = turbine_specs["name"]
+    wind_speeds = turbine_specs["power_curve"]["wind_speed_ms"].to_list()
+    turbine_curve_cols = turbine_specs["power_curve"].columns.to_list()
+    if "power_kw" in turbine_curve_cols and "cp" in turbine_curve_cols:
+        power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
+        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
+        power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
+        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
+        cp_curve = np.where(cp_curve<0,0,cp_curve)
+        power_curve_kw = list(power_curve_kw)
+        cp_curve = list(cp_curve)
+    elif "power_kw" not in turbine_curve_cols and "cp" in turbine_curve_cols:
+        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
+        cp_curve = np.where(cp_curve<0,0,cp_curve)
+        cp_curve = list(cp_curve)
+
+        power_curve_kw = curve_tools.calculate_power_from_cp(wind_speeds,cp_curve,turbine_specs["rotor_diameter"],turbine_specs["rated_power"])
+    elif "power_kw" in turbine_curve_cols and "cp" not in turbine_curve_cols:
+        power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
+        power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
+        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
+        power_curve_kw = list(power_curve_kw)
+        cp_curve = curve_tools.calculate_cp_from_power(wind_speeds,power_curve_kw)
+    else:
+        raise UserWarning(f"turbine {turbine_name} does not have minimum required power curve data (needs either power_kw or cp)")
+    if "ct" in turbine_specs["power_curve"].columns.to_list():
+        ct = turbine_specs["power_curve"]["ct"].to_list()
+    else:
+        ct = curve_tools.estimate_thrust_coefficient(wind_speeds,cp_curve)
+    
+    _, cp_curve = curve_tools.pad_power_curve(wind_speeds,cp_curve)
+    _, ct = curve_tools.pad_power_curve(wind_speeds,ct)
+    wind_speeds, power_curve_kw = curve_tools.pad_power_curve(wind_speeds,power_curve_kw)
+    if model_name == "floris":
+        power_thrust_table = {
+            # "ref_air_density": 1.225,
+            # "ref_tilt": 5.0,
+            # "cosine_loss_exponent_yaw": 1.88,
+            # "cosine_loss_exponent_tilt": 1.88,
+            "wind_speed":wind_speeds,
+            "power":power_curve_kw,
+            "thrust_coefficient":ct,
+            }
+    elif model_name == "pysam":
+        power_thrust_table = {
+            "wind_turbine_max_cp": max(cp_curve),
+            "wind_turbine_ct_curve":ct,
+            "wind_turbine_powercurve_windspeeds":wind_speeds,
+            "wind_turbine_powercurve_powerout":power_curve_kw,
+            }
+    return power_thrust_table
+
 
 def check_hub_height(turbine_specs,wind_plant):
     turbine_name = turbine_specs["name"]
@@ -35,86 +86,42 @@ def check_hub_height(turbine_specs,wind_plant):
     return hub_height
 
 
-def set_pysam_turbine_specs(turbine_name,wind_plant):#:WindPlant):
+def get_pysam_turbine_specs(turbine_name,wind_plant):#:WindPlant):
     t_lib = Turbines()
     turbine_specs = t_lib.specs(turbine_name)
     if isinstance(turbine_specs,dict):
-        
+        turbine_dict = extract_power_curve(turbine_specs, model_name = "pysam")
+
         hub_height = check_hub_height(turbine_specs,wind_plant)
         
-        wind_speeds = turbine_specs["power_curve"]["wind_speed_ms"].to_list()
-
-        if "power_kw" in turbine_specs["power_curve"].columns.to_list():
-            power_curve_kw = turbine_specs["power_curve"]["power_kw"].to_list()
-        else:
-            if "cp" in turbine_specs["power_curve"].columns.to_list():
-                power_curve_kw = curve_tools.calculate_power_from_cp(wind_speeds,turbine_specs["power_curve"]["cp"].to_list(),turbine_specs["rotor_diameter"],turbine_specs["rated_power"])
-        
-        turbine_dict = {"wind_turbine_rotor_diameter":turbine_specs["rotor_diameter"],
-        "wind_turbine_hub_ht":hub_height,
-        "wind_turbine_powercurve_powerout":power_curve_kw,
-        "wind_turbine_powercurve_windspeeds":wind_speeds}
+        turbine_dict.update({
+            "wind_turbine_rotor_diameter":turbine_specs["rotor_diameter"],
+            "wind_turbine_hub_ht":hub_height,
+            })
         
         wind_plant._system_model.Turbine.assign(turbine_dict)
         wind_plant.rotor_diameter = turbine_specs["rotor_diameter"]
-        wind_plant.config.hub_height = hub_height
+
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
     return wind_plant, turbine_dict
 
-def set_floris_turbine_specs(turbine_name,wind_plant): #:WindPlant):
+def get_floris_turbine_specs(turbine_name,wind_plant): #:WindPlant):
     t_lib = Turbines()
     turb_group = t_lib.find_group_for_turbine(turbine_name)
     turbine_specs = t_lib.specs(turbine_name,group = turb_group)
     if isinstance(turbine_specs,dict):
         
         hub_height = check_hub_height(turbine_specs,wind_plant)
-        
-        wind_speeds = turbine_specs["power_curve"]["wind_speed_ms"].to_list()
+        power_thrust_table = extract_power_curve(turbine_specs, model_name = "floris")
 
-        turbine_curve_cols = turbine_specs["power_curve"].columns.to_list()
-        if "power_kw" in turbine_curve_cols and "cp" in turbine_curve_cols:
-            power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
-            cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-            power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
-            power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
-            cp_curve = np.where(cp_curve<0,0,cp_curve)
-            power_curve_kw = list(power_curve_kw)
-            cp_curve = list(cp_curve)
-        elif "power_kw" not in turbine_curve_cols and "cp" in turbine_curve_cols:
-            # cp_curve = turbine_specs["power_curve"]["cp"].to_list()
-            cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-            cp_curve = np.where(cp_curve<0,0,cp_curve)
-            cp_curve = list(cp_curve)
-
-            power_curve_kw = curve_tools.calculate_power_from_cp(wind_speeds,cp_curve,turbine_specs["rotor_diameter"],turbine_specs["rated_power"])
-        elif "power_kw" in turbine_curve_cols and "cp" not in turbine_curve_cols:
-            # power_curve_kw = turbine_specs["power_curve"]["power_kw"].to_list()
-
-            power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
-            power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
-            power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
-            power_curve_kw = list(power_curve_kw)
-            cp_curve = curve_tools.calculate_cp_from_power(wind_speeds,power_curve_kw)
-        else:
-            raise UserWarning(f"turbine {turbine_name} does not have minimum required power curve data (needs either power_kw or cp)")
-        if "ct" in turbine_specs["power_curve"].columns.to_list():
-            ct = turbine_specs["power_curve"]["ct"].to_list()
-        else:
-            ct = curve_tools.estimate_thrust_coefficient(wind_speeds,cp_curve)
-        _, cp_curve = curve_tools.pad_power_curve(wind_speeds,cp_curve)
-        _, ct = curve_tools.pad_power_curve(wind_speeds,ct)
-        wind_speeds, power_curve_kw = curve_tools.pad_power_curve(wind_speeds,power_curve_kw)
-        power_thrust_table = {
+        power_thrust_table.update({
             "ref_air_density": 1.225,
             "ref_tilt": 5.0,
             "cosine_loss_exponent_yaw": 1.88,
             "cosine_loss_exponent_tilt": 1.88,
             # "TSR": 8.0,
-            "wind_speed":wind_speeds,
-            "power":power_curve_kw,
-            "thrust_coefficient":ct,
-            }
+            })
         turbine_dict = {
             "turbine_type":turbine_name,
             "turbine_rating":turbine_specs["rated_power"],
@@ -125,12 +132,9 @@ def set_floris_turbine_specs(turbine_name,wind_plant): #:WindPlant):
             "power_thrust_table": power_thrust_table,
         }
         
-        #floris_config["farm"]["turbine_type"][0]
-        # if wind_plant.__getattribute__("fi") is not None:
-        #     wind_plant.fi.set(turbine_type=[turbine_dict])
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
-    return wind_plant, turbine_dict
+    return turbine_dict
 
 def load_distributed_turbine_options():
     t_lib = Turbines()
@@ -147,5 +151,31 @@ def load_offshore_turbine_options():
     osw_turbines = t_lib.turbines(group = "offshore")
     return osw_turbines
 
+def check_turbine_name(turbine_name:str):
+    t_lib = Turbines()
+    valid_name = False
+    best_match = ""
+    max_match_ratio = 0.0
+    for turb_group in t_lib.groups:
+        turbines_in_group = t_lib.turbines(group = turb_group)
+        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
+            valid_name = True
+        else:
+            for turb in turbines_in_group.values():
+                match_ratio = SequenceMatcher(None,turbine_name.lower(), turb.lower()).ratio()
+                if match_ratio>max_match_ratio:
+                    best_match = str(turb)
+                    max_match_ratio = max(match_ratio,max_match_ratio)
+    if valid_name:
+        return turbine_name
+    else:
+        return best_match
 
-[]
+def check_turbine_library_for_turbine(turbine_name:str):
+    t_lib = Turbines()
+    valid_name = False
+    for turb_group in t_lib.groups:
+        turbines_in_group = t_lib.turbines(group = turb_group)
+        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
+            valid_name = True
+    return valid_name

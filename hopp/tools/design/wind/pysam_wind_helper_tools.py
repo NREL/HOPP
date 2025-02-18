@@ -2,7 +2,8 @@ import PySAM.Windpower as Windpower
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.layout.wind_layout_tools import create_grid
 #https://nrel-pysam.readthedocs.io/en/main/modules/Windpower.html
-def set_wind_farm_layout(system_model,n_turbs,):
+
+def set_wind_farm_layout(system_model,xcoords):
     farm_dict = {
         "wind_farm_wake_model": wake_model_num,
         "system_capacity": wind_capacity_kW,
@@ -22,3 +23,9 @@ def set_turbine_params(system_model,params):
     }
     system_model.Turbine.assign(turb_dict)
     return system_model
+
+def write_turbine_to_pysam_file(turbine_dict,output_dir):
+    turb_name = turbine_dict["turbine_type"]
+    output_fpath = os.path.join(output_dir,f"pysam_turbine_{turb_name}.yaml")
+    new_dict = check_output_formatting(turbine_dict)
+    write_yaml(output_fpath,new_dict)
