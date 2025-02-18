@@ -49,7 +49,8 @@ dependencies = [
     "utm",
     "pyyaml-include",
     "profast",
-    "NREL-rex"
+    "NREL-rex",
+    "turbine_models @ git+ssh://git@github.com/NREL/turbine-models",
 ]
 keywords = [
     "python3",
