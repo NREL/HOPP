@@ -15,6 +15,7 @@ from hopp.utilities import load_yaml
 from hopp.tools.resource.wind_tools import (
     calculate_air_density_for_elevation, 
     parse_resource_data,
+    weighted_parse_resource_data
 )
 # avoid circular dep
 if TYPE_CHECKING:
@@ -55,7 +56,10 @@ class Floris(BaseClass):
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
-        self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
+        if self.config.resource_parse_method == "average":
+            self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
+        elif self.config.resource_parse_method == "weighted_average":
+            self.speeds, self.wind_dirs = weighted_parse_resource_data(self.site.wind_resource)
 
         self.wind_farm_xCoordinates = self.fi.layout_x
         self.wind_farm_yCoordinates = self.fi.layout_y
