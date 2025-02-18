@@ -84,6 +84,7 @@ class BatteryConfig(BaseClass):
                 - "LeadAcid" 
                 - "NMCGraphite"
             HOPP options:
+                - "LDES" generic long-duration energy storage
                 - "AEF" Aqueous electrolyte flow battery
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
@@ -95,7 +96,7 @@ class BatteryConfig(BaseClass):
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
     system_model_source: str = field(default="pysam", validator=contains(["pysam", "hopp"]))
-    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite", "LDES"]))
+    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite", "LDES", "AEF"]))
     tracking: bool = field(default=True)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
@@ -127,7 +128,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             system_model = PySAMBatteryModel.default(self.config.chemistry)
         elif self.config.system_model_source == "hopp":
-            system_model = LDES(self.config.chemistry)
+            system_model = LDES.default(self.config.chemistry)
         else:
             raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 
@@ -137,8 +138,11 @@ class Battery(PowerSource):
             financial_model = self.config.fin_model
 
         if financial_model is None:
+            if self.config.system_model_source is "hopp":
+                raise(ValueError("Must specify an instance of or input dict for the custom financial model when using 'hopp' as the `system_model_source`"))
             # default
-            financial_model = Singleowner.from_existing(system_model, self.config_name)
+            else:
+                financial_model = Singleowner.from_existing(system_model, self.config_name)
         else:
             financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
 
@@ -147,6 +151,8 @@ class Battery(PowerSource):
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
         self.system_capacity_kw = self.config.system_capacity_kw
         self.chemistry = self.config.chemistry
+
+
 
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_sizing(self._system_model,
@@ -159,18 +165,20 @@ class Battery(PowerSource):
             self._system_model.ParamsCell.resistance = 0.001
             self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
 
-            # Minimum set of parameters to set to get statefulBattery to work
-            self._system_model.value("control_mode", 0.0)
-            self._system_model.value("input_current", 0.0)
+        # Minimum set of parameters to set to get statefulBattery to work
+        self._system_model.value("control_mode", 0.0)
+        self._system_model.value("input_current", 0.0)
 
-            self._system_model.value("dt_hr", 1.0)
-            self._system_model.value("minimum_SOC", self.config.minimum_SOC)
-            self._system_model.value("maximum_SOC", self.config.maximum_SOC)
-            self._system_model.value("initial_SOC", self.config.initial_SOC)
+        self._system_model.value("dt_hr", 1.0)
+        self._system_model.value("minimum_SOC", self.config.minimum_SOC)
+        self._system_model.value("maximum_SOC", self.config.maximum_SOC)
+        self._system_model.value("initial_SOC", self.config.initial_SOC)
 
-            self._dispatch = None
+        self._dispatch = None
 
-            logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
+        logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
+
+
 
     def setup_system_model(self):
         """Executes Stateful Battery setup"""
