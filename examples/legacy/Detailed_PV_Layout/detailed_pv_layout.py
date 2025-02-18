@@ -152,9 +152,6 @@ class DetailedPVLayout(PVLayout):
             elif self._system_model.value('subarray1_track_mode') == 1:
                 self._system_model.value('subarray1_rotlim', self.parameters.tilt_tracker_angle)
             self._system_model.value('constant', self.flicker_loss * 100)  # percent
-            self._system_model.value('subarray2_enable', 0)
-            self._system_model.value('subarray3_enable', 0)
-            self._system_model.value('subarray4_enable', 0)
         else:   # PVWatts
             self._system_model.value('system_capacity', self.calculated_system_capacity)
 

@@ -217,27 +217,23 @@ class MHKWavePlant(PowerSource):
         """
         self.system_capacity_by_num_devices(size_kw)
 
-    #### These are also in Power Source but overwritten here because MhkWave 
-    #### Expects 3-hr timeseries data so values are inflated by 3x
-    #### TODO: If additional system models are added will need to revise these properties so correct values are assigned
     @property
     def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("annual_energy") / 3 
+            return self._system_model.value("annual_energy") 
         else:
             return 0
     
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("capacity_factor") / 3
+            return self._system_model.value("capacity_factor")
         else:
             return 0
         
-    ### Not in Power Source but affected by hourly data
     @property
     def numberHours(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("numberHours") / 3
+            return self._system_model.value("numberHours")
         else:
             return 0
