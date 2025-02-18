@@ -7,8 +7,11 @@
 * Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
 * Bug fix in load following heuristic method: only using beginning of variable load signals 
 * Feature add: added alternative method to defining site boundary.
+<<<<<<< HEAD
 * Feature add: added function to adjust air density based on site elevation
 * Added weighted average wind resource parsing method option when using floris.
+=======
+>>>>>>> nrel_hopp/develop
 * Updated PySAM version from 4.2.0 to 6.0.1. Main changes noted in [PR #425](https://github.com/NREL/HOPP/pull/425)
 * PySAM generation plant defaults have been updated. Current defaults can be found [here](https://github.com/NREL/SAM/tree/develop/api/api_autogen/library/defaults)
 * PySAM SingleOwner financial model update investment-tax credit and depreciation basis calculations to remove financing fees and reserve account funding from basis.

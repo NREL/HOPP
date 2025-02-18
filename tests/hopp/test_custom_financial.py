@@ -46,8 +46,8 @@ def test_custom_financial():
 
 def test_detailed_pv(site, subtests):
     # Run detailed PV model (pvsamv1) using a custom financial model
-    annual_energy_expected = 108833068
-    npv_expected = -39094449
+    annual_energy_expected = 8884369
+    npv_expected = -4066396
 
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
@@ -193,23 +193,18 @@ def test_hybrid_simple_pv_with_wind(site, subtests):
 
 def test_hybrid_detailed_pv_with_wind(site, subtests):
     # Test wind + detailed PV (pvsamv1) hybrid plant with custom financial model
-    annual_energy_expected_pv = 21541876
-    annual_energy_expected_wind = 32296230
-    annual_energy_expected_hybrid = 53838106
-    npv_expected_pv = -7844643 
-    npv_expected_wind = -11896652
-    npv_expected_hybrid = -19733945
+    annual_energy_expected_pv = 8863135
+    annual_energy_expected_wind = 31453286
+    annual_energy_expected_hybrid = 40316422
+    npv_expected_pv = -4068134
+    npv_expected_wind = -11965644
+    npv_expected_hybrid = -16033778
 
     interconnect_kw = 150e6
     wind_kw = 10000
 
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    
-    # NOTE: PV array shrunk to avoid problem associated with flicker calculation
-    tech_config['system_capacity'] = 10000
-    tech_config['inverter_count'] = 10
-    tech_config['subarray1_nstrings'] = 2687
 
     layout_params = {
         "x_position": 0.5, 
@@ -263,7 +258,7 @@ def test_hybrid_detailed_pv_with_wind(site, subtests):
     npvs = hybrid_plant.net_present_values
 
     with subtests.test("with minimal params"):
-        assert sizes.pv == approx(10000, 1e-3)
+        assert sizes.pv == approx(4993, 1e-3)
         assert sizes.wind == approx(wind_kw, 1e-3)
         assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
         assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
@@ -279,22 +274,22 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
     annual_energy_expected_pv = 10761987
     annual_energy_expected_wind = 31951719
     annual_energy_expected_wave = 12132526
-    annual_energy_expected_battery = -98292
+    annual_energy_expected_battery = -103752
     annual_energy_expected_hybrid = 54747904
 
     npv_expected_pv = -1640023
     npv_expected_wind = -5159400
-    npv_expected_wave = -50006845
+    npv_expected_wave = -62903172
     npv_expected_battery = -8183543
-    npv_expected_hybrid = -64990137
+    npv_expected_hybrid = -77887529
 
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
-    lcoe_expected_wave = 28.83013114281512
-    lcoe_expected_battery = 13.29435118093791
-    lcoe_expected_hybrid = 9.810109326608142
+    lcoe_expected_wave = 35.719370712383856
+    lcoe_expected_battery = 13.333128855903514
+    lcoe_expected_hybrid = 11.337551789830751
 
-    total_installed_cost_expected = 81063378.16191691
+    total_installed_cost_expected = 93959704.39847898
 
     interconnect_kw = 20000
     pv_kw = 5000
@@ -433,14 +428,14 @@ def test_hybrid_simple_pv_with_wind_wave_storage_dispatch(subtests):
 
 def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
     # Test wind + detailed PV (pvsamv1) + storage with dispatch hybrid plant with custom financial model
-    annual_energy_expected_pv = 20416252
-    annual_energy_expected_wind = 32321927
-    annual_energy_expected_battery = -91312
-    annual_energy_expected_hybrid = 52645082
-    npv_expected_pv = -3606490
-    npv_expected_wind = -5050712
+    annual_energy_expected_pv = 8851251
+    annual_energy_expected_wind = 31559803
+    annual_energy_expected_battery = -102220
+    annual_energy_expected_hybrid = 40308834
+    npv_expected_pv = -2194945
+    npv_expected_wind = -5274461
     npv_expected_battery = -8181700
-    npv_expected_hybrid = -16839535
+    npv_expected_hybrid = -15654417
 
     interconnect_kw = 15000
     wind_kw = 10000
@@ -448,11 +443,6 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
 
     with open(pvsamv1_defaults_file, 'r') as f:
         tech_config = json.load(f)
-    
-    # NOTE: PV array shrunk to avoid problem associated with flicker calculation
-    tech_config['system_capacity'] = 10000
-    tech_config['inverter_count'] = 10
-    tech_config['subarray1_nstrings'] = 2687
 
     power_sources = {
         'pv': {
@@ -509,7 +499,7 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     with subtests.test("with minimal params"):
-        assert sizes.pv == approx(10000, 1e-3)
+        assert sizes.pv == approx(4993, 1e-3)
         assert sizes.wind == approx(wind_kw, 1e-3)
         assert sizes.battery == approx(batt_kw, 1e-3)
         assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
