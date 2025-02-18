@@ -250,7 +250,7 @@ class WindLayout(BaseClass):
             self.parameters = WindGridParameters(**self.parameters)
         else:
             self.parameters = WindGridParameters()
-            
+
         if self.layout_mode == "boundarygrid" or self.layout_mode == "grid":
             rotor_diameter = self._system_model.value("wind_turbine_rotor_diameter")
             self.parameters.update_min_spacing_with_rotor_diameter(rotor_diameter)
@@ -460,13 +460,13 @@ class WindLayout(BaseClass):
             
     def set_layout_params(self,
                           wind_kw,
-                          params: Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]],
+                          params: Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters, WindGridParameters]],
                           exclusions: Polygon = None):
         """Set wind farm layout to accomodate input wind capacity.
 
         Args:
             wind_kw (float): wind farm capacity in kW
-            params (Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]]): wind farm parameters.
+            params (Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters, WindGridParameters]]): wind farm parameters.
             exclusions (Polygon, optional): exclusions in site. Only used if layout_mode is 'boundarygrid'. Defaults to None.
         """
         if params:
