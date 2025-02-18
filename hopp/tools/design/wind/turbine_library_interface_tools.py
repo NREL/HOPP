@@ -3,7 +3,7 @@ import hopp.tools.design.wind.power_curve_tools as curve_tools
 from hopp.utilities.log import hybrid_logger as logger
 import numpy as np
 from floris.turbine_library import build_cosine_loss_turbine_dict
-from difflib import SequenceMatcher
+
 
 def extract_power_curve(turbine_specs: dict, model_name: str):
     turbine_name = turbine_specs["name"]
@@ -135,47 +135,3 @@ def get_floris_turbine_specs(turbine_name,wind_plant): #:WindPlant):
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
     return turbine_dict
-
-def load_distributed_turbine_options():
-    t_lib = Turbines()
-    distributed_turbines = t_lib.turbines(group = "distributed")
-    return distributed_turbines
-
-def load_land_based_turbine_options():
-    t_lib = Turbines()
-    lbw_turbines = t_lib.turbines(group = "onshore")
-    return lbw_turbines
-
-def load_offshore_turbine_options():
-    t_lib = Turbines()
-    osw_turbines = t_lib.turbines(group = "offshore")
-    return osw_turbines
-
-def check_turbine_name(turbine_name:str):
-    t_lib = Turbines()
-    valid_name = False
-    best_match = ""
-    max_match_ratio = 0.0
-    for turb_group in t_lib.groups:
-        turbines_in_group = t_lib.turbines(group = turb_group)
-        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
-            valid_name = True
-        else:
-            for turb in turbines_in_group.values():
-                match_ratio = SequenceMatcher(None,turbine_name.lower(), turb.lower()).ratio()
-                if match_ratio>max_match_ratio:
-                    best_match = str(turb)
-                    max_match_ratio = max(match_ratio,max_match_ratio)
-    if valid_name:
-        return turbine_name
-    else:
-        return best_match
-
-def check_turbine_library_for_turbine(turbine_name:str):
-    t_lib = Turbines()
-    valid_name = False
-    for turb_group in t_lib.groups:
-        turbines_in_group = t_lib.turbines(group = turb_group)
-        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
-            valid_name = True
-    return valid_name

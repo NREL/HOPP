@@ -1,0 +1,81 @@
+from turbine_models.parser import Turbines
+from difflib import SequenceMatcher
+
+def load_distributed_turbine_options():
+    """Load list of distributed turbines from turbine-models library.
+
+    Returns:
+        list[str]: list of turbine names in group "distributed"
+    """
+    t_lib = Turbines()
+    distributed_turbines_dict = t_lib.turbines(group = "distributed")
+    distributed_turbines = [v for k,v in distributed_turbines_dict.items()]
+    return distributed_turbines
+
+def load_land_based_turbine_options():
+    """Load list of onshore turbines from turbine-models library.
+
+    Returns:
+        list[str]: list of turbine names in group "onshore"
+    """
+    t_lib = Turbines()
+    lbw_turbines_dict = t_lib.turbines(group = "onshore")
+    lbw_turbines = [v for k,v in lbw_turbines_dict.items()]
+    return lbw_turbines
+
+def load_offshore_turbine_options():
+    """Load list of offshore turbines from turbine-models library.
+
+    Returns:
+        list[str]: list of turbine names in group "offshore"
+    """
+    t_lib = Turbines()
+    osw_turbines_dict = t_lib.turbines(group = "offshore")
+    osw_turbines = [v for k,v in osw_turbines_dict.items()]
+    return osw_turbines
+
+def check_turbine_name(turbine_name:str):
+    """Check turbine-models library for turbine named `turbine_name` and return a valid turbine name.
+
+    Args:
+        turbine_name (str): name of turbine in turbine-models library
+
+    Returns:
+        str: turbine name that most closely matches the input `turbine_name` of the turbines
+             in turbine-models library.
+    """
+    t_lib = Turbines()
+    valid_name = False
+    best_match = ""
+    max_match_ratio = 0.0
+    for turb_group in t_lib.groups:
+        turbines_in_group = t_lib.turbines(group = turb_group)
+        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
+            valid_name = True
+        else:
+            for turb in turbines_in_group.values():
+                match_ratio = SequenceMatcher(None,turbine_name.lower(), turb.lower()).ratio()
+                if match_ratio>max_match_ratio:
+                    best_match = str(turb)
+                    max_match_ratio = max(match_ratio,max_match_ratio)
+    if valid_name:
+        return turbine_name
+    else:
+        return best_match
+
+def check_turbine_library_for_turbine(turbine_name:str):
+    """Check turbine-models library for turbine named `turbine_name`.
+
+    Args:
+        turbine_name (str): name of turbine in turbine-models library
+
+    Returns:
+        bool: whether the input turbine name matches a turbine available in the turbine-models library.
+    """
+    t_lib = Turbines()
+    valid_name = False
+    for turb_group in t_lib.groups:
+        turbines_in_group = t_lib.turbines(group = turb_group)
+        if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
+            valid_name = True
+    return valid_name

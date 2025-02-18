@@ -5,6 +5,16 @@ from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.utilities import load_yaml
 
 def check_output_formatting(orig_dict):
+    """Recursive method to convert arrays to lists and numerical entries to floats.
+        This is primarily used before writing a dictionary to a .yaml file to ensure
+        proper output formatting.
+
+    Args:
+        orig_dict (dict): input dictionary
+
+    Returns:
+        dict: input dictionary with reformatted values.
+    """
     for key, val in orig_dict.items():
         if isinstance(val, dict):
             tmp = check_output_formatting(orig_dict.get(key, { }))
@@ -31,6 +41,15 @@ def check_output_formatting(orig_dict):
     return orig_dict
 
 def write_floris_layout_to_file(layout_x,layout_y,output_dir,turbine_desc):
+    """Export wind farm layout to floris-friendly .yaml file.
+
+    Args:
+        layout_x (List[float]): x-coordinates of turbines
+        layout_y (List[float]): y-coordinates of turbines
+        output_dir (str): output folder to write layout file to.
+        turbine_desc (str): turbine name or description.
+    """
+
     layout_x = [float(x) for x in layout_x]
     layout_y = [float(y) for y in layout_y]
 
@@ -40,12 +59,26 @@ def write_floris_layout_to_file(layout_x,layout_y,output_dir,turbine_desc):
     write_yaml(output_fpath,layout)
 
 def write_turbine_to_floris_file(turbine_dict,output_dir):
+    """Export turbine model to floris-friendly .yaml file.
+
+    Args:
+        turbine_dict (dict): turbine entry of floris_config file
+        output_dir (str): output folder to write turbine model file to.
+    """
     turb_name = turbine_dict["turbine_type"]
     output_fpath = os.path.join(output_dir,f"floris_turbine_{turb_name}.yaml")
     new_dict = check_output_formatting(turbine_dict)
     write_yaml(output_fpath,new_dict)
 
 def check_floris_library_for_turbine(turbine_name):
+    """Check if a turbine exists in the floris internal library.
+
+    Args:
+        turbine_name (str): name of turbine
+
+    Returns:
+        bool: whether turbine exists in floris internal library or not.
+    """
     floris_library_fpath = INTERNAL_LIBRARY / "{}.yaml".format(turbine_name)
     if os.path.isfile(floris_library_fpath):
         return True
@@ -53,6 +86,17 @@ def check_floris_library_for_turbine(turbine_name):
         return False
 
 def load_turbine_from_floris_library(turbine_name):
+    """Load turbine model file from floris internal library.
+
+    Args:
+        turbine_name (str): name of turbine
+
+    Raises:
+        FileNotFoundError: if file does not exist in floris internal library.
+
+    Returns:
+        dict: floris turbine model dictionary
+    """
     floris_library_fpath = INTERNAL_LIBRARY / "{}.yaml".format(turbine_name)
     if os.path.isfile(floris_library_fpath):
         turb_dict = load_yaml(floris_library_fpath)

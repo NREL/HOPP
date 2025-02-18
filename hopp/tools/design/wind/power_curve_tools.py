@@ -11,7 +11,22 @@ def plot_power_curve(wind_speeds_ms,cp_curve,ct_curve):
     plt.show()
 
 
-def pad_power_curve(wind_speed,curve,v_min = 0.0,v_max = 50.0):
+def pad_power_curve(wind_speed, curve, v_min = 0.0, v_max = 50.0):
+    """Pad curve data with zeros from wind speeds of v_min to v_max.
+
+    Args:
+        wind_speeds_ms (List | np.ndarray): list of wind speeds in m/s
+        curve (List | np.ndarray): curve data at each wind speed in `wind_speeds_ms`. Can be 
+            either Cp, power, or Ct.
+        v_min (float, Optional): wind speed to start curve data at. Defaults to 0.0.
+        v_max (float, Optional): wind speed to end curve data at. Defaults to 50.0.
+
+    Returns:
+       2-element tuple containing
+
+       - **padded_wind_speeds_ms** (list): padded wind speed in m/s starting at v_min and ending at v_max
+       - **padded_curve** (list): padded curve data for wind speeds starting at v_min and ending at v_max
+    """
     wind_speeds_ms = copy.deepcopy(wind_speed)
     if isinstance(wind_speeds_ms,list):
         wind_speeds_ms = np.array(wind_speeds_ms)
@@ -28,7 +43,25 @@ def pad_power_curve(wind_speed,curve,v_min = 0.0,v_max = 50.0):
         curve = np.concatenate((curve,np.zeros(len(wind_speed_pad))))
     return list(wind_speeds_ms), list(curve)
 
-def calculate_cp_from_power(wind_speeds_ms,power_curve_kw,rotor_diameter,air_density = 1.225):
+def calculate_cp_from_power(wind_speeds_ms, power_curve_kw, rotor_diameter, air_density = 1.225):
+    """Calculate power coefficient curve (Cp) from power curve.
+
+    Args:
+        wind_speeds_ms (List | np.ndarray): list of wind speeds in m/s
+        power_curve_kw (List | np.ndarray): turbine power (in kW) at each wind speed in `wind_speeds_ms`
+        rotor_diameter (float): rotor diameter of the turbine in meters.
+        air_density (float, Optional): Air density assumed for power-curve calculations in kg/m3.
+             Defaults to 1.225.
+
+    Raises:
+        UserWarning: if `wind_speeds_ms` and `power_curve_kw` are different lengths.
+
+    Returns:
+        list: power curve coefficients (Cp) at each wind speed in `wind_speeds_ms`
+    """
+
+    if len(wind_speeds_ms) != len(power_curve_kw):
+        raise UserWarning("The length of the wind speed and power vectors must be the same")
     rotor_area = np.pi*((rotor_diameter/2)**2)
     if isinstance(wind_speeds_ms,list):
         wind_speeds_ms = np.array(wind_speeds_ms)
@@ -40,7 +73,26 @@ def calculate_cp_from_power(wind_speeds_ms,power_curve_kw,rotor_diameter,air_den
     cp = np.where(cp<0,0,cp)
     return list(cp)
 
-def calculate_power_from_cp(wind_speeds_ms,cp_curve,rotor_diameter,rated_power_kW, air_density = 1.225):
+def calculate_power_from_cp(wind_speeds_ms, cp_curve, rotor_diameter, rated_power_kW, air_density = 1.225):
+    """Calculate power curve from power coefficient curve (Cp)
+
+    Args:
+        wind_speeds_ms (List | np.ndarray): list of wind speeds in m/s
+        cp_curve (List | np.ndarray): power curve coefficients (Cp) at each wind speed in `wind_speeds_ms`
+        rotor_diameter (float): rotor diameter of the turbine in meters.
+        air_density (float, Optional): Air density assumed for power-curve calculations in kg/m3.
+             Defaults to 1.225.
+    
+    Raises:
+        UserWarning: if `wind_speeds_ms` and `cp_curve` are different lengths.
+
+    Returns:
+        list: turbine power (in kW) at each wind speed in `wind_speeds_ms`
+    """
+
+    if len(wind_speeds_ms) != len(cp_curve):
+        raise UserWarning("The length of the wind speed and coefficient of power vectors must be the same")
+
     rotor_area = np.pi*((rotor_diameter/2)**2)
     if isinstance(wind_speeds_ms,list):
         wind_speeds_ms = np.array(wind_speeds_ms)
@@ -53,16 +105,26 @@ def calculate_power_from_cp(wind_speeds_ms,cp_curve,rotor_diameter,rated_power_k
     power_kW = np.where(power_kW<0,0,power_kW)
     return list(power_kW)
 
-def estimate_thrust_coefficient(wind_speeds_ms,cp_curve, plot=False, print_output=False):
+def estimate_thrust_coefficient(wind_speeds_ms, cp_curve, plot=False, print_output=False):
+    """Calculate thrust coefficient curve (Ct) from power coefficient curve (Cp).
 
+    Args:
+        wind_speeds_ms (List | np.ndarray): list of wind speeds in m/s
+        cp_curve (List | np.ndarray): power curve coefficients (cp) at each wind speed in `wind_speeds_ms`
+        plot (bool, Pptional): whether to plot Cp and Ct curve. Defaults to False.
+        print_output (bool, Optional): Whether to print Cp and Ct curves. Defaults to False.
+    
+    Raises:
+        UserWarning: if `wind_speeds_ms` and `cp_curve` are different lengths.
+
+    Returns:
+        list: thrust curve coefficients (cp) at each wind speed in `wind_speeds_ms`
+    """
+    
     # Check that the wind speed and the coefficient of power are the same length
     if len(wind_speeds_ms) != len(cp_curve):
-        print("The length of the wind speed and coefficient of power vectors must be the same")
-        return
-
-    # wind_speeds_ms = wind_speeds_ms.dropna()
-    # cp_curve = cp_curve.dropna()
-        
+        raise UserWarning("The length of the wind speed and coefficient of power vectors must be the same")
+     
     N_wind = len(wind_speeds_ms)
     ct_curve = list(np.zeros(N_wind))
     
@@ -88,13 +150,13 @@ def estimate_thrust_coefficient(wind_speeds_ms,cp_curve, plot=False, print_outpu
         plot_power_curve(wind_speeds_ms,cp_curve,ct_curve)
 
     if print_output:
-        print("Coefficient of Thrust: ")
+        print("Coefficient of Thrust (Ct): ")
         for i in ct_curve:
             print("-",i)
-        print("Coefficient of Power: ")
+        print("Coefficient of Power (Cp): ")
         for i in cp_curve:
             print("-",i)
-        print("Wind Speed: ")
+        print("Wind Speed (v): ")
         for i in wind_speeds_ms:
             print("-",i)
     ct_flat = [ct[0] for ct in ct_curve]
