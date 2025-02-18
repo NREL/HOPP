@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from hopp.simulation.technologies.wind.wind_plant import WindConfig
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
-from from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
+from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
 import hopp.tools.design.wind.floris_helper_tools as floris_tools
 @define
 class Floris(BaseClass):

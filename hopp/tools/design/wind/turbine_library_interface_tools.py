@@ -3,9 +3,21 @@ import hopp.tools.design.wind.power_curve_tools as curve_tools
 from hopp.utilities.log import hybrid_logger as logger
 import numpy as np
 from floris.turbine_library import build_cosine_loss_turbine_dict
-
+import PySAM.Windpower as windpower
 
 def extract_power_curve(turbine_specs: dict, model_name: str):
+    """Creates power-curve for turbine based on available data and formats it for the corresponding simulation model.
+
+    Args:
+        turbine_specs (dict): turbine specs loaded from turbine-models library.
+        model_name (str): wind simulation model, either "pysam" or "floris".
+
+    Raises:
+        UserWarning: if turbine data doesnt have the minimum required power-curve information.
+
+    Returns:
+        dict: power-curve dictionary formatted for the corresponding `model_name`.
+    """
     turbine_name = turbine_specs["name"]
     wind_speeds = turbine_specs["power_curve"]["wind_speed_ms"].to_list()
     turbine_curve_cols = turbine_specs["power_curve"].columns.to_list()
@@ -60,21 +72,51 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
 
 
 def check_hub_height(turbine_specs,wind_plant):
+    """Check the hub-height from the turbine-library specs against the other possible hub-height entries.
+        If multiple hub-height options are available from the turbine_specs, it will choose one based on user-input information.
+
+    Args:
+        turbine_specs (dict): turbine specs loaded from turbine-models library.
+        wind_plant (:obj:`hopp.simulation.technologies.wind.floris.Floris` | :obj:`hopp.simulation.technologies.wind.wind_plant.WindPlant`): wind 
+            plant object for either PySAM or FLORIS wind simulation model.
+
+    Returns:
+        float: hub-height to use in meters.
+    """
     turbine_name = turbine_specs["name"]
     # if multiple hub height options are available
     if isinstance(turbine_specs["hub_height"],list):
         # check for hub height in wind_plant
-        if not isinstance(wind_plant,dict) and wind_plant is not None:
+        if isinstance(wind_plant,object) and wind_plant is not None:
+            
+            # check if hub_height was put in WindConfig
             if wind_plant.config.hub_height is not None:
-                hub_height = wind_plant.config.hub_height
-                logger.warning(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to config hub_height: {hub_height}")
+                if any(float(k) == float(wind_plant.config.hub_height) for k in turbine_specs["hub_height"]):
+                    hub_height = wind_plant.config.hub_height
+                    logger.info(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to WindConfig hub_height: {hub_height}")
+                    return hub_height
+                    
+            
             # check the hub_height used for wind resource
             elif wind_plant.site.hub_height is not None:
-                hub_height= wind_plant.site.hub_height
+                if any(float(k) == float(wind_plant.site.hub_height) for k in turbine_specs["hub_height"]):
+                    hub_height = wind_plant.site.hub_height
+                    logger.info(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to SiteInfo hub_height: {hub_height}")
+                    return hub_height
+            
+            # check the hub-height of PySAM wind turbine object
+            elif isinstance(wind_plant._system_model,windpower.Windpower):
+                if any(float(k) == float(wind_plant._system_model.Turbine.wind_turbine_hub_ht) for k in turbine_specs["hub_height"]):
+                    hub_height = wind_plant._system_model.Turbine.wind_turbine_hub_ht
+                    logger.info(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to WindPower.WindPower.Turbine.wind_turbine_hub_ht: {hub_height}")
+                    return hub_height
+            
             # set hub height as median from options
             else:
                 hub_height = np.median(turbine_specs["hub_height"])
-                logger.warning(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to median available height: {hub_height}")
+                logger.info(f"multiple hub height options available for {turbine_name} turbine. Setting hub height to median available height: {hub_height}")
+                return hub_height
+                
     else:
         hub_height = turbine_specs["hub_height"]
         if wind_plant.config.hub_height is not None:
@@ -86,7 +128,19 @@ def check_hub_height(turbine_specs,wind_plant):
     return hub_height
 
 
-def get_pysam_turbine_specs(turbine_name,wind_plant):#:WindPlant):
+def get_pysam_turbine_specs(turbine_name,wind_plant):
+    """Load and set turbine data from turbine-models library to use with PySAM wind simulation.
+
+    Args:
+        turbine_name (str): name of turbine in turbine-models library
+        wind_plant (:obj:`hopp.simulation.technologies.wind.wind_plant.WindPlant`): wind plant object.
+
+    Raises:
+        ValueError: if turbine is missing data.
+
+    Returns:
+        dict: turbine model dictionary formatted for PySAM.
+    """
     t_lib = Turbines()
     turbine_specs = t_lib.specs(turbine_name)
     if isinstance(turbine_specs,dict):
@@ -104,9 +158,21 @@ def get_pysam_turbine_specs(turbine_name,wind_plant):#:WindPlant):
 
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
-    return wind_plant, turbine_dict
+    return turbine_dict
 
-def get_floris_turbine_specs(turbine_name,wind_plant): #:WindPlant):
+def get_floris_turbine_specs(turbine_name,wind_plant):
+    """Load and set turbine data from turbine-models library to use with FLORIS wind simulation.
+
+    Args:
+        turbine_name (str): name of turbine in turbine-models library
+        wind_plant (:obj:`hopp.simulation.technologies.wind.floris.Floris`): FLORIS wrapper object.
+
+    Raises:
+        ValueError: if turbine is missing data.
+
+    Returns:
+        dict: turbine model dictionary formatted for FLORIS.
+    """
     t_lib = Turbines()
     turb_group = t_lib.find_group_for_turbine(turbine_name)
     turbine_specs = t_lib.specs(turbine_name,group = turb_group)
