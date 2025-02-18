@@ -15,6 +15,7 @@ from hopp.utilities import load_yaml
 from hopp.tools.resource.wind_tools import (
     calculate_air_density_for_elevation, 
     parse_resource_data,
+    weighted_parse_resource_data
 )
 # avoid circular dep
 if TYPE_CHECKING:
@@ -23,14 +24,13 @@ from hopp.utilities.log import hybrid_logger as logger
 from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
 from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
 import hopp.tools.design.wind.floris_helper_tools as floris_tools
+
 @define
 class Floris(BaseClass):
     
     site: SiteInfo = field()
     config: "WindConfig" = field()
     verbose: bool = field(default = True)
-    # option to store turbine-powers and velocities or not
-    store_turbine_performance_results: bool = field(default = False)
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
@@ -83,8 +83,10 @@ class Floris(BaseClass):
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
 
-        self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
-
+        if self.config.resource_parse_method == "average":
+            self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
+        elif self.config.resource_parse_method == "weighted_average":
+            self.speeds, self.wind_dirs = weighted_parse_resource_data(self.site.wind_resource)
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # time to simulate
@@ -210,7 +212,7 @@ class Floris(BaseClass):
         self.annual_energy = np.sum(self.gen) # kWh
         self.capacity_factor = np.sum(self.gen) / (len(power_farm) * self.system_capacity) * 100
         self.annual_energy_pre_curtailment_ac = np.sum(self.gen) # kWh
-        if self.store_turbine_performance_results:
+        if self.config.store_turbine_performance_results:
             self.turb_powers = power_turbines * operational_efficiency / 1000 # kW
             self.turb_velocities = self.fi.turbine_average_velocities
         
