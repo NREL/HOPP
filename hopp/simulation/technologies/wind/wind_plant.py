@@ -44,6 +44,8 @@ class WindConfig(BaseClass):
         floris_config (dict | str | Path): Floris configuration, only used if `model_name` == 'floris'
         adjust_air_density_for_elevation (bool): whether to adjust air density for elevation. Defaults to False.
             Only used if True and ``site.elev`` is not None. 
+        resource_parse_method (str): method to parse wind resource data if using floris and downloaded resource data for 2 heights.
+            Can either be "weighted_average" or "average". Defaults to "average".
         operational_losses (float, Optional): total percentage losses in addition to wake losses, defaults based on PySAM (only used for Floris model)
         timestep (Tuple[int]): Timestep (required for floris runs, otherwise optional). Defaults to (0,8760)
         fin_model (obj | dict | str): Optional financial model. Can be any of the following:
@@ -66,6 +68,7 @@ class WindConfig(BaseClass):
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     adjust_air_density_for_elevation: Optional[bool] = field(default = False)
+    resource_parse_method: str = field(default="average", validator=contains(["weighted_average", "average"]))
     operational_losses: float = field(default = 12.83, validator=range_val(0, 100))
     timestep: Optional[Tuple[int, int]] = field(default=(0,8760))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
