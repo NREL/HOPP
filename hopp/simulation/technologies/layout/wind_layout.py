@@ -248,14 +248,11 @@ class WindLayout(BaseClass):
             self.parameters = WindCustomParameters(**self.parameters)
         elif self.layout_mode == 'grid' and isinstance(self.parameters,dict):
             self.parameters = WindGridParameters(**self.parameters)
-        else:
+        elif self.parameters is None:
             self.parameters = WindGridParameters()
+        
 
-        if self.layout_mode == "boundarygrid" or self.layout_mode == "grid":
-            rotor_diameter = self._system_model.value("wind_turbine_rotor_diameter")
-            self.parameters.update_min_spacing_with_rotor_diameter(rotor_diameter)
-            if self.layout_mode == "boundarygrid":
-                self.parameters.update_max_spacing_with_rotor_diameter(rotor_diameter)
+        self._get_system_config()
 
     def _get_system_config(self):
         """Update min and max spacing constraints in `parameters` based on actual rotor diameter of the wind turbine.
@@ -442,9 +439,14 @@ class WindLayout(BaseClass):
                 # just use `grid`` method
                 max_min_spacing_D = max(self.parameters.row_D_spacing,self.parameters.turbine_D_spacing)
                 max_min_spacing_m = max(interrow_spacing,intrarow_spacing)
+                original_parameters = self.parameters._get_model_dict()
                 self.parameters = WindGridParameters(min_spacing_D = max_min_spacing_D,min_spacing_m=max_min_spacing_m)
+                self.layout_mode = "grid"
                 self.parameters.update_min_spacing_with_rotor_diameter(self.rotor_diameter)
                 self.reset_grid(n_turbines)
+                self.layout_mode = "basicgrid"
+                self.parameters = original_parameters
+
         else:
             # center on the site
             xcoords_grid = [point.x for point in grid_position_square]
