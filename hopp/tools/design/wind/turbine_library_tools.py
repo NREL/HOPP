@@ -52,6 +52,19 @@ def check_turbine_name(turbine_name:str):
         turbines_in_group = t_lib.turbines(group = turb_group)
         if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
             valid_name = True
+            return turbine_name
+        elif any(turbine_name.lower() in turb.lower() for turb in turbines_in_group.values()):
+            turbine_options = [turb for turb in turbines_in_group.values() if turbine_name.lower() in turb.lower()]
+            if len(turbine_options)==1:
+                best_match = turbine_options[0]
+                return best_match
+            else:
+                for turb in turbine_options:
+                    match_ratio = SequenceMatcher(None,turbine_name.lower(), turb.lower()).ratio()
+                    if match_ratio>max_match_ratio:
+                        best_match = str(turb)
+                        max_match_ratio = max(match_ratio,max_match_ratio)
+
         else:
             for turb in turbines_in_group.values():
                 match_ratio = SequenceMatcher(None,turbine_name.lower(), turb.lower()).ratio()
