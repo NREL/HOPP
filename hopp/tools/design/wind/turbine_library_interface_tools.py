@@ -180,21 +180,22 @@ def get_floris_turbine_specs(turbine_name,wind_plant):
         
         hub_height = check_hub_height(turbine_specs,wind_plant)
         power_thrust_table = extract_power_curve(turbine_specs, model_name = "floris")
+        
+        turbine_specs.setdefault("rated_tsr", 8.0)
+        if turbine_specs["rated_tsr"] is None:
+            turbine_specs["rated_tsr"] = 8.0
 
         power_thrust_table.update({
             "ref_air_density": 1.225,
-            "ref_tilt": 5.0,
+            "ref_tilt": turbine_specs.setdefault("rotor_tilt_angle", 5.0),
             "cosine_loss_exponent_yaw": 1.88,
             "cosine_loss_exponent_tilt": 1.88,
-            # "TSR": 8.0,
             })
         turbine_dict = {
             "turbine_type":turbine_name,
-            "turbine_rating":turbine_specs["rated_power"],
             "hub_height":hub_height,
-            "TSR": 8.0,
+            "TSR": turbine_specs["rated_tsr"],
             "rotor_diameter":turbine_specs["rotor_diameter"],
-            # "operation_model": "cosine-loss",
             "power_thrust_table": power_thrust_table,
         }
         

@@ -274,4 +274,4 @@ class Floris(BaseClass):
         self.fi.set(turbine_type=[turbine_lib_res])
         self.value("wind_turbine_rotor_diameter", turbine_lib_res["rotor_diameter"])
         self.value("wind_turbine_powercurve_powerout", turbine_lib_res["power_thrust_table"]["power"])
-        self.turb_rating = max(turbine_lib_res["turbine_rating"])
+        self.turb_rating = max(turbine_lib_res["power_thrust_table"]["power"])

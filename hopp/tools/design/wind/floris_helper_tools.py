@@ -102,6 +102,7 @@ def load_turbine_from_floris_library(turbine_name):
     floris_library_fpath = INTERNAL_LIBRARY / "{}.yaml".format(turbine_name)
     if os.path.isfile(floris_library_fpath):
         turb_dict = load_yaml(floris_library_fpath)
+        turb_dict.pop("power_thrust_data_file")
         return turb_dict
     else:
         raise FileNotFoundError("Floris library file for turbine {} does not exist.".format(turbine_name))
@@ -115,7 +116,7 @@ def check_libraries_for_turbine_name_floris(turbine_name,floris_model):
         return turb_dict
     elif is_turb_lib_turbine:
         floris_model.value("turbine_name",turbine_name)
-        turbine_dict = get_floris_turbine_specs(turbine_name,floris_model)
+        turb_dict = get_floris_turbine_specs(turbine_name,floris_model)
         return turb_dict
     else:
         best_match_name = check_turbine_name(turbine_name)
