@@ -13,7 +13,7 @@ from hopp.type_dec import resource_file_converter
 from pathlib import Path
 from hopp.utilities import load_yaml
 from hopp.tools.resource.wind_tools import (
-    calculate_air_density_for_elevation, 
+    calculate_air_density, 
     parse_resource_data,
     weighted_parse_resource_data
 )
@@ -74,7 +74,7 @@ class Floris(BaseClass):
             floris_config = self.config.floris_config
 
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-            rho = calculate_air_density_for_elevation(self.site.elev)
+            rho = calculate_air_density(self.site.elev)
             floris_config["flow_field"].update({"air_density":rho})
         
         floris_config = self.initialize_from_floris(floris_config)

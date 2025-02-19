@@ -18,7 +18,7 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindBasicGridParameters)
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
+from hopp.tools.resource.wind_tools import calculate_air_density_losses
 
 
 @define
@@ -165,7 +165,7 @@ class WindPlant(PowerSource):
             if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
             if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-                air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
+                air_dens_losses = calculate_air_density_losses(self.site.elev)
                 self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
         
         

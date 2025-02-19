@@ -229,7 +229,7 @@ def plot_site_polygon(
         site_sw_bound = np.array([bounds[0], bounds[1]])
         site_ne_bound = np.array([bounds[2], bounds[3]])
         site_center = .5 * (site_sw_bound + site_ne_bound)
-        max_delta = max(bounds[2] - bounds[0], bounds[3] - bounds[1])
+        max_delta = max(site_ne_bound - site_sw_bound)
         reach = (max_delta / 2) * 1.3
         min_plot_bound = site_center - reach
         max_plot_bound = site_center + reach
