@@ -54,7 +54,7 @@ def make_grid_lines(site_shape: BaseGeometry,
     
     grid_angle = np.deg2rad(grid_angle)
     grid_angle = (grid_angle + np.pi) % (2 * np.pi) - np.pi  # reset grid_angle to (-pi, pi)
-    bounds = site_shape.bounds #(xmin,ymin,xmax,ymax)
+    bounds = site_shape.bounds 
     
     #line from (xmin,ymin) to (xmax,ymax)
     bounding_box_line = LineString([(bounds[0], bounds[1]), (bounds[2], bounds[3])])
@@ -296,7 +296,7 @@ def find_most_square_layout_dimensions(n_turbs):
 
     n_rows = n_rows_min + n_extra_rows
 
-    return n_turbs_per_row,n_rows
+    return n_turbs_per_row.astype(int),n_rows.astype(int)
 
 def make_site_boundary_for_square_grid_layout(n_turbs,rotor_diam,row_spacing,turbine_spacing):
     """Generate coordinates for shape that would result in the most-square turbine layout.

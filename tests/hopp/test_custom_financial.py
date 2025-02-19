@@ -8,6 +8,7 @@ from hopp.simulation.technologies.financial.custom_financial_model import Custom
 from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 import copy
 import numpy as np
+
 DEFAULT_FIN_CONFIG_LOCAL = copy.deepcopy(DEFAULT_FIN_CONFIG)
 DEFAULT_FIN_CONFIG_LOCAL.pop("revenue") # these tests were written before the revenue section was added to the default financial config
 

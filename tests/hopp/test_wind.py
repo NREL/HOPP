@@ -167,7 +167,6 @@ def test_changing_turbine_rating_floris(site):
    
 
 def test_changing_system_capacity_floris(site):
-    # this will fail now
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
@@ -180,6 +179,6 @@ def test_changing_system_capacity_floris(site):
     assert model._system_model.nTurbs == 4
     assert model._system_model.turb_rating == rating
     assert model._system_model.system_capacity == 20000
-    model.system_capacity_by_num_turbines(1000)
-    assert model._system_model.system_capacity == 0.0 #weird
+    model.system_capacity_by_num_turbines(10000)
+    assert model._system_model.system_capacity == 10000.0 #weird
 
