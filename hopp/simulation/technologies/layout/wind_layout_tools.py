@@ -41,13 +41,23 @@ def make_grid_lines(site_shape: BaseGeometry,
                     grid_angle: float,
                     interrow_spacing: float
                     ) -> list:
-    """
-    Place parallel lines inside a site. 
-    :param site_shape: Polygon
-    :param center: where to center the grid
-    :param grid_angle: in degrees where 0 is east
-    :param interrow_spacing: distance between lines
-    :return: list of lines
+    """Place parallel lines inside a site. 
+
+    Process runs as follows:
+
+        - `bounding_box_line`: line from (xmin,ymin) to (xmax,ymax)
+        - `base_line`: at y=0, x goes from negative to positive `bounding_box_line.length`
+        - `line_length`: `2x(bounding_box_line.length) = 2*(sqrt[(xmax-xmin)^2 + (ymax-ymin)^2])`
+        - shift `base_line` so ymax,ymin = center.y and (xmax - xmin)/2 = center.x
+    
+    Args:
+        site_shape (BaseGeometry): Polygon
+        center (Point): where to center the grid
+        grid_angle (float): in degrees where 0 is east
+        interrow_spacing (float): distance between lines
+    
+    Returns:
+        list[LineString]: grid lines as rows.
     """
     if site_shape.is_empty:
         return []
@@ -56,15 +66,11 @@ def make_grid_lines(site_shape: BaseGeometry,
     grid_angle = (grid_angle + np.pi) % (2 * np.pi) - np.pi  # reset grid_angle to (-pi, pi)
     bounds = site_shape.bounds 
     
-    #line from (xmin,ymin) to (xmax,ymax)
     bounding_box_line = LineString([(bounds[0], bounds[1]), (bounds[2], bounds[3])])
-    #at y=0, x goes from negative to positive bounding_box_line.length
     base_line = LineString([(-bounding_box_line.length, 0), (bounding_box_line.length, 0)])
-    # line_length = 2x(bounding_box_line.length) = 2*(sqrt[(xmax-xmin)^2 + (ymax-ymin)^2])
     line_length = base_line.length
     
     base_line = rotate(base_line, -grid_angle, use_radians=True)
-    #shift baseline so ymax,ymin = center.y and (xmax - xmin)/2 = center.x
     base_line = translate(base_line, center.x, center.y)
     
     row_offset = Point(
