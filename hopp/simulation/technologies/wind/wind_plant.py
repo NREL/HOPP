@@ -161,7 +161,6 @@ class WindPlant(PowerSource):
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
             
-        # below only is applicable if using PySAM
         if self.config.model_name=="pysam":
             if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height

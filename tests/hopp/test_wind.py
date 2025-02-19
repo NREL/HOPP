@@ -180,5 +180,5 @@ def test_changing_system_capacity_floris(site):
     assert model._system_model.turb_rating == rating
     assert model._system_model.system_capacity == 20000
     model.system_capacity_by_num_turbines(10000)
-    assert model._system_model.system_capacity == 10000.0 #weird
+    assert model._system_model.system_capacity == 10000.0 
 
