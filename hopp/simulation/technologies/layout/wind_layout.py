@@ -6,7 +6,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.affinity import scale
 import PySAM.Windpower as windpower
 from attrs import define, field
-from typing import Optional, Union, List
+from typing import Optional, Union
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.simulation.technologies.layout.wind_layout_tools import (
     get_best_grid,
@@ -209,19 +209,19 @@ class WindLayout(BaseClass):
     """
     site_polygon: Union[Polygon, BaseGeometry] 
     _system_model: Union[windpower.Windpower,Floris]
-    layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']), converter=(str.strip, str.lower))
+    layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom', 'basicgrid']), converter=(str.strip, str.lower))
     parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, WindGridParameters, dict]
     
     turbine_rating_kW: Optional[float] = field(default = None)
 
-    turb_pos_x: List[float] = field(init=False)
-    turb_pos_y: List[float] = field(init=False)
+    turb_pos_x: list[float] = field(init=False)
+    turb_pos_y: list[float] = field(init=False)
     
     def __attrs_post_init__(self):
         """The following are initialized in this post init hook:
             
-            - turb_pos_x (List[float]): x-coordinates of turbines
-            - turb_pos_y (List[float]): x-coordinates of turbines
+            - turb_pos_x (list[float]): x-coordinates of turbines
+            - turb_pos_y (list[float]): x-coordinates of turbines
             - parameters.min_spacing (float): minimum spacing between turbines in meters. 
                 Only used if layout_mode is `grid` or `boundarygrid`.
             - parameters.max_spacing (float): maximum spacing between turbines in meters. 
@@ -247,8 +247,8 @@ class WindLayout(BaseClass):
                 self.parameters = WindCustomParameters.from_dict(self.parameters)
             elif self.layout_mode == 'grid':
                 self.parameters = WindGridParameters.from_dict(self.parameters)
-            else:
-                self.parameters = WindGridParameters.from_dict({})
+        elif self.parameters is None:
+            self.parameters = WindGridParameters()
 
         self._get_system_config()
 
