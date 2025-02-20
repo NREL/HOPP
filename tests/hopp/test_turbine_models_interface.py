@@ -90,6 +90,8 @@ def test_floris_nrel_5mw(site_input,subtests):
         assert wind_plant.capacity_factor < 100.0
     with subtests.test("aep"):
         wind_plant._system_model.annual_energy == approx(74149945, 1e-3)
+    with subtests.test("wind capacity factor value"):
+        assert wind_plant.capacity_factor == approx(42.0, abs = 1.0)
 
 def test_floris_nrel_5mw(site_input,subtests):
     floris_template = load_yaml(str(FLORIS_V4_TEMPLATE_PATH))
@@ -120,6 +122,8 @@ def test_floris_nrel_5mw(site_input,subtests):
     aeps = hybrid_plant.annual_energies
     with subtests.test("wind aep"):
         assert aeps.wind == approx(74149945, 1e-3)
+    with subtests.test("wind capacity factor"):
+        assert hybrid_plant.capacity_factors["wind"] == approx(42.0, abs = 1.0)
 
 def test_floris_NREL_5MW_RWT_corrected(site_input,subtests):
     floris_template = load_yaml(str(FLORIS_V4_TEMPLATE_PATH))
@@ -150,4 +154,37 @@ def test_floris_NREL_5MW_RWT_corrected(site_input,subtests):
     aeps = hybrid_plant.annual_energies
     with subtests.test("wind aep"):
         assert aeps.wind == approx(74149945, 1e-3)
-    
+    with subtests.test("wind capacity factor"):
+        assert hybrid_plant.capacity_factors["wind"] == approx(42.0, abs = 1.0)
+
+
+
+def test_pysam_NREL_5MW_RWT_corrected(site_input,subtests):
+    turbine_library_turbine_name = "NREL_5MW_126_RWT_corrected"
+    n_turbs = 4
+    turbine_rating_kw = 5000.0
+    layout_x = [0.0,1841.0,3682.0,5523.0]
+    layout_y = [0.0]*n_turbs
+    layout_params = {"layout_x":layout_x,"layout_y":layout_y}
+    wind_config_dict = {
+        "num_turbines": n_turbs,
+        "turbine_rating_kw": turbine_rating_kw,
+        "turbine_name": turbine_library_turbine_name,
+        "model_name": "pysam",
+        "layout_mode": "custom",
+        "layout_params": layout_params
+    }
+    site_input.update({"hub_height":90.0})
+    system_capacity_kw = turbine_rating_kw*n_turbs
+    technologies = {"wind":wind_config_dict,"grid":{"interconnect_kw":system_capacity_kw}}
+    hybrid_config = {"site":site_input,"technologies":technologies}
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+
+    hi.simulate(25)
+
+    aeps = hybrid_plant.annual_energies
+    with subtests.test("wind aep"):
+        assert aeps.wind == approx(66040330, 1e-3)
+    with subtests.test("wind capacity factor"):
+        assert hybrid_plant.capacity_factors["wind"] == approx(37.7, abs = 1.0)

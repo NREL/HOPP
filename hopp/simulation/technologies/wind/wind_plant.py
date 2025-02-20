@@ -21,7 +21,8 @@ from hopp.simulation.technologies.layout.wind_layout import (
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
-
+from hopp.tools.design.wind.turbine_library_interface_tools import get_pysam_turbine_specs
+from hopp.tools.design.wind.turbine_library_tools import check_turbine_library_for_turbine, check_turbine_name
 
 @define
 class WindConfig(BaseClass):
@@ -172,6 +173,16 @@ class WindPlant(PowerSource):
             
         # below only is applicable if using PySAM
         if self.config.model_name=="pysam":
+            if self.config.turbine_name is not None:
+                valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
+                if not valid_name:
+                    turbine_name = check_turbine_name(self.config.turbine_name)
+                    logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
+                else:
+                    turbine_name = self.config.turbine_name
+                turbine_dict = get_pysam_turbine_specs(turbine_name,self)
+                self._system_model.Turbine.assign(turbine_dict)
+                self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
             if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
             if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
@@ -212,9 +223,13 @@ class WindPlant(PowerSource):
     @num_turbines.setter
     def num_turbines(self, n_turbines: int):
         
-        if self._layout.layout_mode == "custom" and n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
-            n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
-            raise UserWarning(f"using custom layout and input number of turbines ({n_turbines}) does not equal length of layout ({n_turbs_layout})")
+        if self._layout.layout_mode == "custom":
+            if n_turbines == len(self._layout.parameters.layout_x):
+                self._layout.set_num_turbines(n_turbines)
+            else:
+                if n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
+                    n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
+                    raise UserWarning(f"using custom layout and input number of turbines ({n_turbines}) does not equal length of layout ({n_turbs_layout})")
         self._layout.set_num_turbines(n_turbines)
 
     @property

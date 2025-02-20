@@ -153,8 +153,8 @@ def get_pysam_turbine_specs(turbine_name,wind_plant):
             "wind_turbine_hub_ht":hub_height,
             })
         
-        wind_plant._system_model.Turbine.assign(turbine_dict)
-        wind_plant.rotor_diameter = turbine_specs["rotor_diameter"]
+        # wind_plant._system_model.Turbine.assign(turbine_dict)
+        # wind_plant.rotor_diameter = turbine_specs["rotor_diameter"]
 
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
