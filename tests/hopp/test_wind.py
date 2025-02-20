@@ -134,23 +134,21 @@ def test_floris_num_turbines(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
-    f_config = load_yaml(floris_config_path)
-    floris_n_turbines = len(f_config["farm"]["layout_x"])
+    
+    site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict({'num_turbines': 16, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     xcoords, ycoords = model._system_model.wind_farm_layout
     assert len(xcoords) == config.num_turbines
     assert len(ycoords) == model.num_turbines
     assert model._system_model.nTurbs == model.num_turbines
-    # with pytest.raises(UserWarning) as err:
-    # assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
-   
+    
 
 def test_changing_rotor_diam_recalc_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
-    
+    site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     assert model._system_model.system_capacity  == 20000
@@ -164,6 +162,7 @@ def test_changing_turbine_rating_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
+    site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     with pytest.raises(UserWarning) as err:
         model = WindPlant(site, config=config)
@@ -175,7 +174,7 @@ def test_changing_system_capacity_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
-    
+    site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     
