@@ -173,14 +173,6 @@ class WindLayout(BaseClass):
             elif self.layout_mode == 'custom':
                 self.parameters = WindCustomParameters.from_dict(self.parameters)
 
-        if isinstance(self.parameters, dict):
-            if self.layout_mode == 'boundarygrid':
-                self.parameters = WindBoundaryGridParameters.from_dict(self.parameters)
-            elif self.layout_mode == 'basicgrid':
-                self.parameters = WindBasicGridParameters.from_dict(self.parameters)
-            elif self.layout_mode == 'custom':
-                self.parameters = WindCustomParameters.from_dict(self.parameters)
-
     def _get_system_config(self):
         """The following are re-calculated based on the actual rotor diameter of the wind turbine.
         
