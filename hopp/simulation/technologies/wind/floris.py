@@ -160,8 +160,8 @@ class Floris(BaseClass):
                 # raise UserWarning(f"wind resource hub-height ({self.site.wind_resource.hub_height_meters}) does not match hub-height from floris config ({hub_height})")
         
         # check if user-input num_turbines equals number of turbines in layout
-        if self.nTurbs != self.config.num_turbines:
-            logger.warning(f"num_turbines in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris config layout ({self.nTurbs})")
+        # if self.nTurbs != self.config.num_turbines:
+        #     logger.warning(f"num_turbines in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris config layout ({self.nTurbs})")
         return floris_config
     
     def value(self, name: str, set_value=None):
@@ -203,7 +203,7 @@ class Floris(BaseClass):
         if self.nTurbs != self.config.num_turbines:
             # log warning if discrepancy in number of turbines
             # not raising a warning since wind farm capacity can be modified before simulation begins
-            logger.warning(f"num_turbines input in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris model ({self.nTurbs})")
+            logger.info(f"num_turbines input in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris model ({self.nTurbs})")
         logger.info(f"simulating {self.nTurbs} turbines using FLORIS")
         
         # find generation of wind farm
