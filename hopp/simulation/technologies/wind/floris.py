@@ -59,8 +59,8 @@ class Floris(BaseClass):
         5) initialize floris model
 
         Raises:
-            ValueError: _description_
-            ValueError: _description_
+            ValueError: "A floris configuration must be provided"
+            ValueError: "A timestep is required."
         """
         
         if self.config.floris_config is None:
@@ -120,10 +120,10 @@ class Floris(BaseClass):
         if self.config.rotor_diameter is not None:
             floris_config["farm"]["turbine_type"][0].setdefault("rotor_diameter",self.config.rotor_diameter)
         # see if hub-height was input in config but not set in floris config
+        # NOTE: hub-height should also be checked against wind resource hub-height
         if self.config.hub_height is not None:
             floris_config["farm"]["turbine_type"][0].setdefault("hub_height",self.config.hub_height)
-        # NOTE: hub-height should also be checked against wind resource hub-height
-        
+
         # set attributes:
         self.wind_turbine_rotor_diameter = floris_config["farm"]["turbine_type"][0]["rotor_diameter"]
         self.wind_turbine_powercurve_powerout = floris_config["farm"]["turbine_type"][0]["power_thrust_table"]["power"]
@@ -143,7 +143,7 @@ class Floris(BaseClass):
         return floris_config
     
     def value(self, name: str, set_value=None):
-        """Set or retrieve atrribute of `hopp.simulation.technologies.wind.floris.Floris`.
+        """Set or retrieve attribute of `hopp.simulation.technologies.wind.floris.Floris`.
             if set_value = None, then retrieve value; otherwise overwrite variable's value.
         
         Args:
