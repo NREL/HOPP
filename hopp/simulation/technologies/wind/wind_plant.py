@@ -19,7 +19,7 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindCustomParameters)
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
+from hopp.tools.resource.wind_tools import calculate_air_density_losses
 
 
 @define
@@ -63,13 +63,13 @@ class WindConfig(BaseClass):
     layout_params: Optional[Union[dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]] = field(default=None)
     hub_height: Optional[float] = field(default=None)
     turbine_name: Optional[str] = field(default=None)
-    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]))
-    model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
+    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]), converter=(str.strip, str.lower))
+    model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]), converter=(str.strip, str.lower))
     model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     adjust_air_density_for_elevation: Optional[bool] = field(default = False)
-    resource_parse_method: str = field(default="average", validator=contains(["weighted_average", "average"]))
+    resource_parse_method: str = field(default="average", validator=contains(["weighted_average", "average"]), converter=(str.strip, str.lower))
     operational_losses: float = field(default = 12.83, validator=range_val(0, 100))
     timestep: Optional[Tuple[int, int]] = field(default=(0,8760))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
@@ -170,7 +170,7 @@ class WindPlant(PowerSource):
             if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
             if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-                air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
+                air_dens_losses = calculate_air_density_losses(self.site.elev)
                 self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
         
         

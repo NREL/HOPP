@@ -2,7 +2,7 @@
 from attrs import define, field
 from dataclasses import dataclass, asdict
 import csv
-from typing import TYPE_CHECKING, Tuple, List
+from typing import TYPE_CHECKING, Tuple
 import numpy as np
 
 from floris import FlorisModel, TimeSeries
@@ -13,7 +13,7 @@ from hopp.type_dec import resource_file_converter
 from pathlib import Path
 from hopp.utilities import load_yaml
 from hopp.tools.resource.wind_tools import (
-    calculate_air_density_for_elevation, 
+    calculate_air_density, 
     parse_resource_data,
     weighted_parse_resource_data
 )
@@ -39,15 +39,13 @@ class Floris(BaseClass):
     wind_turbine_rotor_diameter: float = field(init = False)
     turb_rating: float = field(init = False)
     # turbine power curve (array of kW power outputs)
-    wind_turbine_powercurve_powerout: List[float] = field(init = False)
-    # wind farm layout
-    wind_farm_xCoordinates: List[float] = field(init = False)
-    wind_farm_yCoordinates: List[float] = field(init = False)
-    # wind farm capacity
+    wind_turbine_powercurve_powerout: list[float] = field(init = False)
+    wind_farm_xCoordinates: list[float] = field(init = False)
+    wind_farm_yCoordinates: list[float] = field(init = False)
     system_capacity: float = field(init = False)
     
-    # results
-    gen: List[float] = field(init = False)
+    #results
+    gen: list[float] = field(init = False)
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
@@ -57,31 +55,39 @@ class Floris(BaseClass):
     turb_powers: np.ndarray = field(init = False)
 
     def __attrs_post_init__(self):
-        # 1) check that floris config is provided
+        """_summary_
+
+        1) check that floris config is provided
+        2) load floris config if needed
+        3) modify air density in floris config if needed
+        4) initialize attributes from floris config and update floris config as needed
+        5) initialize floris model
+
+        Raises:
+            ValueError: _description_
+            ValueError: _description_
+        """
+        
         if self.config.floris_config is None:
             raise ValueError("A floris configuration must be provided")
         if self.config.timestep is None:
             raise ValueError("A timestep is required.")
 
-        # 2) load floris config if needed
         if isinstance(self.config.floris_config,(str, Path)):
             floris_config = load_yaml(self.config.floris_config)
         else:
             floris_config = self.config.floris_config
 
-        # 3) modify air density in floris config if needed
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-            rho = calculate_air_density_for_elevation(self.site.elev)
+            rho = calculate_air_density(self.site.elev)
             floris_config["flow_field"].update({"air_density":rho})
         
-        # 4) initialize attributes from floris config and update floris config as needed
         floris_config = self.initialize_from_floris(floris_config)
         
-        # 5) initialize floris model
         self.fi = FlorisModel(floris_config)
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
-
+        
         if self.config.resource_parse_method == "average":
             self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
         elif self.config.resource_parse_method == "weighted_average":

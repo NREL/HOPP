@@ -171,7 +171,6 @@ def test_changing_turbine_rating_floris(site):
    
 
 def test_changing_system_capacity_floris(site):
-    # this will fail now
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )

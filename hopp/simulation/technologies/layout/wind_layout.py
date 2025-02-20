@@ -21,11 +21,10 @@ from hopp.simulation.technologies.layout.wind_layout_tools import (
 from hopp.utilities.validators import contains, range_val
 from hopp.simulation.technologies.sites.site_shape_tools import plot_site_polygon
 from hopp.simulation.base import BaseClass
-from typing import List
 from hopp.simulation.technologies.wind.floris import Floris
 
 @define
-class WindBasicGridParameters:
+class WindBasicGridParameters(BaseClass):
     """Configuration class for 'basicgrid' wind layout.
 
     Args:
@@ -41,14 +40,14 @@ class WindBasicGridParameters:
     """
 
     row_D_spacing: Optional[float] = field(default = 5.0)
-    turbine_D_spacing: Optional[float]= field(default = 5.0)
+    turbine_D_spacing: Optional[float] = field(default = 5.0)
     grid_angle: Optional[float] = field(default = 0.0)
-    row_phase_offset: Optional[float] = field(default = 0.0, validator=range_val(0.0, 1.0))
+    row_phase_offset: Optional[float] = field(default = 0.0, validator = range_val(0.0, 1.0))
     site_boundary_constrained: Optional[bool] = field(default = False)
 
 @define
-class WindBoundaryGridParameters:
-    """ Configuration class for 'boundarygrid' wind layout.
+class WindBoundaryGridParameters(BaseClass):
+    """Configuration class for 'boundarygrid' wind layout.
 
     Args:
         border_spacing (float): border spacing ratio for turbines placed along border. Defaults to 0.0
@@ -77,29 +76,28 @@ class WindBoundaryGridParameters:
     grid_aspect_power: Optional[float] = field(default = None)
     grid_aspect_ratio: Optional[float] = field(default = None)
     row_phase_offset: float = field(default = 0.2, validator = range_val(0.0, 1.0))
+    
     def __attrs_post_init__(self):
         
-        if self.grid_aspect_power is not None and self.grid_aspect_ratio is None:
+        if self.grid_aspect_ratio is None:
             #NOTE: unsure if this equation is correct given doc strong
-            self.grid_aspect_ratio = np.exp(self.grid_aspect_power) 
-        if self.grid_aspect_power is None and self.grid_aspect_ratio is None:
-            self.grid_aspect_ratio = 1.0
+            self.grid_aspect_ratio = 1 if self.grid_aspect_power is None else np.exp(self.grid_aspect_power)
             
         if self.min_spacing_m is not None and self.border_spacing_m is not None:
             self.border_spacing = (self.border_spacing_m/self.min_spacing_m) - 1
 
 @define
-class WindCustomParameters:
+class WindCustomParameters(BaseClass):
     """
     Configuration class for 'custom' wind layout.
 
     Args:
-        layout_x (List[float]): x-coordinates of turbines
-        layout_y (List[float]): y-coordinates of turbines
+        layout_x (list[float]): x-coordinates of turbines
+        layout_y (list[float]): y-coordinates of turbines
     """
 
-    layout_x: List[float]
-    layout_y: List[float]
+    layout_x: list[float]
+    layout_y: list[float]
 
 
 @define
@@ -119,8 +117,8 @@ class WindLayout(BaseClass):
         turbine_rating_kW (float, Optional): rating of a single turbine in kW. if not provided, turbine power is estimated from the power-curve.
     """
     site_polygon: Union[Polygon, BaseGeometry] 
-    _system_model: Union[windpower.Windpower,Floris]
-    layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']))
+    _system_model: Union[windpower.Windpower, Floris]
+    layout_mode: str = field(validator=contains(['boundarygrid', 'grid', 'custom','basicgrid']), converter=(str.strip, str.lower))
     parameters: Union[WindBoundaryGridParameters, WindCustomParameters, WindBasicGridParameters, None]
     # TODO: convert min_spacing and max_spacing to be within the parameter class that uses it.
     min_spacing_meters: Optional[float] = field(default = 0.0)
@@ -131,8 +129,8 @@ class WindLayout(BaseClass):
     
     turbine_rating_kW: Optional[float] = field(default = None)
 
-    turb_pos_x: List[float] = field(init=False)
-    turb_pos_y: List[float] = field(init=False)
+    turb_pos_x: list[float] = field(init=False)
+    turb_pos_y: list[float] = field(init=False)
 
     min_spacing: float = field(init = False)
     max_spacing: float = field(init = False)
@@ -144,8 +142,8 @@ class WindLayout(BaseClass):
                 Only used if layout_mode is `grid` or `boundarygrid`.
             - max_spacing (float): maximum spacing between turbines in meters. 
                 Only used if layout_mode is `grid` or `boundarygrid`.
-            - turb_pos_x (List[float]): x-coordinates of turbines
-            - turb_pos_y (List[float]): x-coordinates of turbines
+            - turb_pos_x (list[float]): x-coordinates of turbines
+            - turb_pos_y (list[float]): x-coordinates of turbines
         
         Note: these calculations are based on the default values of rotor diamter and turbine layout.
             `min_spacing` and `max_spacing` are re-calculated in _get_system_config(). `turb_pos_x` and `turb_pos_y`
@@ -167,12 +165,13 @@ class WindLayout(BaseClass):
             self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
             self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
 
-        if self.layout_mode == 'boundarygrid' and isinstance(self.parameters,dict):
-            self.parameters = WindBoundaryGridParameters(**self.parameters)
-        elif self.layout_mode == 'basicgrid' and isinstance(self.parameters,dict):
-            self.parameters = WindBasicGridParameters(**self.parameters)
-        elif self.layout_mode == 'custom' and isinstance(self.parameters,dict):
-            self.parameters = WindCustomParameters(**self.parameters)
+        if isinstance(self.parameters, dict):
+            if self.layout_mode == 'boundarygrid':
+                self.parameters = WindBoundaryGridParameters.from_dict(self.parameters)
+            elif self.layout_mode == 'basicgrid':
+                self.parameters = WindBasicGridParameters.from_dict(self.parameters)
+            elif self.layout_mode == 'custom':
+                self.parameters = WindCustomParameters.from_dict(self.parameters)
 
     def _get_system_config(self):
         """The following are re-calculated based on the actual rotor diameter of the wind turbine.
@@ -252,7 +251,6 @@ class WindLayout(BaseClass):
         valid_wind_shape = subtract_turbine_exclusion_zone(self.min_spacing, wind_shape, turbine_positions)
 
         # place interior grid turbines
-        print(f"grid aspect power: {self.parameters.grid_aspect_power}")
         max_num_interior_turbines = n_turbines - len(turbine_positions)
         intrarow_spacing, grid_sites = get_best_grid(
             valid_wind_shape,
@@ -324,7 +322,6 @@ class WindLayout(BaseClass):
         Args:
             n_turbines (int): number of turbines to include in layout.
         """
-        
         self._get_system_config()
 
         interrow_spacing = self.parameters.row_D_spacing*self.rotor_diameter
