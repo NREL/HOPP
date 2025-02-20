@@ -171,46 +171,50 @@ class WindPlant(PowerSource):
             
         # below only is applicable if using PySAM
         if self.config.model_name=="pysam":
+            self.initialize_pysam_wind_turbine()
+        
+        
+    def initialize_pysam_wind_turbine(self):
+        if self.config.model_name != "pysam":
+            return
+        if self.config.rotor_diameter is not None:
+            self.rotor_diameter = self.config.rotor_diameter
+        if self.config.turbine_name is not None:
+            valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
+            if not valid_name:
+                turbine_name = check_turbine_name(self.config.turbine_name)
+                logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
+            else:
+                turbine_name = self.config.turbine_name
+            turbine_dict = get_pysam_turbine_specs(turbine_name,self)
+            self._system_model.Turbine.assign(turbine_dict)
+            self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
             if self.config.rotor_diameter is not None:
-                self.rotor_diameter = self.config.rotor_diameter
-            if self.config.turbine_name is not None:
-                valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
-                if not valid_name:
-                    turbine_name = check_turbine_name(self.config.turbine_name)
-                    logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
-                else:
-                    turbine_name = self.config.turbine_name
-                turbine_dict = get_pysam_turbine_specs(turbine_name,self)
-                self._system_model.Turbine.assign(turbine_dict)
-                self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
-                if self.config.rotor_diameter is not None:
-                    if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
-                        raise UserWarning(f"input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})")
-            if self.config.hub_height is not None:
-                if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
-                    raise UserWarning(f"input hub-height ({self.config.hub_height}) does not match hub-height from for turbine ({self._system_model.Turbine.wind_turbine_hub_ht})")
-            if self._system_model.Turbine.wind_turbine_hub_ht != self.site.wind_resource.hub_height_meters:
-                if self._system_model.Turbine.wind_turbine_hub_ht >= min(self.site.wind_resource.data["heights"]) and self._system_model.Turbine.wind_turbine_hub_ht<=max(self.site.wind_resource.data["heights"]):
-                    self.site.wind_resource.hub_height_meters = float(self._system_model.Turbine.wind_turbine_hub_ht)
-                    self.site.hub_height = float(self._system_model.Turbine.wind_turbine_hub_ht)
-                    logger.info(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m")
-                else:  
-                    logger.warning(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m and redownloading wind resource data")
-                    self.site.hub_height = self._system_model.Turbine.wind_turbine_hub_ht
-                    data = {
-                        "lat": self.site.wind_resource.latitude,
-                        "lon": self.site.wind_resource.longitude,
-                        "year": self.site.wind_resource.year,
-                    }
-                    wind_resource = self.site.initialize_wind_resource(data)
-                    self.site.wind_resource = wind_resource
+                if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
+                    raise UserWarning(f"input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})")
+        if self.config.hub_height is not None:
+            if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+                raise UserWarning(f"input hub-height ({self.config.hub_height}) does not match hub-height from for turbine ({self._system_model.Turbine.wind_turbine_hub_ht})")
+        if self._system_model.Turbine.wind_turbine_hub_ht != self.site.wind_resource.hub_height_meters:
+            if self._system_model.Turbine.wind_turbine_hub_ht >= min(self.site.wind_resource.data["heights"]) and self._system_model.Turbine.wind_turbine_hub_ht<=max(self.site.wind_resource.data["heights"]):
+                self.site.wind_resource.hub_height_meters = float(self._system_model.Turbine.wind_turbine_hub_ht)
+                self.site.hub_height = float(self._system_model.Turbine.wind_turbine_hub_ht)
+                logger.info(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m")
+            else:  
+                logger.warning(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m and redownloading wind resource data")
+                self.site.hub_height = self._system_model.Turbine.wind_turbine_hub_ht
+                data = {
+                    "lat": self.site.wind_resource.latitude,
+                    "lon": self.site.wind_resource.longitude,
+                    "year": self.site.wind_resource.year,
+                }
+                wind_resource = self.site.initialize_wind_resource(data)
+                self.site.wind_resource = wind_resource
 
-            if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-                air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
-                self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
-        
-        
-        
+        if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
+            air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
+            self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
+
     @property
     def wake_model(self) -> str:
         try:
