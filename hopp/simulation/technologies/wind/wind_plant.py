@@ -20,7 +20,7 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindGridParameters)
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.tools.resource.wind_tools import calculate_elevation_air_density_losses
+from hopp.tools.resource.wind_tools import calculate_air_density_losses
 
 
 @define
@@ -39,6 +39,7 @@ class WindConfig(BaseClass):
             - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'layout_params'
             - 'basicgrid': most-square grid layout, requires WindBasicGridParameters as 'layout_params'
             - 'custom': use a user-provided layout. 
+            - 'floris_layout': use layout provided in `floris_config`
         model_name (str): which model to use. Options are 'floris' and 'pysam'
         model_input_file (str): file specifying a full PySAM input
         layout_params (obj | dict, Optional): layout configuration object corresponding to `layout_mode` or dictionary.
@@ -46,6 +47,8 @@ class WindConfig(BaseClass):
         floris_config (dict | str | Path): Floris configuration, only used if `model_name` == 'floris'
         adjust_air_density_for_elevation (bool): whether to adjust air density for elevation. Defaults to False.
             Only used if True and ``site.elev`` is not None. 
+        resource_parse_method (str): method to parse wind resource data if using floris and downloaded resource data for 2 heights.
+            Can either be "weighted_average" or "average". Defaults to "average".
         operational_losses (float, Optional): total percentage losses in addition to wake losses, defaults based on PySAM (only used for Floris model)
         timestep (Tuple[int]): Timestep (required for floris runs, otherwise optional). Defaults to (0,8760)
         fin_model (obj | dict | str): Optional financial model. Can be any of the following:
@@ -62,12 +65,13 @@ class WindConfig(BaseClass):
     layout_params: Optional[Union[dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]] = field(default=None)
     hub_height: Optional[float] = field(default=None)
     turbine_name: Optional[str] = field(default=None)
-    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]))
-    model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]))
+    layout_mode: str = field(default="grid", validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]), converter=(str.strip, str.lower))
+    model_name: str = field(default="pysam", validator=contains(["pysam", "floris"]), converter=(str.strip, str.lower))
     model_input_file: Optional[str] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     adjust_air_density_for_elevation: Optional[bool] = field(default = False)
+    resource_parse_method: str = field(default="average", validator=contains(["weighted_average", "average"]), converter=(str.strip, str.lower))
     operational_losses: float = field(default = 12.83, validator=range_val(0, 100))
     timestep: Optional[Tuple[int, int]] = field(default=(0,8760))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
@@ -120,8 +124,6 @@ class WindPlant(PowerSource):
                 )
                 # modify to custom for WindLayout
                 layout_mode = "custom"
-                    
-
 
             if financial_model is None:
                 # default
@@ -151,7 +153,7 @@ class WindPlant(PowerSource):
                 financial_model = Singleowner.from_existing(system_model, self.config_name)
             else:
                 financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
-        
+
         super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
@@ -164,12 +166,11 @@ class WindPlant(PowerSource):
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
             
-        # below only is applicable if using PySAM
         if self.config.model_name=="pysam":
             if self.config.hub_height is not None:
                 self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
             if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-                air_dens_losses = calculate_elevation_air_density_losses(self.site.elev)
+                air_dens_losses = calculate_air_density_losses(self.site.elev)
                 self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
         
         

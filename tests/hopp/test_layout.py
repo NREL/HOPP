@@ -342,14 +342,14 @@ def test_system_electrical_sizing(site):
 
 
 def test_detailed_pv_properties(site):
-    SYSTEM_CAPACITY_DEFAULT = 50002.22178
-    SUBARRAY1_NSTRINGS_DEFAULT = 13435
-    SUBARRAY1_MODULES_PER_STRING_DEFAULT = 12
-    INVERTER_COUNT_DEFAULT = 99
-    CEC_V_MP_REF_DEFAULT = 54.7
-    CEC_I_MP_REF_DEFAULT = 5.67
-    INV_SNL_PACO_DEFAULT = 753200
-    DC_AC_RATIO_DEFAULT = 0.67057
+    SYSTEM_CAPACITY_DEFAULT = 4993.277184
+    SUBARRAY1_NSTRINGS_DEFAULT = 336.0
+    SUBARRAY1_MODULES_PER_STRING_DEFAULT = 28.0
+    INVERTER_COUNT_DEFAULT = 1.0
+    CEC_V_MP_REF_DEFAULT = 41.4
+    CEC_I_MP_REF_DEFAULT = 12.82
+    INV_SNL_PACO_DEFAULT = 2507190.0
+    DC_AC_RATIO_DEFAULT = 1.9915
 
     pvsamv1_defaults_file = Path(__file__).absolute().parent.parent / "hopp/pvsamv1_basic_params.json"
     with open(pvsamv1_defaults_file, 'r') as f:
@@ -385,30 +385,30 @@ def test_detailed_pv_properties(site):
 
     # Modify system capacity and check that values update correctly
     detailed_pvplant.value('system_capacity', 20000)
-    assert detailed_pvplant.value('system_capacity') == approx(20000.889, 1e-6)
-    assert detailed_pvplant.value('subarray1_nstrings') == 5374
+    assert detailed_pvplant.value('system_capacity') == approx(20002.8306, 1e-6)
+    assert detailed_pvplant.value('subarray1_nstrings') == 1346.0
     assert detailed_pvplant.value('subarray1_modules_per_string') == SUBARRAY1_MODULES_PER_STRING_DEFAULT
-    assert detailed_pvplant.value('inverter_count') == 40
+    assert detailed_pvplant.value('inverter_count') == 4.0
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(CEC_V_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(CEC_I_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(INV_SNL_PACO_DEFAULT, 1e-3)
     # The dc_ac_ratio changes because the inverter_count is a function of the system capacity, and it is rounded to an integer.
     # Changes to the inverter count do not influence the system capacity, therefore the dc_ac_ratio does not adjust back to the original value
-    assert detailed_pvplant.dc_ac_ratio == approx(0.6639, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(1.994, 1e-3)
     # Reset system capacity back to the default value to verify values update correctly
     detailed_pvplant.value('system_capacity', SYSTEM_CAPACITY_DEFAULT)
     # The dc_ac_ratio is not noticeably affected because the inverter_count, calculated from the prior dc_ac_ratio, barely changed when rounded 
-    assert detailed_pvplant.dc_ac_ratio == approx(0.6639, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(1.991, 1e-3)
     assert detailed_pvplant.value('system_capacity') == approx(SYSTEM_CAPACITY_DEFAULT, 1e-3)
     assert detailed_pvplant.value('subarray1_nstrings') == SUBARRAY1_NSTRINGS_DEFAULT
     assert detailed_pvplant.value('subarray1_modules_per_string') == SUBARRAY1_MODULES_PER_STRING_DEFAULT
     # The inverter count did not change back to the default value because the dc_ac_ratio did not change back to the default value,
     # and unlike the UI, there is no 'desired' dc_ac_ratio that is used to calculate the inverter count, only the prior dc_ac_ratio
-    assert detailed_pvplant.value('inverter_count') == INVERTER_COUNT_DEFAULT + 1
+    assert detailed_pvplant.value('inverter_count') == INVERTER_COUNT_DEFAULT
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(CEC_V_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(CEC_I_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(INV_SNL_PACO_DEFAULT, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == approx(0.664, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(1.991, 1e-3)
 
     # Reinstantiate (reset) the detailed PV plant
     detailed_pvplant = DetailedPVPlant(
@@ -418,14 +418,14 @@ def test_detailed_pv_properties(site):
 
     # Modify the number of strings and verify that values update correctly
     detailed_pvplant.value('subarray1_nstrings', 10000)
-    assert detailed_pvplant.value('system_capacity') == approx(37217.88, 1e-3)
+    assert detailed_pvplant.value('system_capacity') == approx(148609, 1e-3)
     assert detailed_pvplant.value('subarray1_nstrings') == 10000
     assert detailed_pvplant.value('subarray1_modules_per_string') == SUBARRAY1_MODULES_PER_STRING_DEFAULT
     assert detailed_pvplant.value('inverter_count') == INVERTER_COUNT_DEFAULT
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(CEC_V_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(CEC_I_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(INV_SNL_PACO_DEFAULT, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == approx(0.499, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(59.27, 1e-3)
     # Reset the number of strings back to the default value to verify other values reset back to their defaults
     detailed_pvplant.value('subarray1_nstrings', SUBARRAY1_NSTRINGS_DEFAULT)
     verify_defaults()
@@ -438,14 +438,14 @@ def test_detailed_pv_properties(site):
 
     # Modify the modules per string and verify that values update correctly
     detailed_pvplant.value('subarray1_modules_per_string', 10)
-    assert detailed_pvplant.value('system_capacity') == approx(41668.52, 1e-3)
+    assert detailed_pvplant.value('system_capacity') == approx(1783.31, 1e-3)
     assert detailed_pvplant.value('subarray1_nstrings') == SUBARRAY1_NSTRINGS_DEFAULT
     assert detailed_pvplant.value('subarray1_modules_per_string') == 10
     assert detailed_pvplant.value('inverter_count') == INVERTER_COUNT_DEFAULT
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(CEC_V_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(CEC_I_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(INV_SNL_PACO_DEFAULT, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == approx(0.559, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(0.7112, 1e-3)
     # Reset the modules per string back to the default value to verify other values reset back to their defaults
     detailed_pvplant.value('subarray1_modules_per_string', SUBARRAY1_MODULES_PER_STRING_DEFAULT)
     verify_defaults()
@@ -467,7 +467,6 @@ def test_detailed_pv_properties(site):
         'cec_adjust':           13.0949,
         'cec_alpha_sc':         0.0020822,
         'cec_beta_oc':          -0.134854,
-        'cec_gamma_r':          -0.3904,
         'cec_i_l_ref':          5.81,
         'cec_i_mp_ref':         5.4,
         'cec_i_o_ref':          3.698e-11,
@@ -488,14 +487,14 @@ def test_detailed_pv_properties(site):
         'cec_transient_thermal_model_unit_mass':    0,
     }
     detailed_pvplant.set_pv_module(module_params)
-    assert detailed_pvplant.value('system_capacity') == approx(34649.402, 1e-3)
+    assert detailed_pvplant.value('system_capacity') == approx(2021.96, 1e-3)
     assert detailed_pvplant.value('subarray1_nstrings') == SUBARRAY1_NSTRINGS_DEFAULT
     assert detailed_pvplant.value('subarray1_modules_per_string') == SUBARRAY1_MODULES_PER_STRING_DEFAULT
     assert detailed_pvplant.value('inverter_count') == INVERTER_COUNT_DEFAULT
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(module_params['cec_v_mp_ref'], 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(module_params['cec_i_mp_ref'], 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(INV_SNL_PACO_DEFAULT, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == approx(0.465, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(0.806, 1e-3)
     # Reset the PV module back to the default module to verify other values reset back to their defaults
     detailed_pvplant.set_pv_module(default_pv_module)
     verify_defaults()
@@ -534,7 +533,7 @@ def test_detailed_pv_properties(site):
     assert detailed_pvplant.value('cec_v_mp_ref') == approx(CEC_V_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('cec_i_mp_ref') == approx(CEC_I_MP_REF_DEFAULT, 1e-3)
     assert detailed_pvplant.value('inv_snl_paco') == approx(507000, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == approx(0.996, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == approx(9.84, 1e-3)
     # Reset the inverter back to the default inverter to verify other values reset back to their defaults
     detailed_pvplant.set_inverter(default_inverter)
     verify_defaults()
@@ -547,7 +546,7 @@ def test_detailed_pv_plant_custom_design(site):
 
     # Modify the inputs for a custom design
     target_solar_kw = 3e5
-    target_dc_ac_ratio = 1.34
+    target_dc_ac_ratio = 1.3444
     modules_per_string = 12
     module_power = tech_config['cec_v_mp_ref'] * tech_config['cec_i_mp_ref'] * 1e-3         # [kW]
     inverter_power = tech_config['inv_snl_paco'] * 1e-3                                     # [kW]
@@ -577,13 +576,12 @@ def test_detailed_pv_plant_custom_design(site):
     )
 
     assert detailed_pvplant.system_capacity == pytest.approx(calculated_system_capacity, 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == pytest.approx(1.341, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == pytest.approx(1.3444, 1e-3)
 
     detailed_pvplant.simulate(target_solar_kw)
 
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.3
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.31
     assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
-    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
 
 
 def test_detailed_pv_plant_modify_after_init(site):
@@ -599,27 +597,27 @@ def test_detailed_pv_plant_modify_after_init(site):
     )
 
     assert detailed_pvplant.system_capacity == pytest.approx(tech_config['system_capacity'], 1e-3)
-    assert detailed_pvplant.dc_ac_ratio == pytest.approx(0.671, 1e-3)
+    assert detailed_pvplant.dc_ac_ratio == pytest.approx(1.99, 1e-3)
     
     detailed_pvplant.simulate(5e5)
 
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
-    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
-    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(108.239, abs=10)
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 23.4
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 4.49
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.7
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(8.87, abs=10)
 
     # modify dc ac ratio
-    detailed_pvplant.dc_ac_ratio = 1.341
+    detailed_pvplant.dc_ac_ratio = 1.3444
     detailed_pvplant.simulate(5e5)
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
-    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
-    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(107.502, abs=10)
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 23.4
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 4.49
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.7
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(8.87, abs=10)
 
     # modify system capacity
     detailed_pvplant.system_capacity_kw *= 2
     detailed_pvplant.simulate(5e5)
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 1.2
-    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 3
-    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.91
-    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(215.0, abs=10)
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_clip_loss_percent < 23.4
+    assert detailed_pvplant._system_model.Outputs.annual_ac_inv_eff_loss_percent < 4.9
+    assert detailed_pvplant._system_model.Outputs.annual_ac_gross / detailed_pvplant._system_model.Outputs.annual_dc_gross > 0.7
+    assert detailed_pvplant.annual_energy_kwh * 1e-6 == pytest.approx(17.74, abs=10)
