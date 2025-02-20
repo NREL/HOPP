@@ -100,13 +100,16 @@ class Floris(BaseClass):
         
 
     def initialize_from_floris(self,floris_config):
-        """_summary_
+        """Initialize wind turbine parmeters and set in floris_config.
 
         Args:
             floris_config (dict): floris input dictionary
 
         Raises:
             UserWarning: if rotor diameter in WindConfig doesnt match rotor diameter in floris_config
+            UserWarning: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
+            UserWarning: if hub-height in WindConfig doesnt match hub-height in floris_config
+
 
         Returns:
             dict: updated floris_config
