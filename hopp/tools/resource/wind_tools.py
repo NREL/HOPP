@@ -79,8 +79,23 @@ def parse_resource_data(wind_resource):
     
     # If there's multiple hub-heights - average the data
     if len(idx_ws) > 1:
-        speeds = data[:, idx_ws].mean(axis=1)
-        wind_dirs = data[:, idx_wd].mean(axis=1)
+        hh1, hh2 = np.unique(wind_resource.data['heights'])
+        
+        if hh1 == wind_resource.hub_height_meters:
+            idx_ws1 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh1][0]
+            idx_wd1 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh1][0]
+            speeds = data[:, idx_ws1]
+            wind_dirs = data[:, idx_wd1]
+
+        elif hh2 == wind_resource.hub_height_meters:
+            idx_ws2 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh2][0]
+            idx_wd2 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh2][0]
+            speeds = data[:, idx_ws2]
+            wind_dirs = data[:, idx_wd2]
+        
+        else:
+            speeds = data[:, idx_ws].mean(axis=1)
+            wind_dirs = data[:, idx_wd].mean(axis=1)
     else:
         # If there's only one hub-height, grab speed and direction data
         speeds = data[:, idx_ws[0]]
