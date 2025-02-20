@@ -139,7 +139,21 @@ class Floris(BaseClass):
             if self.config.hub_height != hub_height:
                 raise UserWarning(f"input hub-height ({self.config.hub_height}) does not match hub-height from floris config ({hub_height})")
         if hub_height != self.site.wind_resource.hub_height_meters:
-            raise UserWarning(f"wind resource hub-height ({self.site.wind_resource.hub_height_meters}) does not match hub-height from floris config ({hub_height})")
+            if hub_height >= min(self.site.wind_resource.data["heights"]) and hub_height<=max(self.site.wind_resource.data["heights"]):
+                self.site.wind_resource.hub_height_meters = float(hub_height)
+                self.site.hub_height = float(hub_height)
+                logger.info(f"updating wind resource hub-height to {hub_height}m")
+            else:  
+                logger.warning(f"updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                self.site.hub_height = hub_height  
+                data = {
+                    "lat": self.site.wind_resource.latitude,
+                    "lon": self.site.wind_resource.longitude,
+                    "year": self.site.wind_resource.year,
+                }
+                wind_resource = self.site.initialize_wind_resource(data)
+                self.site.wind_resource = wind_resource
+                # raise UserWarning(f"wind resource hub-height ({self.site.wind_resource.hub_height_meters}) does not match hub-height from floris config ({hub_height})")
         
         # check if user-input num_turbines equals number of turbines in layout
         if self.nTurbs != self.config.num_turbines:
