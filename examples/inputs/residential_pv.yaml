@@ -1,0 +1,26 @@
+# panel_system_design:
+SystemDesign:
+  array_type: 1.0 ##0: fixed open rack 1: fixed roof mount 2: 1-axis tracking 3: 1-axis backtracking 4: 2-axis tracking
+  azimuth: 180.0 ##E=90,S=180,W=270
+  batt_simple_enable: 0.0
+  bifaciality: 0.0
+  dc_ac_ratio: 1.21
+  en_snowloss: 0.0
+  gcr: 0.3
+  inv_eff: 96.0
+  losses: 15.0
+  module_type: 1.0 ##0: standard 1: premium 2: thin film
+  rotlim: 0.0
+  soiling:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
