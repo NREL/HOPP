@@ -24,13 +24,14 @@ from hopp.utilities.log import hybrid_logger as logger
 from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
 from hopp.tools.design.wind.turbine_library_tools import check_turbine_name
 import hopp.tools.design.wind.floris_helper_tools as floris_tools
+from hopp.simulation.base import BaseClass
+
 
 @define
 class Floris(BaseClass):
     
     site: SiteInfo = field()
     config: "WindConfig" = field()
-    verbose: bool = field(default = True)
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
@@ -192,7 +193,7 @@ class Floris(BaseClass):
             project_life (int): unused project life in years
         """
         
-        if self.verbose:
+        if self.config.verbose:
             print('Simulating wind farm output in FLORIS...')
 
         # check if user-input num_turbines equals number of turbines in layout
