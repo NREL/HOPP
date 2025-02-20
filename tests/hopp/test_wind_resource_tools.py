@@ -1,8 +1,8 @@
 import os
 from PySAM.ResourceTools import SRW_to_wind_data
 from hopp.tools.resource.wind_tools import (
-    calculate_air_density_for_elevation,
-    calculate_elevation_air_density_losses,
+    calculate_air_density,
+    calculate_air_density_losses,
     parse_resource_data,
     weighted_parse_resource_data
 )
@@ -57,23 +57,23 @@ def wind_resource_data_100m():
 
 def test_sea_level_air_density():
     elevation = 0.0 #meters
-    air_dens = calculate_air_density_for_elevation(elevation)
+    air_dens = calculate_air_density(elevation)
     assert air_dens == approx(1.225, rel = 1e-3)
    
 def test_mile_high_air_density():
     #test elevation at 1 mile above sea level
     elevation = 1609.34 #meters
-    air_dens = calculate_air_density_for_elevation(elevation)
+    air_dens = calculate_air_density(elevation)
     assert air_dens == approx(1.05, rel = 1e-3)
 
 def test_sea_level_air_density_losses():
     elevation = 0.0 #meters
-    loss_percent = calculate_elevation_air_density_losses(elevation)
+    loss_percent = calculate_air_density_losses(elevation)
     assert loss_percent == 0.0
 
 def test_mile_high_air_density_losses():
     elevation = 1609.34 #meters
-    loss_percent = calculate_elevation_air_density_losses(elevation)
+    loss_percent = calculate_air_density_losses(elevation)
     assert loss_percent == approx(14.325, rel = 1e-3)
 
 def test_weighted_parsing_100m(wind_resource_data_100m):
