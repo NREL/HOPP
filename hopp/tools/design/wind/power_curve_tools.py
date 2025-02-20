@@ -84,7 +84,7 @@ def calculate_cp_from_power(wind_speeds_ms, power_curve_kw, rotor_diameter, air_
     return list(cp)
 
 def calculate_power_from_cp(wind_speeds_ms, cp_curve, rotor_diameter, rated_power_kW, air_density = 1.225):
-    """Calculate power curve from power coefficient curve (Cp)
+    """Calculate power curve from power coefficient curve (Cp).
 
     Args:
         wind_speeds_ms (List | np.ndarray): list of wind speeds in m/s

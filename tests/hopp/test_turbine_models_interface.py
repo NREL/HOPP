@@ -5,7 +5,6 @@ import json
 from hopp.simulation.technologies.wind.floris import Floris
 from hopp.utilities import load_yaml
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
-from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
 from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp import ROOT_DIR
@@ -93,7 +92,7 @@ def test_floris_nrel_5mw(site_input,subtests):
     with subtests.test("wind capacity factor value"):
         assert wind_plant.capacity_factor == approx(42.0, abs = 1.0)
 
-def test_floris_nrel_5mw(site_input,subtests):
+def test_floris_nrel_5mw_hopp(site_input,subtests):
     floris_template = load_yaml(str(FLORIS_V4_TEMPLATE_PATH))
     floris_library_turbine_name = "nrel_5MW"
     n_turbs = 4
@@ -125,7 +124,7 @@ def test_floris_nrel_5mw(site_input,subtests):
     with subtests.test("wind capacity factor"):
         assert hybrid_plant.capacity_factors["wind"] == approx(42.0, abs = 1.0)
 
-def test_floris_NREL_5MW_RWT_corrected(site_input,subtests):
+def test_floris_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
     floris_template = load_yaml(str(FLORIS_V4_TEMPLATE_PATH))
     turbine_library_turbine_name = "NREL_5MW_126_RWT_corrected"
     n_turbs = 4
@@ -159,7 +158,7 @@ def test_floris_NREL_5MW_RWT_corrected(site_input,subtests):
 
 
 
-def test_pysam_NREL_5MW_RWT_corrected(site_input,subtests):
+def test_pysam_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
     turbine_library_turbine_name = "NREL_5MW_126_RWT_corrected"
     n_turbs = 4
     turbine_rating_kw = 5000.0

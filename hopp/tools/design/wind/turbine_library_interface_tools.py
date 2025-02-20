@@ -2,7 +2,6 @@ from turbine_models.parser import Turbines
 import hopp.tools.design.wind.power_curve_tools as curve_tools
 from hopp.utilities.log import hybrid_logger as logger
 import numpy as np
-from floris.turbine_library import build_cosine_loss_turbine_dict
 import PySAM.Windpower as windpower
 
 def extract_power_curve(turbine_specs: dict, model_name: str):
@@ -129,7 +128,7 @@ def check_hub_height(turbine_specs,wind_plant):
 
 
 def get_pysam_turbine_specs(turbine_name,wind_plant):
-    """Load and set turbine data from turbine-models library to use with PySAM wind simulation.
+    """Load turbine data from turbine-models library to use with PySAM wind simulation.
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
@@ -152,16 +151,13 @@ def get_pysam_turbine_specs(turbine_name,wind_plant):
             "wind_turbine_rotor_diameter":turbine_specs["rotor_diameter"],
             "wind_turbine_hub_ht":hub_height,
             })
-        
-        # wind_plant._system_model.Turbine.assign(turbine_dict)
-        # wind_plant.rotor_diameter = turbine_specs["rotor_diameter"]
 
     else:
         raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
     return turbine_dict
 
 def get_floris_turbine_specs(turbine_name,wind_plant):
-    """Load and set turbine data from turbine-models library to use with FLORIS wind simulation.
+    """Load turbine data from turbine-models library to use with FLORIS wind simulation.
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
