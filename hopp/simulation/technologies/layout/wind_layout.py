@@ -173,6 +173,14 @@ class WindLayout(BaseClass):
             elif self.layout_mode == 'custom':
                 self.parameters = WindCustomParameters.from_dict(self.parameters)
 
+        if isinstance(self.parameters, dict):
+            if self.layout_mode == 'boundarygrid':
+                self.parameters = WindBoundaryGridParameters.from_dict(self.parameters)
+            elif self.layout_mode == 'basicgrid':
+                self.parameters = WindBasicGridParameters.from_dict(self.parameters)
+            elif self.layout_mode == 'custom':
+                self.parameters = WindCustomParameters.from_dict(self.parameters)
+
     def _get_system_config(self):
         """The following are re-calculated based on the actual rotor diameter of the wind turbine.
         
@@ -327,7 +335,12 @@ class WindLayout(BaseClass):
         interrow_spacing = self.parameters.row_D_spacing*self.rotor_diameter
         intrarow_spacing = self.parameters.turbine_D_spacing*self.rotor_diameter
             
-        data = make_site_boundary_for_square_grid_layout(n_turbines,self.rotor_diameter,self.parameters.row_D_spacing,self.parameters.turbine_D_spacing)
+        data = make_site_boundary_for_square_grid_layout(
+            n_turbines,
+            self.rotor_diameter,
+            self.parameters.row_D_spacing,
+            self.parameters.turbine_D_spacing
+            )
         vertices = np.array([np.array(v) for v in data['site_boundaries']['verts']])
         square_bounds = Polygon(vertices)
         grid_position_square = create_grid(square_bounds,
@@ -379,7 +392,7 @@ class WindLayout(BaseClass):
                           wind_kw,
                           params: Optional[Union[WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters]],
                           exclusions: Polygon = None):
-        """Set wind farm layout to accomodate input wind capacity.
+        """Set wind farm layout to accommodate input wind capacity.
 
         Args:
             wind_kw (float): wind farm capacity in kW
@@ -447,7 +460,6 @@ class WindLayout(BaseClass):
             circle = plt.Circle(
                 (x, y),
                 radius=self.rotor_diameter/2.0,
-                # linewidth=linewidth * 10,
                 color=turbine_color,
                 fill=True,
                 linewidth=linewidth,

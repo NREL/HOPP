@@ -38,6 +38,7 @@ class WindConfig(BaseClass):
             - 'grid': regular grid with dx, dy distance, 0 angle; does not require 'layout_params'
             - 'basicgrid': most-square grid layout, requires WindBasicGridParameters as 'layout_params'
             - 'custom': use a user-provided layout. 
+            - 'floris_layout': use layout provided in `floris_config`
         model_name (str): which model to use. Options are 'floris' and 'pysam'
         model_input_file (str): file specifying a full PySAM input
         layout_params (obj | dict, Optional): layout configuration object corresponding to `layout_mode` or dictionary.
@@ -122,8 +123,6 @@ class WindPlant(PowerSource):
                 )
                 # modify to custom for WindLayout
                 layout_mode = "custom"
-                    
-
 
             if financial_model is None:
                 # default
@@ -153,7 +152,7 @@ class WindPlant(PowerSource):
                 financial_model = Singleowner.from_existing(system_model, self.config_name)
             else:
                 financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
-        
+
         super().__init__("WindPlant", self.site, system_model, financial_model)
         self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 

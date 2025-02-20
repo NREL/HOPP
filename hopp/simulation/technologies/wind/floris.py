@@ -61,8 +61,8 @@ class Floris(BaseClass):
         5) initialize floris model
 
         Raises:
-            ValueError: if a floris configuration is not provided
-            ValueError: if a timestep is not provided
+            ValueError: "A floris configuration must be provided"
+            ValueError: "A timestep is required."
         """
         
         if self.config.floris_config is None:
