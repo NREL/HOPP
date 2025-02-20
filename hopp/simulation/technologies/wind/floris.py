@@ -1,7 +1,5 @@
 # tools to add floris to the hybrid simulation class
 from attrs import define, field
-from dataclasses import dataclass, asdict
-import csv
 from typing import TYPE_CHECKING, Tuple
 import numpy as np
 
@@ -9,7 +7,6 @@ from floris import FlorisModel, TimeSeries
 from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.type_dec import resource_file_converter
 from pathlib import Path
 from hopp.utilities import load_yaml
 from hopp.tools.resource.wind_tools import (
@@ -55,7 +52,7 @@ class Floris(BaseClass):
     turb_powers: np.ndarray = field(init = False)
 
     def __attrs_post_init__(self):
-        """_summary_
+        """Set-up and initialize floris_config and floris model. This method does the following:
 
         1) check that floris config is provided
         2) load floris config if needed
@@ -64,8 +61,8 @@ class Floris(BaseClass):
         5) initialize floris model
 
         Raises:
-            ValueError: _description_
-            ValueError: _description_
+            ValueError: if a floris configuration is not provided
+            ValueError: if a timestep is not provided
         """
         
         if self.config.floris_config is None:
