@@ -369,7 +369,7 @@ class WindLayout(BaseClass):
             )
 
         valid_wind_shape = subtract_turbine_exclusion_zone(
-            self.min_spacing,
+            self.parameters.min_spacing,
             wind_shape, turbine_positions,
         )
 
