@@ -21,7 +21,7 @@ from hopp.simulation.technologies.layout.pv_design_utils import size_electrical_
 from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, DetailedPVConfig
 
 from hopp.utilities.utils_for_tests import create_default_site_info
-
+from hopp import ROOT_DIR
 
 @pytest.fixture
 def site():
@@ -88,7 +88,7 @@ def test_wind_boundary_grid_layout_pysam(site):
         assert xcoords[i] == pytest.approx(expected_xcoords[i], abs=1)
         assert ycoords[i] == pytest.approx(expected_ycoords[i], abs=1)
 
-def test_wind_basic_grid_layout_pysam_default(site):
+def test_wind_basic_grid_layout_pysam_default(site, subtests):
     wind_technology = {
     'num_turbines': 16,
     'rotor_diameter': 40.0,
@@ -102,14 +102,72 @@ def test_wind_basic_grid_layout_pysam_default(site):
     unique_x_coords = np.unique(xcoords)
     unique_y_coords = np.unique(ycoords)
 
-    expected_unique_x_coords = [196, 396, 596, 796]
-    expected_unique_y_coords = [50, 250, 450, 650]
-    assert len(xcoords) == wind_technology["num_turbines"]
-    assert len(unique_x_coords) == len(unique_y_coords)
+    x_spacing_meters = unique_x_coords[-1] - unique_x_coords[-2]
+    y_spacing_meters = unique_y_coords[-1] - unique_y_coords[-2]
+
+    expected_spacing_D = 5.0
+
+    expected_unique_x_coords = [554, 754, 954, 1154]
+    expected_unique_y_coords = [397, 597, 797, 997]
+
+    with subtests.test("number of turbines in layout"):
+        assert len(xcoords) == wind_technology["num_turbines"]
+    with subtests.test("x spacing"):
+        assert x_spacing_meters/wind_technology["rotor_diameter"] == pytest.approx(expected_spacing_D,abs=1e-3)
+    with subtests.test("y spacing"):
+        assert y_spacing_meters/wind_technology["rotor_diameter"] == pytest.approx(expected_spacing_D,abs=1e-3)
+    with subtests.test("number of coordinates"):
+        assert len(unique_x_coords) == len(unique_y_coords)
     for i in range(len(unique_x_coords)):
-        assert unique_x_coords[i] == pytest.approx(expected_unique_x_coords[i], abs=1)
+        with subtests.test(f"unique x coordinate #{i}"):
+            assert unique_x_coords[i] == pytest.approx(expected_unique_x_coords[i], abs=1)
     for i in range(len(unique_y_coords)):
-        assert unique_y_coords[i] == pytest.approx(expected_unique_y_coords[i], abs=1)
+        with subtests.test(f"unique y coordinate #{i}"):
+            assert unique_y_coords[i] == pytest.approx(expected_unique_y_coords[i], abs=1)
+
+def test_wind_basic_grid_layout_floris_default(site, subtests):
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    wind_technology = {
+    'model_name': "floris",
+    'floris_config': floris_config_path,
+    'num_turbines': 16,
+    'rotor_diameter': 125.88,
+    'turbine_rating_kw': 5000,
+    'layout_mode': 'basicgrid',
+    'layout_params': WindBasicGridParameters()
+    }
+    config = WindConfig.from_dict(wind_technology)
+    wind_model = WindPlant(site, config=config)
+    xcoords, ycoords = wind_model._system_model.wind_farm_layout
+    unique_x_coords = np.unique(xcoords)
+    unique_y_coords = np.unique(ycoords)
+
+    x_spacing_meters = unique_x_coords[-1] - unique_x_coords[-2]
+    y_spacing_meters = unique_y_coords[-1] - unique_y_coords[-2]
+
+    expected_spacing_D = 5.0
+    
+    expected_unique_x_coords = [330, 959, 1589, 2218]
+    expected_unique_y_coords = [-139, 489, 1119, 1748]
+    
+    with subtests.test("number of turbines"):
+        assert wind_model._system_model.nTurbs == wind_model.num_turbines
+    with subtests.test("x spacing"):
+        assert x_spacing_meters/wind_technology["rotor_diameter"] == pytest.approx(expected_spacing_D,abs=1e-3)
+    with subtests.test("y spacing"):
+        assert y_spacing_meters/wind_technology["rotor_diameter"] == pytest.approx(expected_spacing_D,abs=1e-3)
+    with subtests.test("number of turbines in layout"):
+        assert len(xcoords) == wind_technology["num_turbines"]
+    with subtests.test("number of coordinates"):
+        assert len(unique_x_coords) == len(unique_y_coords)
+    for i in range(len(unique_x_coords)):
+        with subtests.test(f"unique x coordinate #{i}"):
+            assert unique_x_coords[i] == pytest.approx(expected_unique_x_coords[i], abs=1)
+    for i in range(len(unique_y_coords)):
+        with subtests.test(f"unique y coordinate #{i}"):
+            assert unique_y_coords[i] == pytest.approx(expected_unique_y_coords[i], abs=1)
 
 
 def test_solar_layout(site):
