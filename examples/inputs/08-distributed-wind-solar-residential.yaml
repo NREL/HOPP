@@ -45,7 +45,7 @@ technologies:
     maximum_SOC: 100.0
     initial_SOC: 20.0
   grid:
-    interconnect_kw: 1800.0
+    interconnect_kw: 16674.0
     ppa_price: 0.01
 
 config:
