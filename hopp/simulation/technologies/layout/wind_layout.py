@@ -98,7 +98,8 @@ class WindBoundaryGridParameters(BaseClass):
     def __attrs_post_init__(self):
         """The following are initialized in this post init hook:
             - grid_aspect_ratio (float): cols / rows of turbine grid.
-            - border_spacing (float): turbine border spacing offset as ratio of border spacing  (0, 1). Defaults to 0.0
+            - border_spacing (float): turbine border spacing offset as ratio of border spacing (0, 1).
+                Defaults to 0.0
             - min_spacing (float): minimum spacing between turbines in meters. Takes the max of 
                 min_spacing_m and min_spacing_D*rotor_diameter
             - max_spacing (float): maximum spacing between turbines in meters. Takes the max of 
@@ -115,7 +116,7 @@ class WindBoundaryGridParameters(BaseClass):
             self.border_spacing = (self.border_spacing_m/self.min_spacing_m) - 1
     
     def update_min_spacing_with_rotor_diameter(self,rotor_diameter: float):
-        """update min_spacing based on rotor diameter. Sets min_spacing as the maximum
+        """Update min_spacing based on rotor diameter. Sets min_spacing as the maximum
             of min_spacing_m and rotor_diameter*min_spacing_D.
 
         Args:
@@ -127,7 +128,7 @@ class WindBoundaryGridParameters(BaseClass):
         )
     
     def update_max_spacing_with_rotor_diameter(self,rotor_diameter: float):
-        """update max_spacing based on rotor diameter. Sets max_spacing as the maximum
+        """Update max_spacing based on rotor diameter. Sets max_spacing as the maximum
             of max_spacing_m and rotor_diameter*max_spacing_D.
 
         Args:
