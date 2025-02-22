@@ -22,6 +22,7 @@
     + Updated floris initialization to set attributes from `floris_config`
     + Update: raise errors when using floris if theres a discrepancy between inputs in `WindConfig` and information in `floris_config` (such as `num_turbines` and the `floris_config` layout, and turbine parameters like rotor diameter and turbine rating.)
     + Integrated wind layout functionality when using floris
+    + Updated wind layout parameters.
 
 ## Version 3.1.1, Dec. 18, 2024
 

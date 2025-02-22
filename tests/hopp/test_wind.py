@@ -198,7 +198,7 @@ def test_changing_turbine_rating_floris(site):
     )
     with pytest.raises(UserWarning) as err:
         model = WindPlant(site, config=config)
-    assert str(err.value) == "input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
+    assert str(err.value) == "Input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
 
 
 def test_changing_system_capacity_floris(site):
@@ -214,7 +214,6 @@ def test_changing_system_capacity_floris(site):
         }
     )
     model = WindPlant(site, config=config)
-
     new_num_turbs = 16
     new_capacity_kW = new_num_turbs*config.turbine_rating_kw
     rating = model._system_model.turb_rating

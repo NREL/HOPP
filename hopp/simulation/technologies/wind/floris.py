@@ -22,7 +22,6 @@ from hopp.utilities.log import hybrid_logger as logger
 
 @define
 class Floris(BaseClass):
-
     site: SiteInfo = field()
     config: "WindConfig" = field()
     verbose: bool = field(default = True)
@@ -30,26 +29,26 @@ class Floris(BaseClass):
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
     fi: FlorisModel = field(init=False)
-
+    
     # turbine parameters
-    turbine_name: str = field(init=False)
-    wind_turbine_rotor_diameter: float = field(init=False)
-    turb_rating: float = field(init=False)
+    turbine_name: str = field(init = False)
+    wind_turbine_rotor_diameter: float = field(init = False)
+    turb_rating: float = field(init = False)
     # turbine power curve (array of kW power outputs)
-    wind_turbine_powercurve_powerout: list[float] = field(init=False)
-    wind_farm_xCoordinates: list[float] = field(init=False)
-    wind_farm_yCoordinates: list[float] = field(init=False)
-    system_capacity: float = field(init=False)
-
+    wind_turbine_powercurve_powerout: list[float] = field(init = False)
+    wind_farm_xCoordinates: list[float] = field(init = False)
+    wind_farm_yCoordinates: list[float] = field(init = False)
+    system_capacity: float = field(init = False)
+    
     #results
-    gen: list[float] = field(init=False)
-    annual_energy: float = field(init=False)
-    capacity_factor: float = field(init=False)
-    annual_energy_pre_curtailment_ac: float = field(init=False)
-
+    gen: list[float] = field(init = False)
+    annual_energy: float = field(init = False)
+    capacity_factor: float = field(init = False)
+    annual_energy_pre_curtailment_ac: float = field(init = False)
+    
     #TODO: add option to store turbine-powers and velocities or not
-    turb_velocities: np.ndarray = field(init=False)
-    turb_powers: np.ndarray = field(init=False)
+    turb_velocities: np.ndarray = field(init = False)
+    turb_powers: np.ndarray = field(init = False)
 
     def __attrs_post_init__(self):
         """Set-up and initialize floris_config and floris model. This method does the following:
@@ -143,7 +142,7 @@ class Floris(BaseClass):
         if self.config.turbine_rating_kw is not None:
             if self.config.turbine_rating_kw != self.turb_rating:
                 raise UserWarning(
-                    f"input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
+                    f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
                     f"rating from floris power-curve ({self.turb_rating} kW)"
                 )
         
@@ -251,8 +250,8 @@ class Floris(BaseClass):
         Sets the wind farm layout and updates relevant parameters.
 
         Args:
-            xcoords (list[float]): A list of x-coordinates for turbine lcoations.
-            ycoords (list[float]): A list of y-coordinates for turbine lcoations.
+            xcoords (list[float]): A list of x-coordinates for turbine locations.
+            ycoords (list[float]): A list of y-coordinates for turbine locations.
 
         Raises:
             ValueError: If x- and y-coordinates are not the same length, an error is raised.

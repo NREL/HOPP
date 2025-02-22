@@ -12,6 +12,7 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindBoundaryGridParameters, 
     WindBasicGridParameters,
     WindCustomParameters,
+    WindGridParameters,
 )
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
@@ -333,7 +334,6 @@ class WindPlant(PowerSource):
             self._system_model.value("wind_farm_xCoordinates", xcoords)
             self._system_model.value("wind_farm_yCoordinates", ycoords)
             self._system_model.value("system_capacity", self.turb_rating * len(xcoords))
-
         logger.debug("WindPlant set xcoords to {}".format(xcoords))
         logger.debug("WindPlant set ycoords to {}".format(ycoords))
         logger.info("WindPlant set system_capacity to {} kW".format(self.system_capacity_kw))
@@ -374,3 +374,23 @@ class WindPlant(PowerSource):
         :return:
         """
         self.system_capacity_by_num_turbines(size_kw)
+
+    def modify_layout_params(
+        self,
+        wind_capacity_kW: float,
+        layout_params: Union[dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters, WindGridParameters],
+        layout_mode: Optional[str] = None):
+        
+        if isinstance(layout_params, dict):
+            if layout_mode == "custom":
+                layout_params = WindCustomParameters(**layout_params)
+            elif layout_mode == "grid":
+                layout_params = WindGridParameters(**layout_params)
+            elif layout_mode == "basicgrid":
+                layout_params = WindBasicGridParameters(**layout_params)
+            elif layout_mode == "boundarygrid":
+                layout_params = WindBoundaryGridParameters(**layout_params)
+            elif layout_mode is None:
+                raise UserWarning("if providing layout_params as dictionary, please specify layout mode")
+        
+        self._layout.set_layout_params(wind_capacity_kW, params = layout_params)
