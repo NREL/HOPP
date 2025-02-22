@@ -64,7 +64,7 @@ def make_grid_lines(site_shape: BaseGeometry,
     
     grid_angle = np.deg2rad(grid_angle)
     grid_angle = (grid_angle + np.pi) % (2 * np.pi) - np.pi  # reset grid_angle to (-pi, pi)
-    bounds = site_shape.bounds 
+    bounds = site_shape.bounds
     
     bounding_box_line = LineString([(bounds[0], bounds[1]), (bounds[2], bounds[3])])
     base_line = LineString([(-bounding_box_line.length, 0), (bounding_box_line.length, 0)])

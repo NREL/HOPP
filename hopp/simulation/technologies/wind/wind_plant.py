@@ -381,15 +381,16 @@ class WindPlant(PowerSource):
         layout_params: Union[dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters, WindGridParameters],
         layout_mode: Optional[str] = None):
         
-        if isinstance(layout_params,dict) and layout_mode == "custom":
-            layout_params = WindCustomParameters(**layout_params)
-        elif isinstance(layout_params,dict) and layout_mode == "grid":
-            layout_params = WindGridParameters(**layout_params)
-        elif isinstance(layout_params,dict) and layout_mode == "basicgrid":
-            layout_params = WindBasicGridParameters(**layout_params)
-        elif isinstance(layout_params,dict) and layout_mode == "boundarygrid":
-            layout_params = WindBoundaryGridParameters(**layout_params)
-        elif isinstance(layout_params,dict) and layout_mode is None:
-            raise UserWarning("if providing layout_params as dictionary, please specify layout mode")
+        if isinstance(layout_params, dict):
+            if layout_mode == "custom":
+                layout_params = WindCustomParameters(**layout_params)
+            elif layout_mode == "grid":
+                layout_params = WindGridParameters(**layout_params)
+            elif layout_mode == "basicgrid":
+                layout_params = WindBasicGridParameters(**layout_params)
+            elif layout_mode == "boundarygrid":
+                layout_params = WindBoundaryGridParameters(**layout_params)
+            elif layout_mode is None:
+                raise UserWarning("if providing layout_params as dictionary, please specify layout mode")
         
         self._layout.set_layout_params(wind_capacity_kW, params = layout_params)
