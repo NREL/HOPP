@@ -160,7 +160,7 @@ def test_floris_num_turbines(site):
     assert model._system_model.nTurbs == model.num_turbines
     # with pytest.raises(UserWarning) as err:
     # assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
-   
+
 
 def test_changing_rotor_diam_recalc_floris(site):
     floris_config_path = (
@@ -221,7 +221,7 @@ def test_changing_system_capacity_floris(site):
     assert model._system_model.nTurbs == 4
     assert model._system_model.turb_rating == rating
     assert model._system_model.system_capacity == 20000
-    
+
     model.system_capacity_by_num_turbines(new_capacity_kW)
     assert model._system_model.nTurbs == new_num_turbs
     assert model._system_model.system_capacity == new_capacity_kW 

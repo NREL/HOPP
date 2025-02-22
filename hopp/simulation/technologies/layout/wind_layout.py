@@ -83,10 +83,10 @@ class WindBoundaryGridParameters(BaseClass):
     border_offset: float = field(default = 0.0, validator = range_val(0.0, 1.0)) 
     border_spacing_m: Optional[float] = field(default = None)
 
-    min_spacing_m: Optional[float] = field(default = 0.0, validator=validators.instance_of(float, type(None)))
-    min_spacing_D: Optional[float] = field(default = 2.0, validator=validators.instance_of(float, type(None)))
-    max_spacing_m: Optional[float] = field(default = 2e6, validator=validators.instance_of(float, type(None)))
-    max_spacing_D: Optional[float] = field(default = 20.0, validator=validators.instance_of(float, type(None)))
+    min_spacing_m: Optional[float] = field(default = 0.0, validator=validators.instance_of((float, type(None))))
+    min_spacing_D: Optional[float] = field(default = 2.0, validator=validators.instance_of((float, type(None))))
+    max_spacing_m: Optional[float] = field(default = 2e6, validator=validators.instance_of((float, type(None))))
+    max_spacing_D: Optional[float] = field(default = 20.0, validator=validators.instance_of((float, type(None))))
 
     grid_angle: float = field(default=0.0, validator=range_val(0.0, 180.0))
     grid_aspect_power: Optional[float] = field(default=None)
