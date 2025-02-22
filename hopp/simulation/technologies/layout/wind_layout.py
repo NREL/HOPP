@@ -293,8 +293,8 @@ class WindLayout(BaseClass):
             self.parameters.update_min_spacing_with_rotor_diameter(rotor_diameter)
             if self.layout_mode == "boundarygrid":
                 max_spacing = max(
-                    self.max_spacing_m, 
-                    rotor_diameter * self.max_spacing_D
+                    self.parameters.max_spacing_m, 
+                    rotor_diameter * self.parameters.max_spacing_D
                 )
                 self.parameters.value("max_spacing", max_spacing)
 
