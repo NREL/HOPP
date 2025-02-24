@@ -205,18 +205,11 @@ class WindLayout(BaseClass):
                     WindBoundaryGridParameters, 
                     WindCustomParameters, 
                     WindBasicGridParameters, 
+                    WindGridParameters,
                     None, 
                     dict
                 ]
             ): wind layout parameters for the corresponding `layout_mode`
-        min_spacing_meters (float, Optional): minimum spacing between turbines in meters. 
-            Defaults to 0.0.
-        max_spacing_meters (float, Optional): maximum spacing between turbines in meters. 
-            Defaults to 2e6.
-        min_rotor_diameter_multiplier (float, Optional): minimum spacing between turbines as 
-            multiplier of rotor diameter. Defaults to 2.0.
-        max_rotor_diameter_multiplier (float, Optional): maximum spacing between turbines as 
-            multiplier of rotor diameter. Defaults to 20.0.
         turbine_rating_kW (float, Optional): rating of a single turbine in kW. if not provided, 
             turbine power is estimated from the power-curve.
     """
@@ -233,30 +226,17 @@ class WindLayout(BaseClass):
         WindGridParameters,
         dict,
     ]
-    # TODO: convert min_spacing and max_spacing to be within the parameter class that uses it.
-    min_spacing_meters: Optional[float] = field(default=0.0)
-    max_spacing_meters: Optional[float] = field(default=2e6)
-
-    min_rotor_diameter_multiplier: Optional[float] = field(default=2.0)
-    max_rotor_diameter_multiplier: Optional[float] = field(default=20.0)
     
     turbine_rating_kW: Optional[float] = field(default=None)
 
     turb_pos_x: list[float] = field(init=False)
     turb_pos_y: list[float] = field(init=False)
-
-    min_spacing: float = field(init=False)
-    max_spacing: float = field(init=False)
     
     def __attrs_post_init__(self):
         """The following are initialized in this post init hook:
             
             - turb_pos_x (list[float]): x-coordinates of turbines
             - turb_pos_y (list[float]): x-coordinates of turbines
-            - parameters.min_spacing (float): minimum spacing between turbines in meters. 
-                Only used if layout_mode is `grid` or `boundarygrid`.
-            - parameters.max_spacing (float): maximum spacing between turbines in meters. 
-                Only used if layout_mode is `boundarygrid`.
         
         Note: these calculations are based on the default values of rotor diameter and turbine 
             layout. `min_spacing` and `max_spacing` are re-calculated in _get_system_config(). 
