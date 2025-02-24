@@ -103,6 +103,8 @@ class WindConfig(BaseClass):
     timestep: Optional[Tuple[int, int]] = field(default=(0,8760))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
     name: str = field(default="WindPlant")
+    verbose: bool = field(default = True)
+    store_turbine_performance_results: bool = field(default = False)
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
@@ -289,15 +291,13 @@ class WindPlant(PowerSource):
     @num_turbines.setter
     def num_turbines(self, n_turbines: int):
         
-        if (
-            self._layout.layout_mode == "custom"
-            and n_turbines != len(self._system_model.value("wind_farm_xCoordinates"))
-        ):
-            n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
-            raise UserWarning(
-                f"Using custom layout and input number of turbines ({n_turbines}) does not equal "
-                f"length of layout ({n_turbs_layout})."
-            )
+        if self._layout.layout_mode == "custom":
+            if n_turbines == len(self._layout.parameters.layout_x):
+                self._layout.set_num_turbines(n_turbines)
+            else:
+                if n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
+                    n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
+                    raise UserWarning(f"using custom layout and input number of turbines ({n_turbines}) does not equal length of layout ({n_turbs_layout})")
         self._layout.set_num_turbines(n_turbines)
 
     @property

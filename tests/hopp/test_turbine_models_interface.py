@@ -109,7 +109,6 @@ def test_floris_nrel_5mw_hopp(site_input,subtests):
         "layout_mode": "floris_layout"
     }
     site_input.update({"hub_height":90.0})
-    # site_input.update({"solar":False})
     system_capacity_kw = turbine_rating_kw*n_turbs
     technologies = {"wind":wind_config_dict,"grid":{"interconnect_kw":system_capacity_kw}}
     hybrid_config = {"site":site_input,"technologies":technologies}
@@ -141,7 +140,6 @@ def test_floris_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
         "layout_mode": "floris_layout"
     }
     site_input.update({"hub_height":90.0})
-    # site_input.update({"solar":False})
     system_capacity_kw = turbine_rating_kw*n_turbs
     technologies = {"wind":wind_config_dict,"grid":{"interconnect_kw":system_capacity_kw}}
     hybrid_config = {"site":site_input,"technologies":technologies}

@@ -2,10 +2,10 @@ import math
 
 import PySAM.Windpower as windpower
 import pytest
+from pytest import fixture,approx
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.utilities import load_yaml
 from tests.hopp.utils import create_default_site_info
-from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
 
 @fixture
@@ -181,7 +181,7 @@ def test_changing_turbine_rating_floris(site):
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     with pytest.raises(UserWarning) as err:
         model = WindPlant(site, config=config)
-    assert str(err.value) == "input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
+    assert str(err.value) == "Input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
    
 
 def test_changing_system_capacity_floris(site):
