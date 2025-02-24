@@ -88,8 +88,8 @@ wake:
     jensen:
       we: 0.05
 farm:
-  layout_x: []
-  layout_y: []
+  layout_x: [0.0]
+  layout_y: [0.0]
   turbine_type:
   - operation_model: cosine-loss
     
