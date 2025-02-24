@@ -10,7 +10,7 @@ from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp import ROOT_DIR
 from hopp.simulation import HoppInterface
 
-FLORIS_V4_TEMPLATE_PATH = ROOT_DIR.parent / "tests"/"hopp"/"inputs"/"floris_v4_template.yaml"
+FLORIS_V4_TEMPLATE_PATH = ROOT_DIR.parent / "tests"/"hopp"/"inputs"/"floris_v4_empty_layout.yaml"
 DEFAULT_WIND_RESOURCE_FILE = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 DEFAULT_SOLAR_RESOURCE_FILE = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 

@@ -68,6 +68,9 @@ class WindConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+        verbose (bool): if True, print simulation progress statements. Defaults to True. 
+        store_turbine_performance_results (bool): If running FLORIS, whether to save speed and power timeseries
+            for each turbine in the farm. Defaults to False. 
     """
     # TODO: put `resource_parse_method`, `store_turbine_performance_results`, and `verbose` in "floris_kwargs" dictionary
     num_turbines: int = field(validator=gt_zero)
