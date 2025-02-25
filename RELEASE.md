@@ -23,7 +23,10 @@
     + Update: raise errors when using floris if theres a discrepancy between inputs in `WindConfig` and information in `floris_config` (such as `num_turbines` and the `floris_config` layout, and turbine parameters like rotor diameter and turbine rating.)
     + Integrated wind layout functionality when using floris
     + Updated wind layout parameters.
-    + Integrated turbine-models library so turbine can be specfied by its name.
+
+* Integrated [turbine-models library](https://github.com/NREL/turbine-models/tree/master). For further details on the following updates, users are referred [here](https://github.com/NREL/HOPP/pull/435)
+    + Wind turbines from the turbine-models library can now be simulated by specifying the turbine name. This feature is compatible with FLORIS and PySAM WindPower simulations.
+    + Added wind turbine power-curve tools to estimate thrust coefficient, power coefficient, and power-curve.
 
 ## Version 3.1.1, Dec. 18, 2024
 
