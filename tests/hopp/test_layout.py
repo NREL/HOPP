@@ -138,6 +138,7 @@ def test_wind_basic_grid_layout_floris_default(site, subtests):
     'layout_mode': 'basicgrid',
     'layout_params': WindBasicGridParameters()
     }
+    site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict(wind_technology)
     wind_model = WindPlant(site, config=config)
     xcoords, ycoords = wind_model._system_model.wind_farm_layout

@@ -1,14 +1,12 @@
 import math
 
-import pytest
-from pytest import fixture, approx
-
 import PySAM.Windpower as windpower
-from hopp import ROOT_DIR
+import pytest
+from pytest import fixture,approx
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.utilities import load_yaml
 from tests.hopp.utils import create_default_site_info
-
+from hopp import ROOT_DIR
 
 @fixture
 def site():
@@ -141,48 +139,31 @@ def test_changing_system_capacity_pysam(site):
 
 #################### FLORIS tests ################
 def test_floris_num_turbines(site):
-    floris_config_path = (ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml")
-    f_config = load_yaml(floris_config_path)
-    floris_n_turbines = len(f_config["farm"]["layout_x"])
-    config = WindConfig.from_dict(
-        {
-            'num_turbines': 16,
-            "turbine_rating_kw": 5000,
-            "model_name": "floris",
-            "timestep": [1, 8760],
-            "floris_config": floris_config_path
-        }
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
+    
+    site.wind_resource.hub_height_meters = 90.0
+    config = WindConfig.from_dict({'num_turbines': 16, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     xcoords, ycoords = model._system_model.wind_farm_layout
     assert len(xcoords) == config.num_turbines
     assert len(ycoords) == model.num_turbines
     assert model._system_model.nTurbs == model.num_turbines
-    # with pytest.raises(UserWarning) as err:
-    # assert str(err.value) == f"num_turbines input ({config.num_turbines}) does not equal number of turbines in floris layout ({floris_n_turbines})"
-
+    
 
 def test_changing_rotor_diam_recalc_floris(site):
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
-    
-    config = WindConfig.from_dict(
-        {
-            'num_turbines': 4,
-            "turbine_rating_kw": 5000,
-            "model_name": "floris",
-            "timestep": [1, 8760],
-            "floris_config": floris_config_path
-        }
-    )
+    site.wind_resource.hub_height_meters = 90.0
+    config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
     assert model._system_model.system_capacity  == 20000
     diams = range(50, 70, 140)
     for d in diams:
         model._system_model.wind_turbine_rotor_diameter = d
         assert model._system_model.wind_turbine_rotor_diameter == d, "rotor diameter should be " + str(d)
-
 
 def test_changing_turbine_rating_floris(site):
     
@@ -196,32 +177,31 @@ def test_changing_turbine_rating_floris(site):
             "floris_config": floris_config_path
         }
     )
+    site.wind_resource.hub_height_meters = 90.0
+    config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     with pytest.raises(UserWarning) as err:
         model = WindPlant(site, config=config)
     assert str(err.value) == "Input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
-
+   
 
 def test_changing_system_capacity_floris(site):
-    floris_config_path = (ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml")
-    
-    config = WindConfig.from_dict(
-        {
-            'num_turbines': 4,
-            "turbine_rating_kw": 5000,
-            "model_name": "floris",
-            "timestep": [1, 8760],
-            "floris_config": floris_config_path
-        }
+    # this will fail now
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
+    site.wind_resource.hub_height_meters = 90.0
+    config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 5000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
     model = WindPlant(site, config=config)
+    
     new_num_turbs = 16
     new_capacity_kW = new_num_turbs*config.turbine_rating_kw
     rating = model._system_model.turb_rating
-
+    
     assert model._system_model.nTurbs == 4
     assert model._system_model.turb_rating == rating
     assert model._system_model.system_capacity == 20000
-
+    
     model.system_capacity_by_num_turbines(new_capacity_kW)
     assert model._system_model.nTurbs == new_num_turbs
     assert model._system_model.system_capacity == new_capacity_kW 
+
