@@ -7,9 +7,9 @@ from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_tu
 from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
 
 def check_output_formatting(orig_dict):
-    """Recursive method to convert arrays to lists and numerical entries to floats.
-        This is primarily used before writing a dictionary to a .yaml file to ensure
-        proper output formatting.
+    """Recursive method to convert arrays to lists and numerical entries to floats. 
+    This is primarily used before writing a dictionary to a .yaml file to ensure 
+    proper output formatting.
 
     Args:
         orig_dict (dict): input dictionary
@@ -46,8 +46,8 @@ def write_floris_layout_to_file(layout_x,layout_y,output_dir,turbine_desc):
     """Export wind farm layout to floris-friendly .yaml file.
 
     Args:
-        layout_x (List[float]): x-coordinates of turbines
-        layout_y (List[float]): y-coordinates of turbines
+        layout_x (list[float]): x-coordinates of turbines
+        layout_y (list[float]): y-coordinates of turbines
         output_dir (str): output folder to write layout file to.
         turbine_desc (str): turbine name or description.
     """
@@ -108,6 +108,19 @@ def load_turbine_from_floris_library(turbine_name):
         raise FileNotFoundError("Floris library file for turbine {} does not exist.".format(turbine_name))
 
 def check_libraries_for_turbine_name_floris(turbine_name,floris_model):
+    """Check the FLORIS internal turbine library and the turbine-models library for 
+    a turbine of ``turbine_name``. Return a FLORIS-compatible dictionary of the turbine 
+    parameters if the ``turbine_name`` if valid. If the ``turbine_name`` is invalid, 
+    return a warning message string.
+
+    Args:
+        turbine_name (str): name of turbine
+        floris_model (FlorisModel): _description_
+
+    Returns:
+        dict | str: FLORIS-compatible dict of the turbine parameters for a valid ``turbine_name``. 
+        If the ``turbine_name`` is invalid, return a warning message string.
+    """
     is_floris_lib_turbine = check_floris_library_for_turbine(turbine_name)
     is_turb_lib_turbine = check_turbine_library_for_turbine(turbine_name)
 

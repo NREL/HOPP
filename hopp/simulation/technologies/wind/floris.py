@@ -100,7 +100,7 @@ class Floris(BaseClass):
             self.end_idx = 8759
         
 
-    def initialize_from_floris(self,floris_config):
+    def initialize_from_floris(self, floris_config):
         """Initialize wind turbine parmeters and set in floris_config.
 
         Args:
@@ -136,15 +136,29 @@ class Floris(BaseClass):
         
         if self.config.turbine_rating_kw is not None:
             if self.config.turbine_rating_kw != self.turb_rating:
-                raise UserWarning(f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match rating from floris power-curve ({self.turb_rating} kW)")
+                msg = (
+                    f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
+                    f"rating from floris power-curve ({self.turb_rating} kW)"
+                )
+                raise UserWarning(msg)
         if self.config.rotor_diameter is not None:
             if self.config.rotor_diameter != self.wind_turbine_rotor_diameter:
-                raise UserWarning(f"Input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter from floris config ({self.wind_turbine_rotor_diameter})")
+                msg = (
+                    f"Input rotor diameter ({self.config.rotor_diameter}) does not match "
+                    f"rotor diameter from floris config ({self.wind_turbine_rotor_diameter})"
+                )
+                raise UserWarning(msg)
         if self.config.hub_height is not None:
             if self.config.hub_height != hub_height:
-                raise UserWarning(f"Input hub-height ({self.config.hub_height}) does not match hub-height from floris config ({hub_height})")
+                msg = (
+                    f"Input hub-height ({self.config.hub_height}) does not match "
+                    f"hub-height from floris config ({hub_height})"
+                )
+                raise UserWarning(msg)
         if hub_height != self.site.wind_resource.hub_height_meters:
-            if hub_height >= min(self.site.wind_resource.data["heights"]) and hub_height<=max(self.site.wind_resource.data["heights"]):
+            valid_min_height = hub_height >= min(self.site.wind_resource.data["heights"])
+            valid_max_height = hub_height <= max(self.site.wind_resource.data["heights"])
+            if valid_min_height and valid_max_height:
                 self.site.wind_resource.hub_height_meters = float(hub_height)
                 self.site.hub_height = float(hub_height)
                 logger.info(f"Updating wind resource hub-height to {hub_height}m")
@@ -163,7 +177,7 @@ class Floris(BaseClass):
         return floris_config
     
     def value(self, name: str, set_value=None):
-        """Set or retrieve atrribute of `hopp.simulation.technologies.wind.floris.Floris`.
+        """Set or retrieve attribute of `hopp.simulation.technologies.wind.floris.Floris`.
             if set_value = None, then retrieve value; otherwise overwrite variable's value.
         
         Args:
@@ -176,7 +190,7 @@ class Floris(BaseClass):
         else:
             return self.__getattribute__(name)
 
-    def set_floris_value(self,name,value):
+    def set_floris_value(self, name, value):
         """Set value of FlorisModel object using the `set` function.
 
         Args:
@@ -186,21 +200,21 @@ class Floris(BaseClass):
         if value is not None:
             self.fi.set(**{name:value})
     
-    def set_floris_param(self,param,value):
+    def set_floris_param(self, param, value):
         """Set parameter of FlorisModel object using the `set_param` function.
 
         Args:
-            param (str): name of parameter to update.
-            value (any): value to assign to specified `param`.
+            param (list[str]): list of parameter keys in FlorisModel to update.
+            value (any): values to assign to the specified `param`.
         """
         if value is not None:
             self.fi.set_param(param,value)
     
-    def get_floris_param(self,param):
+    def get_floris_param(self, param):
         """Get parameter of FlorisModel object using the `get_param` function.
 
         Args:
-            param (str): name of parameter in FlorisModel object.
+            param (list[str]): list of parameter keys in FlorisModel to retrieve.
 
         Returns:
             any: value of FlorisModel parameter 
@@ -268,12 +282,12 @@ class Floris(BaseClass):
     
     @property
     def wind_farm_layout(self):
-        xcoords,ycoords = self.fi.get_turbine_layout()
-        return xcoords,ycoords
+        xcoords, ycoords = self.fi.get_turbine_layout()
+        return xcoords, ycoords
     
-    def set_wind_farm_layout(self,xcoords,ycoords):
-        """Set wind farm layout coordinates and update system capacity and number
-            of turbines.
+    def set_wind_farm_layout(self, xcoords, ycoords):
+        """Set wind farm layout coordinates and update system capacity and number 
+        of turbines.
 
         Args:
             xcoords (list[float]): x-coordinates of wind turbines in meters.
@@ -295,10 +309,10 @@ class Floris(BaseClass):
     
     def initialize_wind_turbine(self, floris_config): 
         """Update `floris_config` with turbine parameters. Checks the turbine library 
-            and floris internal library for a turbine with name matching either 
-            `config.turbine_name` or `floris_config["farm"]["turbine_type"][0]["turbine_type"]`.
-            If no matching turbine is found, find the turbine with the closest 
-            matching name and raise a warning.
+        and floris internal library for a turbine with name matching either 
+        `config.turbine_name` or `floris_config["farm"]["turbine_type"][0]["turbine_type"]`. 
+        If no matching turbine is found, find the turbine with the closest 
+        matching name and raise a warning.
 
         Args:
             floris_config (dict): floris (version 4) input dictionary.
@@ -315,6 +329,7 @@ class Floris(BaseClass):
             # turbine data is included in floris_config
             if isinstance(floris_config["farm"]["turbine_type"][0],dict):
                 self.turbine_name = floris_config["farm"]["turbine_type"][0]["turbine_type"]
+                return floris_config
 
             # load file from internal floris library
             if isinstance(floris_config["farm"]["turbine_type"][0],str):
@@ -322,20 +337,20 @@ class Floris(BaseClass):
                 if isinstance(turbine_lib_res,str):
                     raise UserWarning(turbine_lib_res)
                 floris_config["farm"]["turbine_type"][0] = turbine_lib_res
-                
-        else:
-            turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(self.config.turbine_name, self)
-            if isinstance(turbine_lib_res,str):
-                turbine_name = check_turbine_name(self.config.turbine_name)
-                turbine_lib_res = get_floris_turbine_specs(turbine_name,self)
-                logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
-            floris_config["farm"]["turbine_type"][0] = turbine_lib_res 
+                return floris_config
+        
+        turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(self.config.turbine_name, self)
+        if isinstance(turbine_lib_res,str):
+            turbine_name = check_turbine_name(self.config.turbine_name)
+            turbine_lib_res = get_floris_turbine_specs(turbine_name,self)
+            logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
+        floris_config["farm"]["turbine_type"][0] = turbine_lib_res 
         return floris_config
 
-    def update_wind_turbine(self,turbine_name):
+    def update_wind_turbine(self, turbine_name):
         """Update `FlorisModel` (`self.fi`) with with turbine parameters corresponding
-            to `turbine_name`. Used to update turbine parameters after Floris has been initialized.
-            Updates system capacity, rotor diameter, power-curve, and turb_rating.
+        to `turbine_name`. Used to update turbine parameters after Floris has been initialized.
+        Updates system capacity, rotor diameter, power-curve, and turb_rating.
 
         Args:
             turbine_name (str): name of turbine in either floris internal library or turbine-models library.

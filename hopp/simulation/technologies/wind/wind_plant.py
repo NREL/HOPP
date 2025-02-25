@@ -235,11 +235,20 @@ class WindPlant(PowerSource):
 
             if self.config.rotor_diameter is not None:
                 if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
-                    raise UserWarning(f"input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})")
+                    msg = (
+                        f"input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter "
+                        f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})"
+                    )
+                    raise UserWarning(msg)
         
         if self.config.hub_height is not None:
             if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
-                raise UserWarning(f"input hub-height ({self.config.hub_height}) does not match hub-height from for turbine ({self._system_model.Turbine.wind_turbine_hub_ht})")
+                msg = (
+                    f"input hub-height ({self.config.hub_height}) does not match hub-height "
+                    f"from for turbine ({self._system_model.Turbine.wind_turbine_hub_ht})"
+                )
+
+                raise UserWarning(msg)
         
         if self._system_model.Turbine.wind_turbine_hub_ht != self.site.wind_resource.hub_height_meters:
             if self._system_model.Turbine.wind_turbine_hub_ht >= min(self.site.wind_resource.data["heights"]) and self._system_model.Turbine.wind_turbine_hub_ht<=max(self.site.wind_resource.data["heights"]):
@@ -300,7 +309,11 @@ class WindPlant(PowerSource):
             else:
                 if n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
                     n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
-                    raise UserWarning(f"using custom layout and input number of turbines ({n_turbines}) does not equal length of layout ({n_turbs_layout})")
+                    msg = (
+                        f"using custom layout and input number of turbines ({n_turbines}) "
+                        f"does not equal length of layout ({n_turbs_layout})"
+                    )
+                    raise UserWarning(msg)
         self._layout.set_num_turbines(n_turbines)
 
     @property

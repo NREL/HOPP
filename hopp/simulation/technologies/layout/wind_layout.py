@@ -418,6 +418,7 @@ class WindLayout(BaseClass):
         Args:
             n_turbines (int): number of turbines to include in layout.
         """
+        
         self._get_system_config()
 
         interrow_spacing = self.parameters.row_D_spacing * self.rotor_diameter
