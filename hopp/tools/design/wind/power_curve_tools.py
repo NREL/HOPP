@@ -148,7 +148,9 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
 
         # Calculate C_T = 4 * a * (1-a)
         ct_curve[i] = np.round(4 * a * (1-a), 4)
-  
+    
+    ct_flat = [ct[0] for ct in ct_curve]
+
     if plot:
         plot_power_curve(wind_speed,cp_curve,ct_curve)
 
@@ -157,4 +159,4 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
         for ws, ct, cp in zip(wind_speed, ct_curve, cp_curve):
             print(f"{ws:7.4f} | {ct:7.4f} | {cp:7.4f}")
 
-    return ct_curve.flatten().tolist()
+    return ct_flat
