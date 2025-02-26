@@ -12,37 +12,50 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
         model_name (str): wind simulation model, either "pysam" or "floris".
 
     Raises:
-        UserWarning: if turbine data doesnt have the minimum required power-curve information.
+        ValueError: if turbine data doesnt have the minimum required power-curve information.
+        ValueError: if model name is not either 'pysam' or 'floris'
 
     Returns:
-        dict: power-curve dictionary formatted for the corresponding `model_name`.
+        dict: power-curve dictionary formatted for the corresponding ``model_name``.
     """
-    turbine_name = turbine_specs["name"]
+
+    if model_name not in ("floris", "pysam"):
+        raise ValueError(f"model_name {model_name} is invalid, options are either 'floris' or 'pysam'.")
+    
     wind_speeds = turbine_specs["power_curve"]["wind_speed_ms"].to_list()
     turbine_curve_cols = turbine_specs["power_curve"].columns.to_list()
-    if "power_kw" in turbine_curve_cols and "cp" in turbine_curve_cols:
-        power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
+    
+    has_cp_curve = "cp" in turbine_curve_cols
+    has_power_curve = "power_kw" in turbine_curve_cols
+    has_ct_curve = "ct" in turbine_curve_cols
+    
+    if not has_cp_curve and not has_power_curve:
+        turbine_name = turbine_specs["name"]
+        raise ValueError(f"turbine {turbine_name} does not have minimum required power curve data (needs either power_kw or cp)")
+    
+    if has_cp_curve:
         cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-        power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
-        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
-        cp_curve = np.where(cp_curve<0,0,cp_curve)
-        power_curve_kw = list(power_curve_kw)
-        cp_curve = list(cp_curve)
-    elif "power_kw" not in turbine_curve_cols and "cp" in turbine_curve_cols:
-        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-        cp_curve = np.where(cp_curve<0,0,cp_curve)
-        cp_curve = list(cp_curve)
+        cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
 
+    if has_power_curve and has_cp_curve:
+        power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
+        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
+        power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
+        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw).tolist()
+        cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
+    
+    if has_cp_curve and not has_power_curve:
+        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
+        cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
         power_curve_kw = curve_tools.calculate_power_from_cp(wind_speeds,cp_curve,turbine_specs["rotor_diameter"],turbine_specs["rated_power"])
-    elif "power_kw" in turbine_curve_cols and "cp" not in turbine_curve_cols:
+    
+    if has_power_curve and not has_cp_curve:
         power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
         power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
-        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw)
-        power_curve_kw = list(power_curve_kw)
+        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw).tolist()
         cp_curve = curve_tools.calculate_cp_from_power(wind_speeds,power_curve_kw)
-    else:
-        raise UserWarning(f"turbine {turbine_name} does not have minimum required power curve data (needs either power_kw or cp)")
-    if "ct" in turbine_specs["power_curve"].columns.to_list():
+        
+    if has_ct_curve:
         ct = turbine_specs["power_curve"]["ct"].to_list()
     else:
         ct = curve_tools.estimate_thrust_coefficient(wind_speeds,cp_curve)
@@ -50,23 +63,22 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
     _, cp_curve = curve_tools.pad_power_curve(wind_speeds,cp_curve)
     _, ct = curve_tools.pad_power_curve(wind_speeds,ct)
     wind_speeds, power_curve_kw = curve_tools.pad_power_curve(wind_speeds,power_curve_kw)
+    
     if model_name == "floris":
         power_thrust_table = {
-            # "ref_air_density": 1.225,
-            # "ref_tilt": 5.0,
-            # "cosine_loss_exponent_yaw": 1.88,
-            # "cosine_loss_exponent_tilt": 1.88,
             "wind_speed":wind_speeds,
             "power":power_curve_kw,
             "thrust_coefficient":ct,
             }
-    elif model_name == "pysam":
-        power_thrust_table = {
-            "wind_turbine_max_cp": max(cp_curve),
-            "wind_turbine_ct_curve":ct,
-            "wind_turbine_powercurve_windspeeds":wind_speeds,
-            "wind_turbine_powercurve_powerout":power_curve_kw,
-            }
+        return power_thrust_table
+    
+    # if model_name is "pysam"
+    power_thrust_table = {
+        "wind_turbine_max_cp": max(cp_curve),
+        "wind_turbine_ct_curve":ct,
+        "wind_turbine_powercurve_windspeeds":wind_speeds,
+        "wind_turbine_powercurve_powerout":power_curve_kw,
+        }
     return power_thrust_table
 
 

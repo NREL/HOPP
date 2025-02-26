@@ -35,14 +35,14 @@ def load_offshore_turbine_options():
     return osw_turbines
 
 def check_turbine_name(turbine_name:str):
-    """Check turbine-models library for turbine named `turbine_name` and return a valid turbine name.
+    """Check turbine-models library for turbine named ``turbine_name`` and return a valid turbine name.
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
 
     Returns:
-        str: turbine name that most closely matches the input `turbine_name` of the turbines
-             in turbine-models library.
+        str: turbine name that most closely matches the input ``turbine_name`` of the turbines 
+            in turbine-models library.
     """
     t_lib = Turbines()
     valid_name = False
@@ -77,7 +77,7 @@ def check_turbine_name(turbine_name:str):
         return best_match
 
 def check_turbine_library_for_turbine(turbine_name:str):
-    """Check turbine-models library for turbine named `turbine_name`.
+    """Check turbine-models library for turbine named ``turbine_name``.
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
