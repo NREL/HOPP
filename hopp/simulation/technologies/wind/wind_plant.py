@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Union, Sequence
 
 from attrs import define, field
+import numpy as np
 
 import PySAM.Singleowner as Singleowner
 import PySAM.Windpower as Windpower
@@ -231,7 +232,7 @@ class WindPlant(PowerSource):
             turbine_dict = get_pysam_turbine_specs(turbine_name,self)
             self._system_model.Turbine.assign(turbine_dict)
             self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
-            self.turb_rating = max(turbine_dict["wind_turbine_powercurve_powerout"])
+            self.turb_rating = np.round(max(turbine_dict["wind_turbine_powercurve_powerout"]), decimals = 3)
 
             if self.config.rotor_diameter is not None:
                 if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:

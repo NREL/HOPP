@@ -341,9 +341,10 @@ class Floris(BaseClass):
         
         turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(self.config.turbine_name, self)
         if isinstance(turbine_lib_res,str):
-            turbine_name = check_turbine_name(self.config.turbine_name)
-            turbine_lib_res = get_floris_turbine_specs(turbine_name,self)
-            logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
+            raise UserWarning(turbine_lib_res)
+            # turbine_name = check_turbine_name(self.config.turbine_name)
+            # turbine_lib_res = get_floris_turbine_specs(turbine_name,self)
+            # logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
         floris_config["farm"]["turbine_type"][0] = turbine_lib_res 
         return floris_config
 
@@ -365,5 +366,5 @@ class Floris(BaseClass):
         self.fi.set(turbine_type=[turbine_lib_res])
         self.value("wind_turbine_rotor_diameter", turbine_lib_res["rotor_diameter"])
         self.value("wind_turbine_powercurve_powerout", turbine_lib_res["power_thrust_table"]["power"])
-        self.turb_rating = max(turbine_lib_res["power_thrust_table"]["power"])
+        self.turb_rating = np.round(max(turbine_lib_res["power_thrust_table"]["power"]), decimals = 1)
         self.system_capacity = self.nTurbs*self.turb_rating
