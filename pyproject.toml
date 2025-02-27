@@ -50,6 +50,7 @@ dependencies = [
     "pyyaml-include",
     "profast",
     "NREL-rex",
+    "dill",
     "turbine_models @ git+https://github.com/NREL/turbine-models.git",
 ]
 keywords = [

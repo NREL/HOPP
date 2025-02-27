@@ -5,7 +5,6 @@ from attrs import define, field
 import numpy as np
 
 from floris import FlorisModel, TimeSeries
-from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 # avoid circular dep
@@ -18,8 +17,6 @@ from hopp.tools.resource.wind_tools import (
 )
 from hopp.utilities import load_yaml
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
-from hopp.tools.design.wind.turbine_library_tools import check_turbine_name
 import hopp.tools.design.wind.floris_helper_tools as floris_tools
 
 @define
@@ -64,7 +61,7 @@ class Floris(BaseClass):
             ValueError: "A floris configuration must be provided"
             ValueError: "A timestep is required."
         """
-        
+
         if self.config.floris_config is None:
             raise ValueError("A floris configuration must be provided")
         if self.config.timestep is None:
@@ -334,17 +331,10 @@ class Floris(BaseClass):
             # load file from internal floris library
             if isinstance(floris_config["farm"]["turbine_type"][0],str):
                 turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(floris_config["farm"]["turbine_type"][0], self)
-                if isinstance(turbine_lib_res,str):
-                    raise UserWarning(turbine_lib_res)
                 floris_config["farm"]["turbine_type"][0] = turbine_lib_res
                 return floris_config
         
         turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(self.config.turbine_name, self)
-        if isinstance(turbine_lib_res,str):
-            raise UserWarning(turbine_lib_res)
-            # turbine_name = check_turbine_name(self.config.turbine_name)
-            # turbine_lib_res = get_floris_turbine_specs(turbine_name,self)
-            # logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
         floris_config["farm"]["turbine_type"][0] = turbine_lib_res 
         return floris_config
 
@@ -361,8 +351,6 @@ class Floris(BaseClass):
                 the turbine library or floris library.
         """
         turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(turbine_name, self)
-        if isinstance(turbine_lib_res,str):
-            raise UserWarning(turbine_lib_res)
         self.fi.set(turbine_type=[turbine_lib_res])
         self.value("wind_turbine_rotor_diameter", turbine_lib_res["rotor_diameter"])
         self.value("wind_turbine_powercurve_powerout", turbine_lib_res["power_thrust_table"]["power"])

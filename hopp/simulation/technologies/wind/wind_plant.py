@@ -15,8 +15,8 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindCustomParameters,
     WindGridParameters,
 )
-from hopp.tools.design.wind.turbine_library_interface_tools import get_pysam_turbine_specs
-from hopp.tools.design.wind.turbine_library_tools import check_turbine_library_for_turbine, check_turbine_name
+import hopp.tools.design.wind.turbine_library_interface_tools as turb_lib_interface
+from hopp.tools.design.wind.turbine_library_tools import check_turbine_library_for_turbine, print_turbine_name_list
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.wind.floris import Floris
@@ -212,6 +212,7 @@ class WindPlant(PowerSource):
         """Initialize wind turbine parameters for PySAM simulation.
 
         Raises:
+            ValueError: if invalid turbine name is provided. Print list of valid turbine names before error is raised. 
             UserWarning: discrepancy in rotor_diameter value
             UserWarning: discrepancy in hub-height value
         """
@@ -225,11 +226,11 @@ class WindPlant(PowerSource):
         if self.config.turbine_name is not None:
             valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
             if not valid_name:
-                turbine_name = check_turbine_name(self.config.turbine_name)
-                logger.warning(f"closest matching turbine name to {self.config.turbine_name} is {turbine_name} ... setting turbine model as {turbine_name}")
+                print_turbine_name_list()
+                ValueError(f"turbine name {self.config.turbine_name} not found in floris or turbine-models library. Please try an available name.")
             else:
                 turbine_name = self.config.turbine_name
-            turbine_dict = get_pysam_turbine_specs(turbine_name,self)
+            turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
             self._system_model.Turbine.assign(turbine_dict)
             self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
             self.turb_rating = np.round(max(turbine_dict["wind_turbine_powercurve_powerout"]), decimals = 3)

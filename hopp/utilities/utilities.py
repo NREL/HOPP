@@ -27,12 +27,10 @@ def load_yaml(filename, loader=Loader) -> dict:
         return yaml.load(fid, loader)
 
 def check_create_folder(filepath):
+    already_exists = True
     if not os.path.isdir(filepath):
         os.makedirs(filepath,exist_ok=True)
         already_exists = False
-    else:
-        already_exists = True
-
     return already_exists
 
 def write_yaml(filename,data):
@@ -41,7 +39,6 @@ def write_yaml(filename,data):
 
     with open(filename, 'w+') as file:
         yaml.dump(data, file,sort_keys=False,encoding = None,default_flow_style=False)
-    return filename
 
 def dump_data_to_pickle(data,filepath):
     with open(filepath,"wb") as f:

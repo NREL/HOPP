@@ -80,7 +80,6 @@ def parse_resource_data(wind_resource):
     idx_ws = [ii for ii, field in enumerate(wind_resource.data['fields']) if field == 3]
     idx_wd = [ii for ii, field in enumerate(wind_resource.data['fields']) if field == 4]
     
-    # If there's multiple hub-heights - average the data
     if len(idx_ws) > 1:
         hh1, hh2 = np.unique(wind_resource.data['heights'])
         
@@ -97,19 +96,17 @@ def parse_resource_data(wind_resource):
             wind_dirs = data[:, idx_wd2]
         
         else:
+            # If there's multiple hub-heights - average the data
             speeds = data[:, idx_ws].mean(axis=1)
             wind_dirs = data[:, idx_wd].mean(axis=1)
-    else:
-        # If there's only one hub-height, grab speed and direction data
-        speeds = data[:, idx_ws[0]]
-        wind_dirs = data[:, idx_wd[0]]
+        
         return speeds, wind_dirs
     
-    # If there's multiple hub-heights - average the data
-    speeds = data[:, idx_ws].mean(axis=1)
-    wind_dirs = data[:, idx_wd].mean(axis=1)    
-
+    # If there's only one hub-height, grab speed and direction data
+    speeds = data[:, idx_ws[0]]
+    wind_dirs = data[:, idx_wd[0]]
     return speeds, wind_dirs
+    
 
 def weighted_parse_resource_data(wind_resource):
     """Parse wind resource data into floris-friendly format.

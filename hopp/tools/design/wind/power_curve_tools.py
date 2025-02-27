@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
 
 def plot_power_curve(wind_speed, cp_curve, ct_curve):
     """Plot Cp and Ct curve per wind speed.

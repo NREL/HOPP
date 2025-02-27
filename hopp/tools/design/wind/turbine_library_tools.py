@@ -7,9 +7,9 @@ def load_distributed_turbine_options():
     Returns:
         list[str]: list of turbine names in group "distributed"
     """
+
     t_lib = Turbines()
-    distributed_turbines_dict = t_lib.turbines(group = "distributed")
-    distributed_turbines = [v for k,v in distributed_turbines_dict.items()]
+    distributed_turbines = list(t_lib.turbines(group="distributed").values())
     return distributed_turbines
 
 def load_land_based_turbine_options():
@@ -18,9 +18,9 @@ def load_land_based_turbine_options():
     Returns:
         list[str]: list of turbine names in group "onshore"
     """
+
     t_lib = Turbines()
-    lbw_turbines_dict = t_lib.turbines(group = "onshore")
-    lbw_turbines = [v for k,v in lbw_turbines_dict.items()]
+    lbw_turbines = list(t_lib.turbines(group="onshore").values())
     return lbw_turbines
 
 def load_offshore_turbine_options():
@@ -29,9 +29,9 @@ def load_offshore_turbine_options():
     Returns:
         list[str]: list of turbine names in group "offshore"
     """
+
     t_lib = Turbines()
-    osw_turbines_dict = t_lib.turbines(group = "offshore")
-    osw_turbines = [v for k,v in osw_turbines_dict.items()]
+    osw_turbines = list(t_lib.turbines(group="offshore").values())
     return osw_turbines
 
 def check_turbine_name(turbine_name:str):
@@ -44,6 +44,7 @@ def check_turbine_name(turbine_name:str):
         str: turbine name that most closely matches the input ``turbine_name`` of the turbines 
             in turbine-models library.
     """
+
     t_lib = Turbines()
     valid_name = False
     best_match = ""
@@ -85,6 +86,7 @@ def check_turbine_library_for_turbine(turbine_name:str):
     Returns:
         bool: whether the input turbine name matches a turbine available in the turbine-models library.
     """
+
     t_lib = Turbines()
     valid_name = False
     for turb_group in t_lib.groups:
@@ -92,3 +94,29 @@ def check_turbine_library_for_turbine(turbine_name:str):
         if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
             valid_name = True
     return valid_name
+
+def print_turbine_name_list():
+    """Print the turbine names for each group of turbines in turbine-models library.
+    """
+    
+    osw_turbs = load_offshore_turbine_options()
+    
+    print("-".join("" for i in range(25)))
+    print("Offshore Turbine Names:")
+    print("-".join("" for i in range(25)))
+    osw_msg = "\n " + "\n ".join(t for t in osw_turbs)
+    print(osw_msg)
+
+    lbw_turbs = load_land_based_turbine_options()
+    print("-".join("" for i in range(25)))
+    print("Onshore Turbine Names:")
+    print("-".join("" for i in range(25)))
+    lbw_msg = "\n " + "\n ".join(t for t in lbw_turbs)
+    print(lbw_msg)
+
+    dw_turbs = load_distributed_turbine_options()
+    print("-".join("" for i in range(25)))
+    print("Distributed Turbine Names:")
+    print("-".join("" for i in range(25)))
+    dw_msg = "\n " + "\n ".join(t for t in dw_turbs)
+    print(dw_msg)

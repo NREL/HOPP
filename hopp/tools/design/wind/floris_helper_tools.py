@@ -4,7 +4,10 @@ from hopp.utilities.utilities import write_yaml
 from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.utilities import load_yaml
 from hopp.tools.design.wind.turbine_library_interface_tools import get_floris_turbine_specs
-from hopp.tools.design.wind.turbine_library_tools import check_turbine_name, check_turbine_library_for_turbine
+from hopp.tools.design.wind.turbine_library_tools import (
+    print_turbine_name_list,
+    check_turbine_library_for_turbine
+)
 
 def check_output_formatting(orig_dict):
     """Recursive method to convert arrays to lists and numerical entries to floats. 
@@ -112,11 +115,16 @@ def check_libraries_for_turbine_name_floris(turbine_name,floris_model):
     Args:
         turbine_name (str): name of turbine
         floris_model (FlorisModel): FlorisModel object.
-
+    
+    Raises:
+        ValueError: if invalid turbine name is provided. 
+            Will print list of valid turbine names before error is raised.
+    
     Returns:
         dict | str: FLORIS-compatible dict of the turbine parameters for a valid ``turbine_name``. 
         If the ``turbine_name`` is invalid, return a warning message string.
     """
+
     is_floris_lib_turbine = check_floris_library_for_turbine(turbine_name)
     is_turb_lib_turbine = check_turbine_library_for_turbine(turbine_name)
 
@@ -127,6 +135,7 @@ def check_libraries_for_turbine_name_floris(turbine_name,floris_model):
         floris_model.value("turbine_name",turbine_name)
         turb_dict = get_floris_turbine_specs(turbine_name,floris_model)
         return turb_dict
-    best_match_name = check_turbine_name(turbine_name)
-    warning_str = f"turbine name {turbine_name} not found in floris or turbine-models library. Did you mean {best_match_name}"
-    return warning_str
+    
+    print_turbine_name_list()
+    raise ValueError(f"turbine name {turbine_name} not found in floris or turbine-models library. Please try an available name.")
+    
