@@ -193,6 +193,8 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
+        elif self.config.system_model_source == "hopp":
+            return self._system_model.nominal_energy, self._system_model.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
@@ -251,6 +253,9 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             model_type = self._system_model.ParamsCell.chem
+        elif self.config.system_model_source == "hopp":
+            model_type = self._system_model.model_type()
+        
         if model_type == 0 or model_type == 1:
             return self._chemistry
         else:
@@ -297,8 +302,9 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
-            self._chemistry = battery_chemistry
-            logger.info("Battery chemistry set to {}".format(battery_chemistry))
+            
+        self._chemistry = battery_chemistry
+        logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
     def setup_performance_model(self):
         """Executes Stateful Battery setup"""
