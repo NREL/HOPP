@@ -152,8 +152,6 @@ class Battery(PowerSource):
         self.system_capacity_kw = self.config.system_capacity_kw
         self.chemistry = self.config.chemistry
 
-
-
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
@@ -164,6 +162,11 @@ class Battery(PowerSource):
             self._system_model.ParamsPack.Cp = 900
             self._system_model.ParamsCell.resistance = 0.001
             self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
+
+        else:
+            self._system_model.sizing(self.config.system_capacity_kw,
+                                      self.config.system_capacity_kwh,
+                                      )
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
@@ -221,6 +224,8 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy
+        else:
+            return self._system_model.system_capacity_kwh
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
