@@ -96,7 +96,13 @@ class MHKTidalPlant(PowerSource):
         self._system_model.value("tidal_resource", self.config.tidal_resource)
 
         # Losses
-        loss_attributes = ['loss_array_spacing', 'loss_downtime', 'loss_resource_overprediction', 'loss_transmission', 'loss_additional']
+        loss_attributes = [
+            'loss_array_spacing', 
+            'loss_downtime', 
+            'loss_resource_overprediction', 
+            'loss_transmission', 
+            'loss_additional'
+            ]
 
         for attribute in loss_attributes:
             if attribute in self.config.as_dict().keys():
@@ -148,11 +154,11 @@ class MHKTidalPlant(PowerSource):
         
         return self._financial_model.value("total_installed_cost", total_installed_cost)
 
-    def system_capacity_by_num_devices(self, wave_size_kw: float):
+    def system_capacity_by_num_devices(self, tidal_size_kw: float):
         """
         Sets the system capacity by adjusting the number of devices
         """
-        new_num_devices = round(wave_size_kw / self.device_rated_power)
+        new_num_devices = round(tidal_size_kw / self.device_rated_power)
         if self.number_devices != new_num_devices:
             self.number_devices = new_num_devices
 
@@ -209,14 +215,14 @@ class MHKTidalPlant(PowerSource):
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
-        Sets the system capacity by updates the number of wave devices using device rating
+        Sets the system capacity by updates the number of tidal devices using device rating
         """
         self.system_capacity_by_num_devices(size_kw)
 
     @property
     def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("annual_energy")
+            return self._system_model.value("annual_energy") 
         else:
             return 0
     

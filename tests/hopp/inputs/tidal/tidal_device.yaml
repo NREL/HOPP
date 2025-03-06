@@ -45,7 +45,7 @@ tidal_power_curve:
 - [3.200000, 1085.370000]
 - [3.300000, 1055.730000]
 
-num_devices: 1
+num_devices: 20
 # Tidal resource is required in PySAM prechecks
 # this is a dummy resource profile and does not 
 # impact simulation when using timeseries data
