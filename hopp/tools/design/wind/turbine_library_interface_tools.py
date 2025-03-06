@@ -102,49 +102,47 @@ def check_hub_height(turbine_specs, wind_plant):
     if isinstance(turbine_specs["hub_height"],list):
         # check for hub height in wind_plant
         is_pysam = isinstance(wind_plant,windpower.Windpower)
-        is_floris = isinstance(wind_plant,floris_wrapper.Floris)
-        if is_pysam or is_floris:
             
-            # check if hub_height was put in WindConfig
-            if (hub_height := wind_plant.config.hub_height) is not None:
-                if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
-                    msg = (
-                        f"multiple hub height options available for {turbine_name} turbine. " 
-                        f"Setting hub height to WindConfig hub_height: {hub_height}"
-                    )
-                    logger.info(msg)
-                    return hub_height
-            
-            # check the hub_height used for wind resource
-            if (hub_height := wind_plant.site.hub_height) is not None:
-                if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
-                    msg = (
-                        f"multiple hub height options available for {turbine_name} turbine. " 
-                        f"Setting hub height to WindConfig hub_height: {hub_height}"
-                    )
-                    logger.info(msg)
-                    return hub_height
-            
-            # check the hub-height of PySAM wind turbine object
-            if is_pysam:
-                if any(float(k) == float(wind_plant._system_model.Turbine.wind_turbine_hub_ht) for k in turbine_specs["hub_height"]):
-                    hub_height = wind_plant._system_model.Turbine.wind_turbine_hub_ht
-                    msg = (
-                        f"multiple hub height options available for {turbine_name} turbine. "
-                        f"Setting hub height to WindPower.WindPower.Turbine.wind_turbine_hub_ht: {hub_height}"
-                    )
-                    logger.info(msg)
-                    return hub_height
-            
-            # set hub height as median from options
-            else:
-                hub_height = np.median(turbine_specs["hub_height"])
+        # check if hub_height was put in WindConfig
+        if (hub_height := wind_plant.config.hub_height) is not None:
+            if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
                 msg = (
-                    f"multiple hub height options available for {turbine_name} turbine. "
-                    f"Setting hub height to median available height: {hub_height}"
+                    f"multiple hub height options available for {turbine_name} turbine. " 
+                    f"Setting hub height to WindConfig hub_height: {hub_height}"
                 )
                 logger.info(msg)
                 return hub_height
+        
+        # check the hub_height used for wind resource
+        if (hub_height := wind_plant.site.hub_height) is not None:
+            if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
+                msg = (
+                    f"multiple hub height options available for {turbine_name} turbine. " 
+                    f"Setting hub height to WindConfig hub_height: {hub_height}"
+                )
+                logger.info(msg)
+                return hub_height
+        
+        # check the hub-height of PySAM wind turbine object
+        if is_pysam:
+            if any(float(k) == float(wind_plant._system_model.Turbine.wind_turbine_hub_ht) for k in turbine_specs["hub_height"]):
+                hub_height = wind_plant._system_model.Turbine.wind_turbine_hub_ht
+                msg = (
+                    f"multiple hub height options available for {turbine_name} turbine. "
+                    f"Setting hub height to WindPower.WindPower.Turbine.wind_turbine_hub_ht: {hub_height}"
+                )
+                logger.info(msg)
+                return hub_height
+        
+        # set hub height as median from options
+        else:
+            hub_height = np.median(turbine_specs["hub_height"])
+            msg = (
+                f"multiple hub height options available for {turbine_name} turbine. "
+                f"Setting hub height to median available height: {hub_height}"
+            )
+            logger.info(msg)
+            return hub_height
                 
     else:
         hub_height = turbine_specs["hub_height"]
