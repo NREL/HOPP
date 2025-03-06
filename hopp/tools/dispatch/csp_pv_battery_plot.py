@@ -247,7 +247,7 @@ if __name__ == '__main__':
         print("\tMissed load [MWh]: {:.2f}".format(sum(hybrid_plant.grid.missed_load[0:8760]) / 1.e3))
         print("\tMissed load percentage: {:.2f}".format(hybrid_plant.grid.missed_load_percentage))
         print("\tSchedule curtailed [MWh]: {:.2f}".format(sum(hybrid_plant.grid.schedule_curtailed[0:8760]) / 1.e3))
-        print("\tSchedule curtailed percentage: {:.2f}".format(hybrid_plant.grid.schedule_curtailed_percentage * 100.0))
+        print("\tSchedule curtailed percentage: {:.2f}".format(hybrid_plant.grid.schedule_curtailed_percentage))
 
     # BCR Breakdown
     print("\n ======= Benefit Cost Ratio Breakdown ======= \n")

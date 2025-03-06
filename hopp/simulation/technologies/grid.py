@@ -150,7 +150,7 @@ class Grid(PowerSource):
             # Calculate curtailed schedule and curtailed schedule percentage
             self.schedule_curtailed = np.array([gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)])
-            self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule) * 100
+            self.schedule_curtailed_percentage = (sum(self.schedule_curtailed)/sum(lifetime_schedule)) * 100
 
             # NOTE: This is currently only happening for load following, would be good to make it more general
             #           i.e. so that this analysis can be used when load following isn't being used (without storage)
