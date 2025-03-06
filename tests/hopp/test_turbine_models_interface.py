@@ -125,7 +125,7 @@ def test_floris_nrel_5mw_hopp(site_input,subtests):
 
 def test_floris_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
     floris_template = load_yaml(str(FLORIS_V4_TEMPLATE_PATH))
-    turbine_library_turbine_name = "NREL_5MW_126_RWT_corrected"
+    turbine_library_turbine_name = "NREL_Reference_5MW_126"
     n_turbs = 4
     turbine_rating_kw = 5000.0
     layout_x = [0.0,1841.0,3682.0,5523.0]
@@ -157,7 +157,7 @@ def test_floris_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
 
 
 def test_pysam_NREL_5MW_RWT_corrected_hopp(site_input,subtests):
-    turbine_library_turbine_name = "NREL_5MW_126_RWT_corrected"
+    turbine_library_turbine_name = "NREL_Reference_5MW_126"
     n_turbs = 4
     turbine_rating_kw = 5000.0
     layout_x = [0.0,1841.0,3682.0,5523.0]
