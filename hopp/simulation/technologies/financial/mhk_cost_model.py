@@ -29,8 +29,8 @@ class MHKCostModelInputs(BaseClass):
     reference_model_num: int
     water_depth: float = field(validator=gt_zero)
     distance_to_shore: float = field(validator=gt_zero)
-    number_rows: int
-    device_spacing: float
+    number_rows: int = field(validator=gt_zero)
+    device_spacing: float = field(validator=gt_zero)
     row_spacing: Optional[float] = field(default=None)
     cable_system_overbuild: float = field(default=10., validator=range_val(0, 100))
     
