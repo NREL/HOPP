@@ -145,7 +145,7 @@ class Grid(PowerSource):
                 max(schedule - gen, 0) 
                 for schedule, gen in zip(desired_schedule, self.generation_profile)
             ])
-            self.missed_load_percentage = sum(self.missed_load)/sum(desired_schedule) * 100
+            self.missed_load_percentage = (sum(self.missed_load)/sum(desired_schedule)) * 100
 
             # Calculate curtailed schedule and curtailed schedule percentage
             self.schedule_curtailed = np.array([gen - schedule if gen > schedule else 0. for (gen, schedule) in
