@@ -110,7 +110,47 @@ class TidalResource(Resource):
         tidalfile_model.execute() 
         hours = tidalfile_model.Outputs.hour
 
-        if len(hours) == 8760:
+        if len(hours) < 8760:
+            # Set up dataframe for data manipulation
+            df = pd.DataFrame()
+            df['year'] = tidalfile_model.Outputs.year 
+            df['month'] = tidalfile_model.Outputs.month
+            df['day'] = tidalfile_model.Outputs.day
+            df['hour'] = tidalfile_model.Outputs.hour
+            df['minute'] = tidalfile_model.Outputs.minute
+            df['date_time'] = pd.to_datetime(dict(year=df.year, month=df.month, day=df.day, hour=df.hour, minute=df.minute))
+            df = df.drop(['year','month','day','hour','minute'], axis=1)
+            df = df.set_index(['date_time'])
+            df['tidal_velocity'] = tidalfile_model.Outputs.tidal_velocity
+            
+            # Resample data and linearly interpolate to hourly data
+            data_df = df.resample("h").mean()
+            data_df = data_df.interpolate(method='linear')
+            
+
+            # If data cannot interpolate last hours
+            if len(data_df['tidal_velocity']) < 8760:
+                last_hour = data_df.index.max()
+                missing_hours = 8760 - len(data_df['tidal_velocity'])
+
+                missing_time = pd.date_range(last_hour + pd.Timedelta(hours=1),periods=missing_hours, freq='h')
+                missing_rows = pd.DataFrame(index=missing_time, columns=df.columns)
+                data_df = pd.concat([data_df, missing_rows]).sort_index()
+                data_df = data_df.ffill() # forward fill
+
+            data_df = data_df.reset_index()
+            dic = dict()
+
+            # Extract outputs
+            dic['tidal_velocity'] = data_df['tidal_velocity']
+            print(data_df.head())
+            dic['year'] = data_df['index'].dt.year
+            dic['month'] = data_df['index'].dt.month
+            dic['day'] = data_df['index'].dt.day
+            dic['hour'] = data_df['index'].dt.hour
+            dic['minute'] = data_df['index'].dt.minute
+
+        elif len(hours) == 8760:
             dic = dict()
             # Extract outputs
             dic['tidal_velocity'] = tidalfile_model.Outputs.tidal_velocity
