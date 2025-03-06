@@ -412,7 +412,6 @@ def test_hybrid_wind_only(hybrid_config, subtests):
         assert npvs.hybrid == approx(-6068047, 1e-3)
 
 def test_hybrid_wind_only_floris(hybrid_config, subtests):
-
     floris_config_path = (
         ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
     )
@@ -422,6 +421,10 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     wind_only["wind"]["model_name"] = "floris"
     wind_only["wind"]["floris_config"] = floris_config_path
     wind_only["wind"]["timestep"] = [0, 8760]
+    wind_only["wind"]["num_turbines"] = 4
+    wind_only["wind"]["turbine_rating_kw"] = 5000
+    wind_only["wind"]["layout_mode"] = "floris_layout"
+
 
     hybrid_config["technologies"] = wind_only
     hi = HoppInterface(hybrid_config)
@@ -432,15 +435,18 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
     cf = hybrid_plant.capacity_factors
-
+    with subtests.test("floris farm capacity"):
+        assert hybrid_plant.wind._system_model.system_capacity == 20000.0
+    with subtests.test("windplant farm capacity"):
+        assert hybrid_plant.wind.system_capacity_kw == 20000.0
     with subtests.test("wind aep"):
         assert aeps.wind == approx(74149945, 1e-3)
     with subtests.test("hybrid aep"):
         assert aeps.hybrid == approx(68271657, 1e-3)
     with subtests.test("wind npv"):
-        assert npvs.wind == approx(5999302, 1e-3)
+        assert npvs.wind == approx(-9193785, 1e-3)
     with subtests.test("hybrid npv"):
-        assert npvs.hybrid == approx(4345865, 1e-3)
+        assert npvs.hybrid == approx(-10847221, 1e-3)
 
 def test_hybrid_pv_only(hybrid_config, subtests):
     technologies = hybrid_config["technologies"]
@@ -1598,3 +1604,34 @@ def test_hybrid_financials(hybrid_config, subtests):
     with subtests.test("wind om total"):
         assert hi.system.om_total_expenses['wind'][1] == approx(463903.43, rel=5e-2)
 
+def test_hybrid_wind_only_floris_elevation_adjusted(hybrid_config, subtests):
+
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    technologies = hybrid_config["technologies"]
+    wind_only = {key: technologies[key] for key in ("wind", "grid")}
+
+    wind_only["wind"]["model_name"] = "floris"
+    wind_only["wind"]["floris_config"] = floris_config_path
+    wind_only["wind"]["timestep"] = [0, 8760]
+    wind_only["wind"]["num_turbines"] = 4
+    wind_only["wind"]["turbine_rating_kw"] = 5000
+    wind_only["wind"]["layout_mode"] = "floris_layout"
+
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hi.simulate(25)
+    hybrid_plant = hi.system
+    aeps_default = hybrid_plant.annual_energies
+
+    wind_only["wind"].update({"adjust_air_density_for_elevation": True})
+    hybrid_config["technologies"] = wind_only
+    hi = HoppInterface(hybrid_config)
+    hi.simulate(25)
+    hybrid_plant = hi.system
+    aeps_adjusted = hybrid_plant.annual_energies
+ 
+
+    with subtests.test("wind aep"):
+        assert aeps_adjusted.wind < aeps_default.wind
