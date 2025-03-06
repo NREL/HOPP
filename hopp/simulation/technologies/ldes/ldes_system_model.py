@@ -8,7 +8,7 @@ class Params:
     cp: float 
     h: float
     nominal_energy: float # nominal installed energy [kWh]
-    nominal_voltage: float # nominal DC voltage [V]
+    nominal_voltage: float # nominal DC voltage [V] - > not used for dispatch
     mass: float 
     surface_area: float
 
@@ -27,6 +27,8 @@ class LDES(BaseClass):
 
     system_capacity_kw: float = field(default=None)
     system_capacity_kwh: float = field(default=None)
+
+    SOC: float = field(default=minimum_SOC)
 
     @classmethod
     def default(cls, chemistry):
@@ -62,6 +64,10 @@ class LDES(BaseClass):
     def nominal_voltage() -> float:
         return None
     
+    @property
+    def nominal_energy(self) -> float:
+        return self.system_capacity_kwh
+
     # @ property
     # def footprint_area() -> float:
     #     return None

@@ -197,7 +197,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
         elif self.config.system_model_source == "hopp":
-            return self._system_model.nominal_energy, self._system_model.nominal_voltage
+            return self._system_model.params.nominal_energy, self._system_model.params.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
@@ -225,7 +225,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy
         else:
-            return self._system_model.system_capacity_kwh
+            return self._system_model.params.nominal
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
@@ -247,6 +247,7 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_voltage
+        # not in LDES/HOPP yet, but could add? May need more specifics about the physics/chemistry
 
     @system_voltage_volts.setter
     def system_voltage_volts(self, voltage_volts: float):
@@ -259,7 +260,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             model_type = self._system_model.ParamsCell.chem
         elif self.config.system_model_source == "hopp":
-            model_type = self._system_model.model_type()
+            model_type = self._system_model.model_type() #TODO revisit this
         
         if model_type == 0 or model_type == 1:
             return self._chemistry
@@ -282,6 +283,7 @@ class Battery(PowerSource):
             cube_surface_area = self._system_model.ParamsPack.surface_area 
             footprint = cube_surface_area / 6 # Single side of cube
             return footprint
+        # TODO should be added for individual LDES storage types
 
     @property
     def energy_capital_cost(self) -> Union[float, int]:
@@ -307,7 +309,7 @@ class Battery(PowerSource):
 
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
-            
+        # TODO update LDES in this setter   
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
