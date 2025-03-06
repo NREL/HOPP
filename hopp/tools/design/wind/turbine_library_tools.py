@@ -1,38 +1,6 @@
 from turbine_models.parser import Turbines
 from difflib import SequenceMatcher
 
-def load_distributed_turbine_options():
-    """Load list of distributed turbines from turbine-models library.
-
-    Returns:
-        list[str]: list of turbine names in group "distributed"
-    """
-
-    t_lib = Turbines()
-    distributed_turbines = list(t_lib.turbines(group="distributed").values())
-    return distributed_turbines
-
-def load_land_based_turbine_options():
-    """Load list of onshore turbines from turbine-models library.
-
-    Returns:
-        list[str]: list of turbine names in group "onshore"
-    """
-
-    t_lib = Turbines()
-    lbw_turbines = list(t_lib.turbines(group="onshore").values())
-    return lbw_turbines
-
-def load_offshore_turbine_options():
-    """Load list of offshore turbines from turbine-models library.
-
-    Returns:
-        list[str]: list of turbine names in group "offshore"
-    """
-
-    t_lib = Turbines()
-    osw_turbines = list(t_lib.turbines(group="offshore").values())
-    return osw_turbines
 
 def check_turbine_name(turbine_name:str):
     """Check turbine-models library for turbine named ``turbine_name`` and return a valid turbine name.
@@ -99,24 +67,25 @@ def print_turbine_name_list():
     """Print the turbine names for each group of turbines in turbine-models library.
     """
     
-    osw_turbs = load_offshore_turbine_options()
+    t_lib = Turbines()
+    osw_turbines = list(t_lib.turbines(group="offshore").values())
     
     print("-".join("" for i in range(25)))
     print("Offshore Turbine Names:")
     print("-".join("" for i in range(25)))
-    osw_msg = "\n " + "\n ".join(t for t in osw_turbs)
+    osw_msg = "\n " + "\n ".join(t for t in osw_turbines)
     print(osw_msg)
 
-    lbw_turbs = load_land_based_turbine_options()
+    lbw_turbines = list(t_lib.turbines(group="onshore").values())
     print("-".join("" for i in range(25)))
     print("Onshore Turbine Names:")
     print("-".join("" for i in range(25)))
-    lbw_msg = "\n " + "\n ".join(t for t in lbw_turbs)
+    lbw_msg = "\n " + "\n ".join(t for t in lbw_turbines)
     print(lbw_msg)
 
-    dw_turbs = load_distributed_turbine_options()
+    distributed_turbines = list(t_lib.turbines(group="distributed").values())
     print("-".join("" for i in range(25)))
     print("Distributed Turbine Names:")
     print("-".join("" for i in range(25)))
-    dw_msg = "\n " + "\n ".join(t for t in dw_turbs)
+    dw_msg = "\n " + "\n ".join(t for t in distributed_turbines)
     print(dw_msg)

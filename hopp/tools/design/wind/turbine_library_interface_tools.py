@@ -14,7 +14,7 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
         model_name (str): wind simulation model, either "pysam" or "floris".
 
     Raises:
-        ValueError: if turbine data doesnt have the minimum required power-curve information.
+        ValueError: if turbine data doesn't have the minimum required power-curve information.
         ValueError: if model name is not either 'pysam' or 'floris'
 
     Returns:

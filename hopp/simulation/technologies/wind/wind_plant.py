@@ -252,14 +252,15 @@ class WindPlant(PowerSource):
 
                 raise UserWarning(msg)
         
-        if self._system_model.Turbine.wind_turbine_hub_ht != self.site.wind_resource.hub_height_meters:
-            if self._system_model.Turbine.wind_turbine_hub_ht >= min(self.site.wind_resource.data["heights"]) and self._system_model.Turbine.wind_turbine_hub_ht<=max(self.site.wind_resource.data["heights"]):
-                self.site.wind_resource.hub_height_meters = float(self._system_model.Turbine.wind_turbine_hub_ht)
-                self.site.hub_height = float(self._system_model.Turbine.wind_turbine_hub_ht)
-                logger.info(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m")
+        hub_height = self._system_model.Turbine.wind_turbine_hub_ht
+        if hub_height != self.site.wind_resource.hub_height_meters:
+            if hub_height >= min(self.site.wind_resource.data["heights"]) and hub_height<=max(self.site.wind_resource.data["heights"]):
+                self.site.wind_resource.hub_height_meters = float(hub_height)
+                self.site.hub_height = float(hub_height)
+                logger.info(f"updating wind resource hub-height to {hub_height}m")
             else:  
-                logger.warning(f"updating wind resource hub-height to {self._system_model.Turbine.wind_turbine_hub_ht}m and redownloading wind resource data")
-                self.site.hub_height = self._system_model.Turbine.wind_turbine_hub_ht
+                logger.warning(f"updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                self.site.hub_height = hub_height
                 data = {
                     "lat": self.site.wind_resource.latitude,
                     "lon": self.site.wind_resource.longitude,
