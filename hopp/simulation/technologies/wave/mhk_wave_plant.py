@@ -188,7 +188,7 @@ class MHKWavePlant(PowerSource):
     @number_devices.setter
     def number_devices(self, number_devices: int):
         self._system_model.MHKWave.number_devices = number_devices
-        if self.mhk_costs is None:
+        if self.mhk_costs is not None:
             self.mhk_costs.number_devices = number_devices
 
     @property
