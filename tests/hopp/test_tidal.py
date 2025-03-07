@@ -18,9 +18,9 @@ def site():
         "year": 2010,
         "tz": -7,
     }
-    tidal_resource_file = ROOT_DIR / "simulation" / "resource_files" / "tidal" / "Tidal_resource_timeseries.csv"
+    tidal_resource_file = Path.joinpath(ROOT_DIR / "simulation" / "resource_files" / "tidal" / "Tidal_resource_timeseries.csv")
     site = SiteInfo(data, solar=False, wind=False, tidal=True, tidal_resource_file=tidal_resource_file)
-
+	
     return site
 
 @fixture
