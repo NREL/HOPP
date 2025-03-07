@@ -14,7 +14,7 @@ MHK Tidal Generator class
 ## Tidal Plant Configuration
 
 ```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.tidal.mhk_tidal_plant.MHKConfig
+.. autoclass:: hopp.simulation.technologies.tidal.mhk_tidal_plant.MHKTidalConfig
     :members:
     :undoc-members:
 ```
