@@ -1051,3 +1051,93 @@ def test_dispatch_load_following_heuristic_with_wave(site, subtests):
         assert sum(discharge) > 0.0
     with subtests.test("discharge power"):
         assert sum(charge) < 0.0
+
+
+def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
+
+    desired_schedule = 8760 * [20]
+    # Using a non-uniform schedule to test the baseload heuristic bugfix
+    desired_schedule[:2000] = [10.] * 2000
+
+    desired_schedule_site = SiteInfo(flatirons_site,
+                                     desired_schedule=desired_schedule)
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic',
+                        'use_higher_hours': True, 
+                        'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
+
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hopp_config["technologies"]["grid"] = {
+        "interconnect_kw": interconnect_mw * 1000
+    }
+    hi = HoppInterface(hopp_config)
+    hi.simulate(1)
+
+    hybrid_plant = hi.system
+
+    assert hybrid_plant.grid.time_load_met == pytest.approx(94.429, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.659, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4270, 1e-2)
+
+def test_dispatch_ldes_load_following_heuristic_with_wave(site, subtests):
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}
+    wave_battery = {key: technologies[key] for key in ['wave', 'battery', 'grid']}
+
+    print(wave_battery)
+    wave_battery["battery"] = {
+        'system_capacity_kwh': 200 * 1000,
+        'system_capacity_kw': 50 * 1000,
+        'system_model_source': "hopp",
+        'chemistry': "LDES",
+    }
+    for tech in wave_battery.keys():
+        wave_battery[tech]["fin_model"] = DEFAULT_FIN_CONFIG
+
+
+    wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+
+    desired_schedule = 8760*[20]
+    site_internal = create_default_site_info(solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file, desired_schedule=desired_schedule)
+
+    hopp_config = {
+        "site": site_internal,
+        "technologies": wave_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+
+    cost_model_inputs = MHKCostModelInputs.from_dict(
+            {
+                "reference_model_num": 3,
+                "water_depth": 100,
+                "distance_to_shore": 80,
+                "number_rows": 10,
+                "device_spacing": 600,
+                "row_spacing": 600,
+                "cable_system_overbuild": 20,
+            }
+        )
+    
+    hi.system.wave.create_mhk_cost_calculator(cost_model_inputs)
+
+    hi.simulate(1)
+
+    power_scale = 1.0
+    discharge = [(p > 0) * p * power_scale for p in hi.system.battery.outputs.P]
+    charge = [(p < 0) * p * power_scale for p in hi.system.battery.outputs.P]
+
+    with subtests.test("load met"):
+        assert hi.system.grid.time_load_met == pytest.approx(40.468, 1e-2)
+    with subtests.test("charge power"):
+        assert sum(discharge) > 0.0
+    with subtests.test("discharge power"):
+        assert sum(charge) < 0.0
