@@ -16,21 +16,22 @@ class MHKTidalConfig(BaseClass):
     Configuration class for MHKTidalPlant.
 
     Args:
-        device_rating_kw: Rated power of the MHK device [kW]
-        num_devices: Number of MHK tidal devices in the system
-        tidal_power_curve: Power curve of tidal energy device as function of stream speeds [kW]
-        tidal_resource: DUMMY VARIABLE. This is required by PySAM MhkTidal module even during timeseries simulations.
+        device_rating_kw (float): Rated power of the MHK device [kW]
+        num_devices (int): Number of MHK tidal devices in the system
+        tidal_power_curve (List[List[float]]): Power curve of tidal energy device as function of stream speeds [kW]
+        tidal_resource (List[List[float]]): Required by the PySAM MhkTidal module for initialization. Although this parameter 
+            is not actively used in HOPP's timeseries simulation mode, it must still be provided to fully 
+            instantiate the PySAM MhkTidal model.
             Frequency distribution of resource as a function of stream speeds.
-        fin_model: Optional financial model. Can be any of the following:
+        fin_model (obj | dict): Optional financial model. Can be any of the following:
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` instance
-        loss_array_spacing: Array spacing loss in % (default: 0)
-        loss_resource_overprediction: Resource overprediction loss
+        loss_array_spacing (float): Array spacing loss in % (default: 0)
+        loss_resource_overprediction (float): Resource overprediction loss
             in % (default: 0)
-        loss_transmission: Transmission loss in % (default: 0)
-        loss_downtime: Array/WEC downtime loss in % (default: 0)
-        loss_additional: Additional losses in % (default: 0)
-        layout_mode: TODO
+        loss_transmission (float): Transmission loss in % (default: 0)
+        loss_downtime (float): Array/WEC downtime loss in % (default: 0)
+        loss_additional (float): Additional losses in % (default: 0)
     """
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
@@ -53,7 +54,7 @@ class MHKTidalPlant(PowerSource):
     Args:
         site: Site information
         config: MHK system configuration parameters
-        cost_model_inputs: An optional dictionary containing input parameters for
+        cost_model_inputs (dict, Optional): An optional dictionary containing input parameters for
             cost modeling.
     """
     site: SiteInfo
