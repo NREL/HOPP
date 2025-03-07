@@ -182,7 +182,7 @@ class MHKTidalPlant(PowerSource):
     @device_rated_power.setter
     def device_rated_power(self, device_rate_power: float):
         self._system_model.device_rated_power = device_rate_power
-        if self.mhk_costs != None:
+        if self.mhk_costs is not None:
             self.mhk_costs.device_rated_power = device_rate_power
 
     @property
@@ -192,7 +192,7 @@ class MHKTidalPlant(PowerSource):
     @number_devices.setter
     def number_devices(self, number_devices: int):
         self._system_model.MHKTidal.number_devices = number_devices
-        if self.mhk_costs != None:
+        if self.mhk_costs is not None:
             self.mhk_costs.number_devices = number_devices
 
     @property
