@@ -156,8 +156,7 @@ class MHKTidalPlant(PowerSource):
         Sets the system capacity by adjusting the number of devices
         """
         new_num_devices = round(tidal_size_kw / self.device_rated_power)
-        if self.number_devices != new_num_devices:
-            self.number_devices = new_num_devices
+        self.number_devices = new_num_devices
 
     def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
         """
