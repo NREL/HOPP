@@ -1,8 +1,9 @@
+import os
 import pandas as pd
 import PySAM.TidalFileReader as tidalfile
 
 from hopp.utilities.log import hybrid_logger as logger
-from hopp.simulation.technologies.resource.resource import *
+from hopp.simulation.technologies.resource.resource import Resource
 
 class TidalResource(Resource):
     """
