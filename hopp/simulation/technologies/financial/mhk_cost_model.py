@@ -55,7 +55,7 @@ class MHKCosts(BaseClass):
     A class for calculating the costs associated with Marine Hydrokinetic (MHK) energy systems.
 
     This class initializes and configures cost calculations for MHK systems based on provided input parameters.
-    It uses the PySAM library for cost modeling which is based on the [Sandia Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
+    It uses the PySAM library for cost modeling which is based on the [Department of Energy Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
     
         Args:
             mhk_config: MHK system configuration parameters.
