@@ -54,3 +54,4 @@ parts:
   - file: api/technology/flicker
   - file: api/cost_calculator
   - file: api/tools/site_shape_tools
+  - file: api/tools/mhk_cost

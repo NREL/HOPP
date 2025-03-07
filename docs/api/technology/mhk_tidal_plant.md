@@ -21,16 +21,4 @@ MHK Tidal Generator class
 
 ## Tidal Plant Cost Model
 
-```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.financial.mhk_cost_model.MHKCosts
-    :members:
-    :undoc-members:
-```
-
-## Tidal Plant Cost Model Inputs
-
-```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.financial.mhk_cost_model.MHKCostModelInputs
-    :members:
-    :undoc-members:
-```
+For details on the cost model used in MHK Tidal Plants, refer to the [MHK Cost Model](cost_model.md).
