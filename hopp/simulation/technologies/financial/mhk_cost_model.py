@@ -16,8 +16,9 @@ class MHKCostModelInputs(BaseClass):
     Configuration class for MHK Cost Model.
         
     Args:
-        reference_model_num: Reference model number from Sandia
-            Project (3, 5, or 6).
+        reference_model_num: Reference model number from the 
+            Department of Energy Reference Model Project
+            (1, 3, 5, or 6).
         water_depth: Water depth in meters
         distance_to_shore: Distance to shore in meters
         number_rows: Number of rows in the device layout
@@ -25,6 +26,19 @@ class MHKCostModelInputs(BaseClass):
             (default 'device_spacing')
         cable_system_overbuild: Cable system overbuild percentage
             (default 10%)
+    Note:
+        More information about the reference models and their 
+        associated costs can be found in the 
+        [Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/)
+        
+        The supported reference models in this cost model are:
+            - Reference Model 1: Tidal Current Turbine
+            - Reference Model 3: Wave Point Absorber
+            - Reference Model 5: Oscillating Surge Flap
+            - Reference Model 6: Oscillating Water Column
+        
+        Additional MHK cost model information can be found 
+        through the [System Advisor Model](https://sam.nrel.gov/)
     """
     reference_model_num: int
     water_depth: float = field(validator=gt_zero)

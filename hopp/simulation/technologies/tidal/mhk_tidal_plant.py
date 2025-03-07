@@ -55,8 +55,7 @@ class MHKTidalPlant(PowerSource):
         config: MHK system configuration parameters
         cost_model_inputs: An optional dictionary containing input parameters for
             cost modeling.
-
-        """
+    """
     site: SiteInfo
     config: MHKTidalConfig
     cost_model_inputs: Optional[MHKCostModelInputs] = field(default=None)
@@ -82,7 +81,7 @@ class MHKTidalPlant(PowerSource):
         super().__init__("MHKTidalPlant", self.site, system_model, financial_model)
 
         # Set tidal resource model choice
-        system_model.MHKTidal.tidal_resource_model_choice = 1 # Time-series data=1 JPD=0
+        system_model.MHKTidal.tidal_resource_model_choice = 1 # Time-series data=1 JPD=0 (Joint-probability distribution)
 
         # Copy values from self.site.tidal_resource.data to system_model.MHKTidal
         attributes_to_copy = ['tidal_velocity']

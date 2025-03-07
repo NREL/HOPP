@@ -243,13 +243,13 @@ class SiteInfo(BaseClass):
             # FIXME: this a hack
 
         if self.wind:
-            logger.info("Set up SiteInfo with wind resource files: {}".format(self.wind_resource.filename))
+            logger.info("Set up SiteInfo with wind resource file: {}".format(self.wind_resource.filename))
         if self.solar:
-            logger.info("Set up SiteInfo with solar resource files: {}".format(self.solar_resource.filename))
+            logger.info("Set up SiteInfo with solar resource file: {}".format(self.solar_resource.filename))
         if self.wave:
-            logger.info("Set up SiteInfo with wave resource files: {}".format(self.wave_resource.filename))
+            logger.info("Set up SiteInfo with wave resource file: {}".format(self.wave_resource.filename))
         if self.tidal:
-            logger.info("Set up SiteInfo with tidal resource files: {}".format(self.tidal_resource.filename))
+            logger.info("Set up SiteInfo with tidal resource file: {}".format(self.tidal_resource.filename))
     def create_site_polygon(self,data:dict):
         """function to create site polygon.
 
