@@ -105,11 +105,8 @@ class MHKTidalPlant(PowerSource):
             ]
 
         for attribute in loss_attributes:
-            if attribute in self.config.as_dict().keys():
-                attr = getattr(self.config, attribute)
-                setattr(self._system_model.MHKTidal, attribute, attr)
-            else:
-                setattr(self._system_model.MHKTidal, attribute, 0)
+            attr = getattr(self.config, attribute, 0)
+            setattr(self._system_model.MHKTidal, attribute, attr)
         
     def create_mhk_cost_calculator(self, cost_model_inputs: Union[dict, MHKCostModelInputs]):
         """
