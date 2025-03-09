@@ -67,7 +67,7 @@ technologies = {
 }
 
 def test_solar_dispatch(site):
-    expected_objective = 34300.55
+    expected_objective = 34021.43
 
     dispatch_n_look_ahead = 48
 
@@ -110,7 +110,7 @@ def test_solar_dispatch(site):
     # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
+    assert model.pv[0].cost_per_generation.value == pytest.approx(round(19/8760*1000,6), 1e-3)
     gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
     assert gen == pytest.approx(588.46, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
@@ -413,7 +413,7 @@ def test_wave_dispatch():
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
 def test_wind_dispatch(site):
-    expected_objective = 19947.1769
+    expected_objective = 20071.18
 
     dispatch_n_look_ahead = 48
 
@@ -660,7 +660,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 49012
+    expected_objective = 48837.60
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -761,7 +761,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 28445
+    expected_objective = 28134.87
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {

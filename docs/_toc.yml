@@ -21,6 +21,7 @@ parts:
       - file: api/resource/wind_api
       - file: api/resource/solar_hpc
       - file: api/resource/wind_hpc
+      - file: api/resource/wave_data
   - file: api/hybrid_simulation
   - file: api/technology/index
     sections:
@@ -50,3 +51,4 @@ parts:
   chapters:
   - file: api/technology/flicker
   - file: api/cost_calculator
+  - file: api/tools/site_shape_tools
