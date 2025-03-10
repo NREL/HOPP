@@ -22,6 +22,7 @@ parts:
       - file: api/resource/solar_hpc
       - file: api/resource/wind_hpc
       - file: api/resource/wave_data
+      - file: api/resource/tidal_data
   - file: api/hybrid_simulation
   - file: api/technology/index
     sections:
@@ -31,6 +32,7 @@ parts:
     - file: api/technology/battery
     - file: api/technology/grid
     - file: api/technology/mhk_wave_plant
+    - file: api/technology/mhk_tidal_plant
   - file: api/dispatch/index
     sections:
     - file: api/dispatch/storage/index
@@ -52,3 +54,4 @@ parts:
   - file: api/technology/flicker
   - file: api/cost_calculator
   - file: api/tools/site_shape_tools
+  - file: api/tools/mhk_cost
