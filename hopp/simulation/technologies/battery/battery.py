@@ -378,7 +378,7 @@ class Battery(PowerSource):
         """
         if not self._system_model:
             return
-        self._system_model.execute(0)
+        self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
@@ -390,7 +390,7 @@ class Battery(PowerSource):
         Args:
             time_step: time step where outputs will be stored.
         """
-        for attr in self.outputs.stateful_attributes:
+        for attr in self.outputs.stateful_attributes: # TODO include State in LDES model
             if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
                 getattr(self.outputs, attr)[time_step] = self.value(attr)
             else:
