@@ -214,6 +214,9 @@ class Battery(PowerSource):
                                             size_kwh,
                                             voltage_volts,
                                             module_specs=Battery.module_specs)
+        else:
+            self._system_model.params.nominal_voltage = voltage_volts
+            self._system_model.params.nominal_energy = size_kwh
             
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
@@ -225,7 +228,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy
         else:
-            return self._system_model.params.nominal
+            return self._system_model.params.nominal_energy
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):

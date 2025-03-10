@@ -5,12 +5,12 @@ from hopp.utilities.validators import range_val
 
 @define
 class Params:
-    cp: float 
-    h: float
+    # cp: float # specific heat capacity [J/KgK]
+    # h: float # Heat transfer between battery and environment [W/m2K]
     nominal_energy: float # nominal installed energy [kWh]
     nominal_voltage: float # nominal DC voltage [V] - > not used for dispatch
-    mass: float 
-    surface_area: float
+    # mass: float 
+    # surface_area: float
 
 @define
 class LDES(BaseClass):
@@ -29,6 +29,8 @@ class LDES(BaseClass):
     system_capacity_kwh: float = field(default=None)
 
     SOC: float = field(default=minimum_SOC)
+
+    params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None)
 
     @classmethod
     def default(cls, chemistry):
