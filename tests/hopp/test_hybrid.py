@@ -534,10 +534,10 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
             )
         )
     with subtests.test("Outputs"):
-        assert hybrid_plant.wave._financial_model.Outputs == approx(
+        assert hybrid_plant.tidal._financial_model.Outputs == approx(
             hybrid_plant.grid._financial_model.Outputs
         )
-        
+
     with subtests.test("net cash flow"):
         tidal_period = hybrid_plant.tidal._financial_model.value("analysis_period")
         grid_period = hybrid_plant.grid._financial_model.value("analysis_period")
