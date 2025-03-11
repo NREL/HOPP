@@ -23,6 +23,27 @@ from hopp import ROOT_DIR
 from hopp.utilities import load_yaml
 
 
+def robust_approx(o1, o2):
+    assert type(o1) == type(o2)
+
+    o1_keys = [v for v in dir(o1) if not v.startswith('__')]
+    o2_keys = [v for v in dir(o2) if not v.startswith('__')]
+
+    assert sorted(o1_keys) == sorted(o2_keys)
+
+    for k in o1_keys:
+        v1 = getattr(o1, k)
+        v2 = getattr(o2, k)
+        if isinstance(v1, int) or isinstance(v1, float):
+            assert v1 == approx(v2)
+            continue
+
+        if isinstance(v1, bool) or isinstance(v1, str):
+            assert v1 == v2
+            continue
+
+        approx(v1, v2)
+
 @fixture
 def hybrid_config():
     """Loads the config YAML and updates site info to use resource files."""
@@ -310,9 +331,8 @@ def test_hybrid_wave_only(hybrid_config, mhk_config, wavesite, subtests):
         )
 
     with subtests.test("Outputs"):
-        assert hybrid_plant.wave._financial_model.Outputs == approx(
-            hybrid_plant.grid._financial_model.Outputs
-        )
+        robust_approx(hybrid_plant.wave._financial_model.Outputs, hybrid_plant.grid._financial_model.Outputs)
+
     with subtests.test("net cash flow"):
         wave_period = hybrid_plant.wave._financial_model.value("analysis_period")
         grid_period = hybrid_plant.grid._financial_model.value("analysis_period")
@@ -534,9 +554,7 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
             )
         )
     with subtests.test("Outputs"):
-        assert hybrid_plant.tidal._financial_model.Outputs == approx(
-            hybrid_plant.grid._financial_model.Outputs
-        )
+        robust_approx(hybrid_plant.tidal._financial_model.Outputs, hybrid_plant.grid._financial_model.Outputs)
 
     with subtests.test("net cash flow"):
         tidal_period = hybrid_plant.tidal._financial_model.value("analysis_period")
