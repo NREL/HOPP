@@ -417,7 +417,7 @@ def test_hybrid_wave_battery(hybrid_config, mhk_config, wavesite, subtests):
     cf = hybrid_plant.capacity_factors
 
     with subtests.test("battery aep"):
-        assert aeps.battery == approx(87.84, 1e3)
+        assert aeps.battery == approx(87.84, 1e-3)
 
 
 def test_hybrid_wind_only(hybrid_config, subtests):
@@ -590,6 +590,55 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
         assert npvs.tidal == approx(-29088482.4, 5.e-2)
     with subtests.test("hybrid tidal only npv"):
         assert npvs.hybrid == approx(npvs.tidal)
+
+def test_hybrid_tidal_battery(hybrid_config, mhk_tidal_config,tidalsite, subtests):
+    hybrid_config["site"]=tidalsite
+    tidal_only_technologies = {
+        "tidal": {
+            "device_rating_kw": mhk_tidal_config["device_rating_kw"],
+            "num_devices": 2,
+            "tidal_power_curve": mhk_tidal_config["tidal_power_curve"],
+            "tidal_resource": mhk_tidal_config["tidal_resource"],
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "battery": {
+            "system_capacity_kwh": 20000,
+            "system_capacity_kw": 80000,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "grid": {
+            "interconnect_kw": interconnection_size_kw,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+    }
+
+    hybrid_config["technologies"] = tidal_only_technologies
+
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    cost_model_inputs = MHKCostModelInputs.from_dict(
+        {
+            "reference_model_num": 1,
+            "water_depth": 100,
+            "distance_to_shore": 80,
+            "number_rows": 2,
+            "device_spacing": 600,
+            "row_spacing": 600,
+            "cable_system_overbuild": 20,
+        }
+    )
+    assert hybrid_plant.tidal is not None
+    hybrid_plant.tidal.create_mhk_cost_calculator(cost_model_inputs)
+    hybrid_plant.tidal._financial_model.om_capacity = [50] # $/kWcap
+    hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
+
+    hi.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("battery aep"):
+        assert aeps.battery == approx(106.537, 1e-3)
 
 def test_hybrid_wind_only_floris(hybrid_config, subtests):
     floris_config_path = (
