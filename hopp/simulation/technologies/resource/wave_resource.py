@@ -67,9 +67,9 @@ class WaveResource(Resource):
         Raises:
             NotImplementedError: Currently, downloading functionality is not implemented.
         
-        TODO:
-            Implement resource downloads using MHKit: 
-            https://mhkit-software.github.io/MHKiT/
+        Notes:
+            Future task: implement resource downloads using 
+            [MHKit](https://mhkit-software.github.io/MHKiT/).
         """
         raise NotImplementedError
 

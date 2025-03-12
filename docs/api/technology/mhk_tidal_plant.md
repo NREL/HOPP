@@ -21,4 +21,4 @@ MHK Tidal Generator class
 
 ## Tidal Plant Cost Model
 
-For details on the cost model used in MHK Tidal Plants, refer to the [MHK Cost Model](cost_model.md).
+For details on the cost model used in MHK Tidal Plants, refer to the [MHK Cost Model](tools:mhk_costs).
