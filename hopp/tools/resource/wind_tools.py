@@ -80,32 +80,49 @@ def parse_resource_data(wind_resource):
     idx_ws = [ii for ii, field in enumerate(wind_resource.data['fields']) if field == 3]
     idx_wd = [ii for ii, field in enumerate(wind_resource.data['fields']) if field == 4]
     
-    if len(idx_ws) > 1:
-        hh1, hh2 = np.unique(wind_resource.data['heights'])
-        
-        if hh1 == wind_resource.hub_height_meters:
-            idx_ws1 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh1][0]
-            idx_wd1 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh1][0]
-            speeds = data[:, idx_ws1]
-            wind_dirs = data[:, idx_wd1]
-
-        elif hh2 == wind_resource.hub_height_meters:
-            idx_ws2 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh2][0]
-            idx_wd2 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh2][0]
-            speeds = data[:, idx_ws2]
-            wind_dirs = data[:, idx_wd2]
-        
-        else:
-            # If there's multiple hub-heights - average the data
-            speeds = data[:, idx_ws].mean(axis=1)
-            wind_dirs = data[:, idx_wd].mean(axis=1)
-        
-        return speeds, wind_dirs
-    
     # If there's only one hub-height, grab speed and direction data
-    speeds = data[:, idx_ws[0]]
-    wind_dirs = data[:, idx_wd[0]]
+    if len(idx_ws) == 1:
+        speeds = data[:, idx_ws[0]]
+        wind_dirs = data[:, idx_wd[0]]
+        return speeds, wind_dirs
+
+    # If there's multiple hub-heights - average the data
+    if len(idx_ws) > 2:
+        # find resource-heights closest to hub-height
+        heights_with_data = [wind_resource.data['heights'][i] for i in idx_ws]
+        if any(h==wind_resource.hub_height_meters for h in heights_with_data):
+            hh1 = wind_resource.hub_height_meters
+            hh2 = wind_resource.hub_height_meters
+        else:
+            height_ub = [h for h in heights_with_data if (wind_resource.hub_height_meters - h)<=0]
+            height_lb = [h for h in heights_with_data if (wind_resource.hub_height_meters - h)>=0]
+            min_diff_ub = min([np.abs(h-wind_resource.hub_height_meters) for h in height_ub])
+            min_diff_lb = min([np.abs(h-wind_resource.hub_height_meters) for h in height_lb])
+            hh1 = [h for h in height_ub if np.abs(h-wind_resource.hub_height_meters)==min_diff_ub][0]
+            hh2 = [h for h in height_lb if np.abs(h-wind_resource.hub_height_meters)==min_diff_lb][0]
+
+    else:
+        hh1, hh2 = np.unique(wind_resource.data['heights'])
+    
+    if hh1 == wind_resource.hub_height_meters:
+        idx_ws1 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh1][0]
+        idx_wd1 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh1][0]
+        speeds = data[:, idx_ws1]
+        wind_dirs = data[:, idx_wd1]
+
+    elif hh2 == wind_resource.hub_height_meters:
+        idx_ws2 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh2][0]
+        idx_wd2 = [i for i in idx_wd if wind_resource.data['heights'][i] == hh2][0]
+        speeds = data[:, idx_ws2]
+        wind_dirs = data[:, idx_wd2]
+    
+    else:
+        # If there's multiple hub-heights - average the data
+        speeds = data[:, idx_ws].mean(axis=1)
+        wind_dirs = data[:, idx_wd].mean(axis=1)
+    
     return speeds, wind_dirs
+
     
 
 def weighted_parse_resource_data(wind_resource):
@@ -140,7 +157,22 @@ def weighted_parse_resource_data(wind_resource):
         return speeds, wind_dirs
     
     # If there's multiple hub-heights - average the data
-    hh1, hh2 = np.unique(wind_resource.data['heights'])
+    if len(idx_ws) > 2:
+        # find resource-heights closest to hub-height
+        heights_with_data = [wind_resource.data['heights'][i] for i in idx_ws]
+        if any(h==wind_resource.hub_height_meters for h in heights_with_data):
+            hh1 = wind_resource.hub_height_meters
+            hh2 = wind_resource.hub_height_meters
+        else:
+            height_ub = [h for h in heights_with_data if (wind_resource.hub_height_meters - h)<=0]
+            height_lb = [h for h in heights_with_data if (wind_resource.hub_height_meters - h)>=0]
+            min_diff_ub = min([np.abs(h-wind_resource.hub_height_meters) for h in height_ub])
+            min_diff_lb = min([np.abs(h-wind_resource.hub_height_meters) for h in height_lb])
+            hh1 = [h for h in height_ub if np.abs(h-wind_resource.hub_height_meters)==min_diff_ub][0]
+            hh2 = [h for h in height_lb if np.abs(h-wind_resource.hub_height_meters)==min_diff_lb][0]
+
+    else:
+        hh1, hh2 = np.unique(wind_resource.data['heights'])
 
     # Weights corresponding to difference of resource height and hub-height
     weight1 = np.abs(hh1 - wind_resource.hub_height_meters)
