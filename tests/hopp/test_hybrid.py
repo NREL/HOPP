@@ -54,16 +54,9 @@ def hybrid_config():
 
     return hybrid_config
 
-
 @fixture
 def site():
     return create_default_site_info()
-
-
-# wave_resource_file = (
-#     ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
-# )
-
 
 @fixture
 def wavesite():
@@ -246,10 +239,8 @@ def test_hybrid_wave_only(hybrid_config, mhk_config, wavesite, subtests):
 
     hybrid_config["technologies"] = wave_only_technologies
 
-    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    # hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
     cost_model_inputs = MHKCostModelInputs.from_dict(
         {
             "reference_model_num": 3,
@@ -299,9 +290,6 @@ def test_hybrid_wave_only(hybrid_config, mhk_config, wavesite, subtests):
             hybrid_plant.grid._financial_model.SystemCosts
         )
 
-    # with subtests.test("SystemOutput.__dict__"):
-    #     skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
-    #     assert hybrid_plant.wave._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
     with subtests.test("SystemOutput.gen"):
         assert hybrid_plant.wave._financial_model.SystemOutput.gen == approx(
             hybrid_plant.grid._financial_model.SystemOutput.gen
@@ -523,9 +511,6 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
             hybrid_plant.grid._financial_model.SystemCosts
         )
 
-    # with subtests.test("SystemOutput.__dict__"):
-    #     skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
-    #     assert hybrid_plant.tidal._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
     with subtests.test("SystemOutput.gen"):
         assert hybrid_plant.tidal._financial_model.SystemOutput.gen == approx(
             hybrid_plant.grid._financial_model.SystemOutput.gen
