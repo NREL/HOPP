@@ -45,7 +45,7 @@ def pad_power_curve(wind_speed, curve, ws_min = 0.0, ws_max = 50.0):
         curve = np.concatenate((np.zeros(len(wind_speed_pad)),curve))
 
     if max(wind_speed) < ws_max:
-        wind_speed_pad = np.arange(max(wind_speed),ws_max,1)
+        wind_speed_pad = np.arange(max(wind_speed)+1,ws_max,1)
         wind_speed = np.concatenate((wind_speed,wind_speed_pad))
         curve = np.concatenate((curve,np.zeros(len(wind_speed_pad))))
     return wind_speed.tolist(), curve.tolist()
@@ -112,6 +112,7 @@ def calculate_power_from_cp(wind_speed, cp_curve, rotor_diameter, rated_power_kW
     power_kW = cp_curve*p_wind
     power_kW = np.where(power_kW > rated_power_kW, rated_power_kW, power_kW)
     power_kW = np.where(power_kW < 0, 0, power_kW)
+
     return power_kW.tolist()
 
 def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=False):
@@ -133,7 +134,6 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
     # Check that the wind speed and the coefficient of power are the same length
     if len(wind_speed) != len(cp_curve):
         raise ValueError("The length of the wind speed and coefficient of power vectors must be the same")
-     
     N_wind = len(wind_speed)
     ct_curve = list(np.zeros(N_wind))
     
