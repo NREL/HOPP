@@ -48,6 +48,7 @@ parts:
       - file: api/dispatch/sources/pv_dispatch
       - file: api/dispatch/sources/wind_dispatch
       - file: api/dispatch/sources/wave_dispatch
+      - file: api/dispatch/sources/tidal_dispatch
       - file: api/dispatch/sources/csp_dispatch
 - caption: Additional Tools
   chapters:

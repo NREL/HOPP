@@ -8,8 +8,6 @@ from hopp.simulation.technologies.power_source import PowerSource, SiteInfo, Seq
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCosts, MHKCostModelInputs
 from hopp.utilities.validators import gt_zero, range_val
-#TODO: Add dispatch for Wave
-# hopp.dispatch.power_sources.wave_dispatch import WaveDispatch
 
 
 @define
