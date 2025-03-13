@@ -51,7 +51,7 @@ dependencies = [
     "profast",
     "NREL-rex",
     "dill",
-    "turbine_models @ git+https://github.com/NREL/turbine-models.git",
+    "turbine-models",
 ]
 keywords = [
     "python3",
