@@ -1,5 +1,5 @@
 from typing import Optional, List, Union
-import PySAM.MhkWave as MhkWave
+import PySAM.MhkTidal as MhkTidal
 
 from attrs import define, field
 from hopp.simulation.base import BaseClass
@@ -11,18 +11,20 @@ from hopp.utilities.validators import gt_zero, range_val
 
 
 @define
-class MHKConfig(BaseClass):
+class MHKTidalConfig(BaseClass):
     """
-    Configuration class for MHKWavePlant.
+    Configuration class for MHKTidalPlant.
 
     Args:
-        device_rating_kw (float): Rated power of the MHK device in kilowatts
-        num_devices (int): Number of MHK devices in the system
-        wave_power_matrix (List[List[float]]): Wave power matrix
-        fin_model (dict | obj): Optional financial model. Can be any of the following:
-
+        device_rating_kw (float): Rated power of the MHK device [kW]
+        num_devices (int): Number of MHK tidal devices in the system
+        tidal_power_curve (List[List[float]]): Power curve of tidal energy device as function of stream speeds [kW]
+        tidal_resource (List[List[float]]): Required by the PySAM MhkTidal module for initialization. Although this parameter 
+            is not actively used in HOPP's timeseries simulation mode, it must still be provided to fully 
+            instantiate the PySAM MhkTidal model.
+            Frequency distribution of resource as a function of stream speeds.
+        fin_model (obj | dict): Optional financial model. Can be any of the following:
             - a dict representing a `CustomFinancialModel`
-
             - an object representing a `CustomFinancialModel` instance
         loss_array_spacing (float): Array spacing loss in % (default: 0)
         loss_resource_overprediction (float): Resource overprediction loss
@@ -33,37 +35,37 @@ class MHKConfig(BaseClass):
     """
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
-    wave_power_matrix: List[List[float]]
+    tidal_power_curve: List[List[float]]
+    tidal_resource: List[List[float]]
     fin_model: Union[dict, CustomFinancialModel]
     loss_array_spacing: float = field(default=0., validator=range_val(0, 100))
     loss_resource_overprediction: float = field(default=0., validator=range_val(0, 100))
     loss_transmission: float = field(default=0., validator=range_val(0, 100))
     loss_downtime: float = field(default=0., validator=range_val(0, 100))
     loss_additional: float = field(default=0., validator=range_val(0, 100))
-    name: str = field(default="MHKWavePlant")
+    name: str = field(default="MHKTidalPlant")
 
 
 @define
-class MHKWavePlant(PowerSource):
+class MHKTidalPlant(PowerSource):
     """
-    Marine Hydrokinetic (MHK) Wave Plant.
+    Marine Hydrokinetic (MHK) Tidal Plant.
 
     Args:
         site: Site information
         config: MHK system configuration parameters
-        cost_model_inputs (dict): An optional dictionary containing input parameters for
+        cost_model_inputs (dict, Optional): An optional dictionary containing input parameters for
             cost modeling.
-
-        """
+    """
     site: SiteInfo
-    config: MHKConfig
+    config: MHKTidalConfig
     cost_model_inputs: Optional[MHKCostModelInputs] = field(default=None)
     config_name: str = field(default="MhkWave")
 
     mhk_costs: Optional[MHKCosts] = field(init=False)
 
     def __attrs_post_init__(self):
-        system_model = MhkWave.new()
+        system_model = MhkTidal.new()
 
         if isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
@@ -77,34 +79,38 @@ class MHKWavePlant(PowerSource):
         else:
             self.mhk_costs = None
             
-        super().__init__("MHKWavePlant", self.site, system_model, financial_model)
+        super().__init__("MHKTidalPlant", self.site, system_model, financial_model)
 
-        # Set wave resource model choice
-        system_model.MHKWave.wave_resource_model_choice = 1  # Time-series data=1 JPD=0
+        # Set tidal resource model choice
+        system_model.MHKTidal.tidal_resource_model_choice = 1 # Time-series data=1 JPD=0 (Joint-probability distribution)
 
-        # Copy values from self.site.wave_resource.data to system_model.MHKWave
-        attributes_to_copy = ['significant_wave_height', 'energy_period', 'year', 'month', 'day', 'hour', 'minute']
+        # Copy values from self.site.tidal_resource.data to system_model.MHKTidal
+        attributes_to_copy = ['tidal_velocity']
         for attribute in attributes_to_copy:
-            setattr(system_model.MHKWave, attribute, self.site.wave_resource.data[attribute])
+            setattr(system_model.MHKTidal, attribute, self.site.tidal_resource.data[attribute])
 
         # System parameter inputs
-        self._system_model.value("device_rated_power", self.config.device_rating_kw)
+        self._system_model.device_rated_power = self.config.device_rating_kw
         self._system_model.value("number_devices",  self.config.num_devices)
-        self._system_model.value("wave_power_matrix", self.config.wave_power_matrix)
+        self._system_model.value("tidal_power_curve", self.config.tidal_power_curve)
+        self._system_model.value("tidal_resource", self.config.tidal_resource)
 
         # Losses
-        loss_attributes = ['loss_array_spacing', 'loss_downtime', 'loss_resource_overprediction', 'loss_transmission', 'loss_additional']
+        loss_attributes = [
+            'loss_array_spacing', 
+            'loss_downtime', 
+            'loss_resource_overprediction', 
+            'loss_transmission', 
+            'loss_additional'
+            ]
 
         for attribute in loss_attributes:
-            if attribute in self.config.as_dict().keys():
-                attr = getattr(self.config, attribute)
-                setattr(self._system_model.MHKWave, attribute, attr)
-            else:
-                setattr(self._system_model.MHKWave, attribute, 0)
+            attr = getattr(self.config, attribute, 0)
+            setattr(self._system_model.MHKTidal, attribute, attr)
         
     def create_mhk_cost_calculator(self, cost_model_inputs: Union[dict, MHKCostModelInputs]):
         """
-        Instantiates MHKCosts, cost calculator for MHKWavePlant.
+        Instantiates MHKCosts, cost calculator for MHKTidalPlant.
 
         Args:
             cost_model_inputs: Input parameters for cost modeling.
@@ -145,11 +151,11 @@ class MHKWavePlant(PowerSource):
         
         return self._financial_model.value("total_installed_cost", total_installed_cost)
 
-    def system_capacity_by_num_devices(self, wave_size_kw: float):
+    def system_capacity_by_num_devices(self, tidal_size_kw: float):
         """
         Sets the system capacity by adjusting the number of devices
         """
-        new_num_devices = round(wave_size_kw / self.device_rated_power)
+        new_num_devices = round(tidal_size_kw / self.device_rated_power)
         self.number_devices = new_num_devices
 
     def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
@@ -171,44 +177,41 @@ class MHKWavePlant(PowerSource):
 
     @property
     def device_rated_power(self) -> float:
-        return self._system_model.MHKWave.device_rated_power
+        return self._system_model.device_rated_power
 
     @device_rated_power.setter
     def device_rated_power(self, device_rate_power: float):
-        self._system_model.MHKWave.device_rated_power = device_rate_power
+        self._system_model.device_rated_power = device_rate_power
         if self.mhk_costs is not None:
             self.mhk_costs.device_rated_power = device_rate_power
 
     @property
     def number_devices(self) -> int:
-        return self._system_model.MHKWave.number_devices
+        return self._system_model.MHKTidal.number_devices
 
     @number_devices.setter
     def number_devices(self, number_devices: int):
-        self._system_model.MHKWave.number_devices = number_devices
+        self._system_model.MHKTidal.number_devices = number_devices
         if self.mhk_costs is not None:
             self.mhk_costs.number_devices = number_devices
 
     @property
-    def wave_power_matrix(self) -> List[List[float]]:
-        return self._system_model.MHKWave.wave_power_matrix
+    def tidal_power_curve(self) -> List[List[float]]:
+        return self._system_model.MHKTidal.tidal_power_curve
 
-    @wave_power_matrix.setter
-    def wave_power_matrix(self, wave_power_matrix: Sequence):
-        if len(wave_power_matrix) != 21 and len(wave_power_matrix[0]) != 22:
-            raise Exception("Wave power matrix must be dimensions 21 by 22")
-        else:    
-            self._system_model.MHKWave.wave_power_matrix = wave_power_matrix
+    @tidal_power_curve.setter
+    def tidal_power_curve(self, tidal_power_curve: Sequence):
+        self._system_model.MHKTidal.tidal_tidal_power_curve =tidal_power_curve
 
     @property
     def system_capacity_kw(self) -> float:
-        self._system_model.value("system_capacity", self._system_model.MHKWave.device_rated_power * self._system_model.MHKWave.number_devices)
+        self._system_model.value("system_capacity", self._system_model.device_rated_power * self._system_model.MHKTidal.number_devices)
         return self._system_model.value("system_capacity")
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
         """
-        Sets the system capacity by updates the number of wave devices using device rating
+        Sets the system capacity by updates the number of tidal devices using device rating
         """
         self.system_capacity_by_num_devices(size_kw)
 
@@ -226,9 +229,3 @@ class MHKWavePlant(PowerSource):
         else:
             return 0
         
-    @property
-    def numberHours(self) -> float:
-        if self.system_capacity_kw > 0:
-            return self._system_model.value("numberHours")
-        else:
-            return 0

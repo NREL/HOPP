@@ -345,11 +345,11 @@ def test_wave_dispatch():
     dispatch_n_look_ahead = 48
 
     data = {
-		"lat": 44.6899,
-		"lon": 124.1346,
-		"year": 2010,
-		"tz": -7,
-	}
+        "lat": 44.6899,
+        "lon": 124.1346,
+        "year": 2010,
+        "tz": -7,
+    }
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
@@ -362,14 +362,14 @@ def test_wave_dispatch():
     config = MHKConfig.from_dict(mhk_config)
 
     cost_model_input = MHKCostModelInputs.from_dict({
-		'reference_model_num':3,
-		'water_depth': 100,
-		'distance_to_shore': 80,
-		'number_rows': 10,
-		'device_spacing':600,
-		'row_spacing': 600,
-		'cable_system_overbuild': 20
-	})
+        'reference_model_num':3,
+        'water_depth': 100,
+        'distance_to_shore': 80,
+        'number_rows': 10,
+        'device_spacing':600,
+        'row_spacing': 600,
+        'cable_system_overbuild': 20
+    })
 
     wave = MHKWavePlant(site, config, cost_model_input)
 

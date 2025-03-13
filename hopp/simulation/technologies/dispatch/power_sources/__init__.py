@@ -8,3 +8,6 @@ from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import (
 from hopp.simulation.technologies.dispatch.power_sources.wave_dispatch import (
     WaveDispatch,
 )
+from hopp.simulation.technologies.dispatch.power_sources.tidal_dispatch import (
+    TidalDispatch,
+)

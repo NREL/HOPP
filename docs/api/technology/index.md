@@ -13,6 +13,7 @@ These are the primary technologies that may be configured for a standard HOPP si
   - [Stateless Battery](tech:battery-stateless)
 - [Grid](tech:grid)
 - [Wave Plant](tech:wave)
+- [Tidal Plant](tech:tidal)
 
 (tech:power-source)=
 ## Power Source Base Class
