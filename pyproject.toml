@@ -51,7 +51,7 @@ dependencies = [
     "profast",
     "NREL-rex",
     "dill",
-    "turbine-models",
+    "turbine-models==0.1.0",
 ]
 keywords = [
     "python3",
