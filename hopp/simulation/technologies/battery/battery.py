@@ -391,11 +391,14 @@ class Battery(PowerSource):
             time_step: time step where outputs will be stored.
         """
         for attr in self.outputs.stateful_attributes: # TODO include State in LDES model
-            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
-                getattr(self.outputs, attr)[time_step] = self.value(attr)
+            if self.config.system_model_source == "pysam":
+                if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
             else:
-                if attr == 'gen':
-                    getattr(self.outputs, attr)[time_step] = self.value('P')
+                if hasattr(self._system_model.state, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
+            if attr == 'gen':
+                getattr(self.outputs, attr)[time_step] = self.value('P')
 
     def validate_replacement_inputs(self, project_life):
         """
