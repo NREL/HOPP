@@ -1,6 +1,5 @@
 import os
 import yaml
-import dill
 
 class Loader(yaml.SafeLoader):
 
@@ -39,12 +38,3 @@ def write_yaml(filename,data):
 
     with open(filename, 'w+') as file:
         yaml.dump(data, file,sort_keys=False,encoding = None,default_flow_style=False)
-
-def dump_data_to_pickle(data,filepath):
-    with open(filepath,"wb") as f:
-        dill.dump(data,f)
-
-def load_dill_pickle(filepath):
-    with open(filepath,"rb") as f:
-        data = dill.load(f)
-    return data

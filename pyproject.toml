@@ -50,7 +50,6 @@ dependencies = [
     "pyyaml-include",
     "profast",
     "NREL-rex",
-    "dill",
     "turbine-models==0.1.0",
 ]
 keywords = [
