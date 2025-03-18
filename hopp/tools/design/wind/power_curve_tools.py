@@ -135,7 +135,7 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
     if len(wind_speed) != len(cp_curve):
         raise ValueError("The length of the wind speed and coefficient of power vectors must be the same")
     N_wind = len(wind_speed)
-    ct_curve = list(np.zeros(N_wind))
+    ct_curve = np.zeros(N_wind)
     
     for i in range(N_wind):
         # calculate induction factor a
@@ -148,14 +148,14 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
         # Calculate C_T = 4 * a * (1-a)
         ct_curve[i] = np.round(4 * a * (1-a), 4)
     
-    ct_flat = [ct[0] for ct in ct_curve]
+    ct_flat = ct_curve.flatten().tolist()
 
     if plot:
-        plot_power_curve(wind_speed,cp_curve,ct_curve)
+        plot_power_curve(wind_speed,cp_curve,ct_flat)
 
     if print_output:
         print("Wind  Speed (m/s) | Coefficient of Thrust (Ct) | Coefficient of Power (Cp)")
-        for ws, ct, cp in zip(wind_speed, ct_curve, cp_curve):
+        for ws, ct, cp in zip(wind_speed, ct_flat, cp_curve):
             print(f"{ws:7.4f} | {ct:7.4f} | {cp:7.4f}")
 
     return ct_flat
