@@ -1,10 +1,12 @@
 from turbine_models.parser import Turbines
 
-def check_turbine_library_for_turbine(turbine_name:str):
+def check_turbine_library_for_turbine(turbine_name:str, turbine_group = "none"):
     """Check turbine-models library for turbine named ``turbine_name``.
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
+        turbine_group (str, Optional): group of turbine in turbine-models library.
+            Options include "offshore", "onfshore", or "distributed".
 
     Returns:
         bool: whether the input turbine name matches a turbine available in the turbine-models library.
@@ -12,8 +14,13 @@ def check_turbine_library_for_turbine(turbine_name:str):
 
     t_lib = Turbines()
     valid_name = False
-    for turb_group in t_lib.groups:
-        turbines_in_group = t_lib.turbines(group = turb_group)
+    if turbine_group not in t_lib.groups:
+        for turb_group in t_lib.groups:
+            turbines_in_group = t_lib.turbines(group = turb_group)
+            if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
+                valid_name = True
+    else:
+        turbines_in_group = t_lib.turbines(group = turbine_group)
         if any(turb.lower()==turbine_name.lower() for turb in turbines_in_group.values()):
             valid_name = True
     return valid_name

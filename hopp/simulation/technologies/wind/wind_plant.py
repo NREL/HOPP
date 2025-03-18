@@ -84,6 +84,11 @@ class WindConfig(BaseClass):
     ] = field(default=None)
     hub_height: Optional[float] = field(default=None)
     turbine_name: Optional[str] = field(default=None)
+    turbine_group: str = field(
+        default="none",
+        validator=contains(["offshore", "onshore", "distributed", "none"]),
+        converter=(str.strip, str.lower)
+    )
     layout_mode: str = field(
         default="grid",
         validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]),
@@ -221,7 +226,7 @@ class WindPlant(PowerSource):
             self.rotor_diameter = self.config.rotor_diameter
         
         if self.config.turbine_name is not None:
-            valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
+            valid_name = check_turbine_library_for_turbine(self.config.turbine_name,turbine_group=self.config.turbine_group)
             if not valid_name:
                 print_turbine_name_list()
                 msg = (

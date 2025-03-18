@@ -126,7 +126,7 @@ def check_libraries_for_turbine_name_floris(turbine_name,floris_model):
     """
 
     is_floris_lib_turbine = check_floris_library_for_turbine(turbine_name)
-    is_turb_lib_turbine = check_turbine_library_for_turbine(turbine_name)
+    is_turb_lib_turbine = check_turbine_library_for_turbine(turbine_name, turbine_group=floris_model.config.turbine_name)
 
     if is_floris_lib_turbine:
         turb_dict = load_turbine_from_floris_library(turbine_name)
