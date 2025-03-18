@@ -50,7 +50,7 @@ dependencies = [
     "pyyaml-include",
     "profast",
     "NREL-rex",
-    "turbine-models==0.1.0",
+    "turbine-models>=0.1.0",
 ]
 keywords = [
     "python3",
