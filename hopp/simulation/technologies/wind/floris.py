@@ -104,9 +104,9 @@ class Floris(BaseClass):
             floris_config (dict): floris input dictionary
 
         Raises:
-            UserWarning: if rotor diameter in WindConfig doesnt match rotor diameter in floris_config
-            UserWarning: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
-            UserWarning: if hub-height in WindConfig doesnt match hub-height in floris_config
+            ValueError: if rotor_diameter in WindConfig doesnt match rotor diameter in floris_config
+            ValueError: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
+            ValueError: if hub_height in WindConfig doesnt match hub-height in floris_config
 
 
         Returns:
@@ -321,10 +321,6 @@ class Floris(BaseClass):
         Args:
             floris_config (dict): floris (version 4) input dictionary.
 
-        Raises:
-            UserWarning: if turbine name does not exactly match a turbine in 
-                the turbine library or floris library.
-
         Returns:
             dict: floris config with turbine model parameters updated in `floris_config["farm"]["turbine_type"][0]`
         """
@@ -352,10 +348,6 @@ class Floris(BaseClass):
 
         Args:
             turbine_name (str): name of turbine in either floris internal library or turbine-models library.
-
-        Raises:
-            UserWarning: if turbine name does not exactly match a turbine in 
-                the turbine library or floris library.
         """
         turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(turbine_name, self)
         self.fi.set(turbine_type=[turbine_lib_res])
