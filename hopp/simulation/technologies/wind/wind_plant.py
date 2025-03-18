@@ -213,8 +213,8 @@ class WindPlant(PowerSource):
 
         Raises:
             ValueError: if invalid turbine name is provided. Print list of valid turbine names before error is raised. 
-            UserWarning: discrepancy in rotor_diameter value
-            UserWarning: discrepancy in hub-height value
+            ValueError: discrepancy in rotor_diameter value
+            ValueError: discrepancy in hub-height value
         """
 
         if self.config.rotor_diameter is not None:
@@ -239,19 +239,23 @@ class WindPlant(PowerSource):
             if self.config.rotor_diameter is not None:
                 if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
                     msg = (
-                        f"input rotor diameter ({self.config.rotor_diameter}) does not match rotor diameter "
-                        f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})"
+                        f"Input rotor diameter ({self.config.rotor_diameter}) does not match does not match rotor diameter "
+                        f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})."
+                        f"Please correct the value for rotor_diameter in the hopp config input "
+                        f"to {self._system_model.Turbine.wind_turbine_rotor_diameter}."
                     )
-                    raise UserWarning(msg)
+                    raise ValueError(msg)
         
         if self.config.hub_height is not None:
             if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
                 msg = (
-                    f"input hub-height ({self.config.hub_height}) does not match hub-height "
-                    f"from for turbine ({self._system_model.Turbine.wind_turbine_hub_ht})"
+                    f"Input hub-height ({self.config.hub_height}) does not match hub-height "
+                    f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
+                    f"Please correct the value for hub_height in the hopp config input "
+                    f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
                 )
 
-                raise UserWarning(msg)
+                raise ValueError(msg)
         
         hub_height = self._system_model.Turbine.wind_turbine_hub_ht
         if hub_height != self.site.wind_resource.hub_height_meters:
@@ -314,10 +318,12 @@ class WindPlant(PowerSource):
                 if n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
                     n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
                     msg = (
-                        f"using custom layout and input number of turbines ({n_turbines}) "
-                        f"does not equal length of layout ({n_turbs_layout})"
+                        f"Using custom wind farm layout and input number of turbines ({n_turbines}) "
+                        f"does not equal length of layout ({n_turbs_layout}). "
+                        f"Please either update num_turbines in the hopp config to {n_turbs_layout} "
+                        f"Or change the layout to include {n_turbines} unique turbine positions."
                     )
-                    raise UserWarning(msg)
+                    raise ValueError(msg)
         self._layout.set_num_turbines(n_turbines)
 
     @property
@@ -465,6 +471,9 @@ class WindPlant(PowerSource):
             elif layout_mode == "boundarygrid":
                 layout_params = WindBoundaryGridParameters(**layout_params)
             elif layout_mode is None:
-                raise UserWarning("if providing layout_params as dictionary, please specify layout mode")
+                msg = (
+                    "If providing layout_params as a dictionary, please specify layout_mode."
+                )
+                raise ValueError(msg)
         
         self._layout.set_layout_params(wind_capacity_kW, params = layout_params)

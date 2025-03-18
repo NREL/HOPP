@@ -135,23 +135,30 @@ class Floris(BaseClass):
             if self.config.turbine_rating_kw != self.turb_rating:
                 msg = (
                     f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
-                    f"rating from floris power-curve ({self.turb_rating} kW)"
+                    f"rating from floris power-curve ({self.turb_rating} kW). "
+                    "Please either remove turbine_rating_kw from the hopp config input "
+                    f"or correct the value to {self.turb_rating}."
                 )
-                raise UserWarning(msg)
+                raise ValueError(msg)
         if self.config.rotor_diameter is not None:
             if self.config.rotor_diameter != self.wind_turbine_rotor_diameter:
                 msg = (
                     f"Input rotor diameter ({self.config.rotor_diameter}) does not match "
-                    f"rotor diameter from floris config ({self.wind_turbine_rotor_diameter})"
+                    f"rotor diameter from floris config ({self.wind_turbine_rotor_diameter}). "
+                    "Please either remove rotor_diameter from the hopp config input "
+                    f"or correct the value to {self.wind_turbine_rotor_diameter}."
                 )
-                raise UserWarning(msg)
+                raise ValueError(msg)
         if self.config.hub_height is not None:
             if self.config.hub_height != hub_height:
                 msg = (
                     f"Input hub-height ({self.config.hub_height}) does not match "
-                    f"hub-height from floris config ({hub_height})"
+                    f"hub-height from floris config ({hub_height}). "
+                    "Please either remove hub_height from the hopp config input "
+                    "(under hopp_config['technologies']['wind'])"
+                    f"or correct the value to {hub_height}."
                 )
-                raise UserWarning(msg)
+                raise ValueError(msg)
         if hub_height != self.site.wind_resource.hub_height_meters:
             valid_min_height = hub_height >= min(self.site.wind_resource.data["heights"])
             valid_max_height = hub_height <= max(self.site.wind_resource.data["heights"])
