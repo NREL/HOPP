@@ -146,7 +146,9 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
         a = roots[np.where(np.logical_and(roots>= 0, roots<= 0.5))]
 
         # Calculate C_T = 4 * a * (1-a)
-        ct_curve[i] = np.round(4 * a * (1-a), 4)
+        ct = np.round(4 * a * (1-a), 4)
+        
+        ct_curve[i] = ct if isinstance(ct,(float,int)) else ct[0]
     
     ct_flat = ct_curve.flatten().tolist()
 
