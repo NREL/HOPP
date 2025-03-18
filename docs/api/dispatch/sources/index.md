@@ -9,6 +9,7 @@ HOPP includes a variety of power source (technology) dispatch options based on t
   - [Molten Salt Tower Power Plant](dispatch:csp-molten-tower)
   - [Parabolic Trough Plant](dispatch:csp-parabolic-trough)
 - [Wave Plant](dispatch:wave)
+- [Wave Plant](dispatch:tidal)
 
 (dispatch:power-source-dispatch)=
 ## Power Source Dispatch

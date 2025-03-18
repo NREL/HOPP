@@ -23,6 +23,11 @@
     + Update: raise errors when using floris if theres a discrepancy between inputs in `WindConfig` and information in `floris_config` (such as `num_turbines` and the `floris_config` layout, and turbine parameters like rotor diameter and turbine rating.)
     + Integrated wind layout functionality when using floris
     + Updated wind layout parameters.
+* Added TidalResource to load tidal resource data for simulating tidal energy.
+* Added MHKTidalPlant to simulate tidal energy.
+* Add tidal energy to HybridSimulation.
+* Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages.
+* Add tidal energy to dispatch.
 
 * Integrated [turbine-models library](https://github.com/NREL/turbine-models/tree/master). For further details on the following updates, users are referred [here](https://github.com/NREL/HOPP/pull/435)
     + Wind turbines from the turbine-models library can now be simulated by specifying the turbine name. This feature is compatible with FLORIS and PySAM WindPower simulations.

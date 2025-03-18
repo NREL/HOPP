@@ -23,6 +23,27 @@ from hopp import ROOT_DIR
 from hopp.utilities import load_yaml
 
 
+def robust_approx(o1, o2):
+    assert type(o1) == type(o2)
+
+    o1_keys = [v for v in dir(o1) if not v.startswith('__')]
+    o2_keys = [v for v in dir(o2) if not v.startswith('__')]
+
+    assert sorted(o1_keys) == sorted(o2_keys)
+
+    for k in o1_keys:
+        v1 = getattr(o1, k)
+        v2 = getattr(o2, k)
+        if isinstance(v1, int) or isinstance(v1, float):
+            assert v1 == approx(v2)
+            continue
+
+        if isinstance(v1, bool) or isinstance(v1, str):
+            assert v1 == v2
+            continue
+
+        approx(v1, v2)
+
 @fixture
 def hybrid_config():
     """Loads the config YAML and updates site info to use resource files."""
@@ -33,29 +54,48 @@ def hybrid_config():
 
     return hybrid_config
 
-
 @fixture
 def site():
     return create_default_site_info()
 
-
-wave_resource_file = (
-    ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
-)
-
-
 @fixture
-def wavesite(): # TODO this should be used, but there were problems getting it working so tests duplicate the work each time right now
+def wavesite():
     data = {"lat": 44.6899, "lon": 124.1346, "year": 2010, "tz": -7}
-    return SiteInfo(
+    wave_resource_file = (
+    ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+    )
+    wavesite = SiteInfo(
         data, wave_resource_file=wave_resource_file, solar=False, wind=False, wave=True
     )
+    return wavesite
 
+@fixture
+def tidalsite():
+    data = {
+        "lat": 44.6899,
+        "lon": 124.1346,
+        "year": 2010,
+        "tz": -7,
+    }
+    tidal_resource_file = Path.joinpath(ROOT_DIR / "simulation" / "resource_files" / "tidal" / "Tidal_resource_timeseries.csv")
+    tidalsite = SiteInfo(data, solar=False, wind=False, tidal=True, tidal_resource_file=tidal_resource_file)
+	
+    return tidalsite
 
-mhk_yaml_path = (
-    ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
-)
-mhk_config = load_yaml(mhk_yaml_path)
+@fixture
+def mhk_config():
+    mhk_yaml_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
+    )
+    mhk_config = load_yaml(mhk_yaml_path)
+    return mhk_config
+
+@fixture
+def mhk_tidal_config():
+    mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "tidal" / "tidal_device.yaml"
+    mhk_config = load_yaml(mhk_yaml_path)
+
+    return mhk_config
 
 interconnection_size_kw = 15000
 pv_kw = 5000
@@ -182,9 +222,8 @@ capacity_credit_hours = [
 ]
 
 
-def test_hybrid_wave_only(hybrid_config, subtests):
-    hybrid_config["site"]["wave"] = True
-    hybrid_config["site"]["wave_resource_file"] = wave_resource_file
+def test_hybrid_wave_only(hybrid_config, mhk_config, wavesite, subtests):
+    hybrid_config["site"]=wavesite
     wave_only_technologies = {
         "wave": {
             "device_rating_kw": mhk_config["device_rating_kw"],
@@ -200,10 +239,8 @@ def test_hybrid_wave_only(hybrid_config, subtests):
 
     hybrid_config["technologies"] = wave_only_technologies
 
-    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    # hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
     cost_model_inputs = MHKCostModelInputs.from_dict(
         {
             "reference_model_num": 3,
@@ -253,9 +290,6 @@ def test_hybrid_wave_only(hybrid_config, subtests):
             hybrid_plant.grid._financial_model.SystemCosts
         )
 
-    # with subtests.test("SystemOutput.__dict__"):
-    #     skip(reason="this test will not be consistent until the code is more type stable. Outputs may be tuple or list")
-    #     assert hybrid_plant.wave._financial_model.SystemOutput.__dict__ == hybrid_plant.grid._financial_model.SystemOutput.__dict__
     with subtests.test("SystemOutput.gen"):
         assert hybrid_plant.wave._financial_model.SystemOutput.gen == approx(
             hybrid_plant.grid._financial_model.SystemOutput.gen
@@ -285,9 +319,8 @@ def test_hybrid_wave_only(hybrid_config, subtests):
         )
 
     with subtests.test("Outputs"):
-        assert hybrid_plant.wave._financial_model.Outputs == approx(
-            hybrid_plant.grid._financial_model.Outputs
-        )
+        robust_approx(hybrid_plant.wave._financial_model.Outputs, hybrid_plant.grid._financial_model.Outputs)
+
     with subtests.test("net cash flow"):
         wave_period = hybrid_plant.wave._financial_model.value("analysis_period")
         grid_period = hybrid_plant.grid._financial_model.value("analysis_period")
@@ -338,9 +371,8 @@ def test_hybrid_wave_only(hybrid_config, subtests):
         assert npvs.hybrid == approx(npvs.wave)
 
 
-def test_hybrid_wave_battery(hybrid_config, subtests):
-    hybrid_config["site"]["wave"] = True
-    hybrid_config["site"]["wave_resource_file"] = wave_resource_file
+def test_hybrid_wave_battery(hybrid_config, mhk_config, wavesite, subtests):
+    hybrid_config["site"] = wavesite
     wave_only_technologies = {
         "wave": {
             "device_rating_kw": mhk_config["device_rating_kw"],
@@ -361,10 +393,9 @@ def test_hybrid_wave_battery(hybrid_config, subtests):
 
     hybrid_config["technologies"] = wave_only_technologies
 
-    # TODO once the financial model is implemented, romove the line immediately following this comment and un-indent the rest of the test
     hi = HoppInterface(hybrid_config)
     hybrid_plant = hi.system
-    # hybrid_plant = HybridSimulation(wave_only_technologies, wavesite)
+
     cost_model_inputs = MHKCostModelInputs.from_dict(
         {
             "reference_model_num": 3,
@@ -386,7 +417,7 @@ def test_hybrid_wave_battery(hybrid_config, subtests):
     cf = hybrid_plant.capacity_factors
 
     with subtests.test("battery aep"):
-        assert aeps.battery == approx(87.84, 1e3)
+        assert aeps.battery == approx(87.84, 1e-3)
 
 
 def test_hybrid_wind_only(hybrid_config, subtests):
@@ -410,6 +441,204 @@ def test_hybrid_wind_only(hybrid_config, subtests):
         assert npvs.wind == approx(-6068047, 1e-3)
     with subtests.test("hybrid npv"):
         assert npvs.hybrid == approx(-6068047, 1e-3)
+
+def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests):
+    hybrid_config["site"]= tidalsite
+    tidal_only_technologies = {
+        "tidal": {
+            "device_rating_kw": mhk_tidal_config["device_rating_kw"],
+            "num_devices": 2,
+            "tidal_power_curve": mhk_tidal_config["tidal_power_curve"],
+            "tidal_resource": mhk_tidal_config["tidal_resource"],
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "grid": {
+            "interconnect_kw": interconnection_size_kw,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+    }
+
+    hybrid_config["technologies"] = tidal_only_technologies
+
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    cost_model_inputs = MHKCostModelInputs.from_dict(
+        {
+            "reference_model_num": 1,
+            "water_depth": 100,
+            "distance_to_shore": 80,
+            "number_rows": 2,
+            "device_spacing": 600,
+            "row_spacing": 600,
+            "cable_system_overbuild": 20,
+        }
+    )
+    assert hybrid_plant.tidal is not None
+    hybrid_plant.tidal.create_mhk_cost_calculator(cost_model_inputs)
+
+    hi.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    # check that tidal and grid match when only tidal is in the hybrid system
+    with subtests.test("financial parameters"):
+        assert hybrid_plant.tidal._financial_model.FinancialParameters == approx(
+            hybrid_plant.grid._financial_model.FinancialParameters
+        )
+    with subtests.test("Revenue: ppa price input"):
+        assert hybrid_plant.tidal._financial_model.Revenue.ppa_price_input == approx(
+            hybrid_plant.grid._financial_model.Revenue.ppa_price_input
+        )
+    with subtests.test("Revenue: ppa escalation"):
+        assert hybrid_plant.tidal._financial_model.Revenue.ppa_escalation == approx(
+            hybrid_plant.grid._financial_model.Revenue.ppa_escalation
+        )
+    with subtests.test("Revenue: ppa multiplier model"):
+        assert (
+            hybrid_plant.tidal._financial_model.Revenue.ppa_multiplier_model
+            == approx(hybrid_plant.grid._financial_model.Revenue.ppa_multiplier_model)
+        )
+    with subtests.test("Revenue: ppa price input"):
+        assert (
+            hybrid_plant.tidal._financial_model.Revenue.dispatch_factors_ts.all()
+            == approx(
+                hybrid_plant.grid._financial_model.Revenue.dispatch_factors_ts.all()
+            )
+        )
+    with subtests.test("SystemCosts"):
+        assert hybrid_plant.tidal._financial_model.SystemCosts == approx(
+            hybrid_plant.grid._financial_model.SystemCosts
+        )
+
+    with subtests.test("SystemOutput.gen"):
+        assert hybrid_plant.tidal._financial_model.SystemOutput.gen == approx(
+            hybrid_plant.grid._financial_model.SystemOutput.gen
+        )
+    with subtests.test("SystemOutput.system_capacity"):
+        assert (
+            hybrid_plant.tidal._financial_model.SystemOutput.system_capacity
+            == approx(hybrid_plant.grid._financial_model.SystemOutput.system_capacity)
+        )
+    with subtests.test("SystemOutput.degradation"):
+        assert hybrid_plant.tidal._financial_model.SystemOutput.degradation == approx(
+            hybrid_plant.grid._financial_model.SystemOutput.degradation
+        )
+    with subtests.test("SystemOutput.system_pre_curtailment_kwac"):
+        assert (
+            hybrid_plant.tidal._financial_model.SystemOutput.system_pre_curtailment_kwac
+            == approx(
+                hybrid_plant.grid._financial_model.SystemOutput.system_pre_curtailment_kwac
+            )
+        )
+    with subtests.test("SystemOutput.annual_energy_pre_curtailment_ac"):
+        assert (
+            hybrid_plant.tidal._financial_model.SystemOutput.annual_energy_pre_curtailment_ac
+            == approx(
+                hybrid_plant.grid._financial_model.SystemOutput.annual_energy_pre_curtailment_ac
+            )
+        )
+    with subtests.test("Outputs"):
+        robust_approx(hybrid_plant.tidal._financial_model.Outputs, hybrid_plant.grid._financial_model.Outputs)
+
+    with subtests.test("net cash flow"):
+        tidal_period = hybrid_plant.tidal._financial_model.value("analysis_period")
+        grid_period = hybrid_plant.grid._financial_model.value("analysis_period")
+        assert hybrid_plant.tidal._financial_model.net_cash_flow(tidal_period) == approx(
+            hybrid_plant.grid._financial_model.net_cash_flow(grid_period)
+        )
+
+    with subtests.test("degradation"):
+        assert hybrid_plant.tidal._financial_model.value("degradation") == approx(
+            hybrid_plant.grid._financial_model.value("degradation")
+        )
+    with subtests.test("total_installed_cost"):
+        assert hybrid_plant.tidal._financial_model.value(
+            "total_installed_cost"
+        ) == approx(hybrid_plant.grid._financial_model.value("total_installed_cost"))
+    with subtests.test("inflation_rate"):
+        assert hybrid_plant.tidal._financial_model.value("inflation_rate") == approx(
+            hybrid_plant.grid._financial_model.value("inflation_rate")
+        )
+    with subtests.test("annual_energy_kwh"):
+        assert hybrid_plant.tidal.value("annual_energy_kwh") == approx(
+            hybrid_plant.grid.value("annual_energy_kwh")
+        )
+    with subtests.test("ppa_price_input"):
+        assert hybrid_plant.tidal._financial_model.value("ppa_price_input") == approx(
+            hybrid_plant.grid._financial_model.value("ppa_price_input")
+        )
+    with subtests.test("ppa_escalation"):
+        assert hybrid_plant.tidal._financial_model.value("ppa_escalation") == approx(
+            hybrid_plant.grid._financial_model.value("ppa_escalation")
+        )
+
+    # test hybrid outputs
+    with subtests.test("tidal aep"):
+        assert aeps.tidal == approx(6062551.5, 1e-2)
+    with subtests.test("hybrid tidal only aep"):
+        assert aeps.hybrid == approx(aeps.tidal)
+    with subtests.test("tidal cf"):
+        assert cf.tidal == approx(31.03, 1e-2)
+    with subtests.test("hybrid tidal only cf"):
+        assert cf.hybrid == approx(cf.tidal)
+    with subtests.test("tidal cost"):
+        # It seems that there is a difference between PySAM cost curves and SAM gui
+        assert hybrid_plant.tidal.total_installed_cost == approx(29015651.4, 1e-2)
+    with subtests.test("tidal npv"):
+        # TODO check/verify this test value somehow, not sure how to do it right now
+        assert npvs.tidal == approx(-29088482.4, 5.e-2)
+    with subtests.test("hybrid tidal only npv"):
+        assert npvs.hybrid == approx(npvs.tidal)
+
+def test_hybrid_tidal_battery(hybrid_config, mhk_tidal_config,tidalsite, subtests):
+    hybrid_config["site"]=tidalsite
+    tidal_only_technologies = {
+        "tidal": {
+            "device_rating_kw": mhk_tidal_config["device_rating_kw"],
+            "num_devices": 2,
+            "tidal_power_curve": mhk_tidal_config["tidal_power_curve"],
+            "tidal_resource": mhk_tidal_config["tidal_resource"],
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "battery": {
+            "system_capacity_kwh": 20000,
+            "system_capacity_kw": 80000,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+        "grid": {
+            "interconnect_kw": interconnection_size_kw,
+            "fin_model": DEFAULT_FIN_CONFIG,
+        },
+    }
+
+    hybrid_config["technologies"] = tidal_only_technologies
+
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    cost_model_inputs = MHKCostModelInputs.from_dict(
+        {
+            "reference_model_num": 1,
+            "water_depth": 100,
+            "distance_to_shore": 80,
+            "number_rows": 2,
+            "device_spacing": 600,
+            "row_spacing": 600,
+            "cable_system_overbuild": 20,
+        }
+    )
+    assert hybrid_plant.tidal is not None
+    hybrid_plant.tidal.create_mhk_cost_calculator(cost_model_inputs)
+    hybrid_plant.tidal._financial_model.om_capacity = [50] # $/kWcap
+    hybrid_plant.battery._financial_model.om_batt_variable_cost = [0.75]
+
+    hi.simulate()
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+    cf = hybrid_plant.capacity_factors
+
+    with subtests.test("battery aep"):
+        assert aeps.battery == approx(106.537, 1e-3)
 
 def test_hybrid_wind_only_floris(hybrid_config, subtests):
     floris_config_path = (
