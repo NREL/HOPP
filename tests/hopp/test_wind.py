@@ -179,9 +179,11 @@ def test_changing_turbine_rating_floris(site):
     )
     site.wind_resource.hub_height_meters = 90.0
     config = WindConfig.from_dict({'num_turbines': 4, "turbine_rating_kw": 1000, "model_name": "floris", "timestep": [1, 8760], "floris_config": floris_config_path})
-    with pytest.raises(UserWarning) as err:
+    with pytest.raises(ValueError) as err:
         model = WindPlant(site, config=config)
-    assert str(err.value) == "Input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
+    
+    err_str = "Input turbine rating (1000 kW) does not match rating from floris power-curve (5000.0 kW)"
+    assert err_str in str(err.value)
    
 
 def test_changing_system_capacity_floris(site):
