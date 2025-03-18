@@ -33,35 +33,27 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
     
     if not has_cp_curve and not has_power_curve:
         turbine_name = turbine_specs["name"]
-        raise ValueError(f"turbine {turbine_name} does not have minimum required power curve data (needs either power_kw or cp)")
+        msg = (
+            f"Turbine {turbine_name} does not have the minimum required power curve data. "
+            "Either power_kw or cp are required."
+            )
+        raise ValueError(msg)
     
     if has_cp_curve:
         cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
         cp_curve = np.nan_to_num(cp_curve)
         cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
 
-    if has_power_curve and has_cp_curve:
+    if has_power_curve:
         power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
         power_curve_kw = np.nan_to_num(power_curve_kw)
         power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
         power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw).tolist()
-        
-        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-        cp_curve = np.nan_to_num(cp_curve)
-        cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
-        
+
     if has_cp_curve and not has_power_curve:
-        cp_curve = np.array(turbine_specs["power_curve"]["cp"].to_list())
-        cp_curve = np.nan_to_num(cp_curve)
-        cp_curve = np.where(cp_curve<0,0,cp_curve).tolist()
         power_curve_kw = curve_tools.calculate_power_from_cp(wind_speeds,cp_curve,turbine_specs["rotor_diameter"],turbine_specs["rated_power"])
     
     if has_power_curve and not has_cp_curve:
-        power_curve_kw = np.array(turbine_specs["power_curve"]["power_kw"].to_list())
-        power_curve_kw = np.nan_to_num(power_curve_kw)
-        power_curve_kw = np.where(power_curve_kw<0,0,power_curve_kw)
-        power_curve_kw = np.where(power_curve_kw>turbine_specs["rated_power"],turbine_specs["rated_power"],power_curve_kw).tolist()
-        
         cp_curve = curve_tools.calculate_cp_from_power(wind_speeds,power_curve_kw)
         
     if has_ct_curve:
@@ -93,7 +85,14 @@ def extract_power_curve(turbine_specs: dict, model_name: str):
 
 def check_hub_height(turbine_specs, wind_plant):
     """Check the hub-height from the turbine-library specs against the other possible hub-height entries. 
-    If multiple hub-height options are available from the turbine_specs, it will choose one based on user-input information.
+    If multiple hub-height options are available from the turbine_specs, this method will choose 
+    one based on other user-input parameters within wind_plant. The other variables checked are:
+    
+    1) wind_plant.config.hub_height
+    2) wind_plant.site.hub_height
+    3) wind_plant._system_model.Turbine.wind_turbine_hub_ht (for PySAM simulations only)
+    4) if none of the heights from 1-3 match a possible hub-height option, the hub-height is chosen
+    as the median hub-height from the list of options from turbine-library.
 
     Args:
         turbine_specs (dict): turbine specs loaded from turbine-models library.
@@ -113,7 +112,7 @@ def check_hub_height(turbine_specs, wind_plant):
         if (hub_height := wind_plant.config.hub_height) is not None:
             if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
                 msg = (
-                    f"multiple hub height options available for {turbine_name} turbine. " 
+                    f"Multiple hub height options available for {turbine_name} turbine. " 
                     f"Setting hub height to WindConfig hub_height: {hub_height}"
                 )
                 logger.info(msg)
@@ -123,7 +122,7 @@ def check_hub_height(turbine_specs, wind_plant):
         if (hub_height := wind_plant.site.hub_height) is not None:
             if any(float(k) == float(hub_height) for k in turbine_specs["hub_height"]):
                 msg = (
-                    f"multiple hub height options available for {turbine_name} turbine. " 
+                    f"Multiple hub height options available for {turbine_name} turbine. " 
                     f"Setting hub height to WindConfig hub_height: {hub_height}"
                 )
                 logger.info(msg)
@@ -134,7 +133,7 @@ def check_hub_height(turbine_specs, wind_plant):
             if any(float(k) == float(wind_plant._system_model.Turbine.wind_turbine_hub_ht) for k in turbine_specs["hub_height"]):
                 hub_height = wind_plant._system_model.Turbine.wind_turbine_hub_ht
                 msg = (
-                    f"multiple hub height options available for {turbine_name} turbine. "
+                    f"Multiple hub height options available for {turbine_name} turbine. "
                     f"Setting hub height to WindPower.WindPower.Turbine.wind_turbine_hub_ht: {hub_height}"
                 )
                 logger.info(msg)
@@ -144,7 +143,7 @@ def check_hub_height(turbine_specs, wind_plant):
         else:
             hub_height = np.median(turbine_specs["hub_height"])
             msg = (
-                f"multiple hub height options available for {turbine_name} turbine. "
+                f"Multiple hub height options available for {turbine_name} turbine. "
                 f"Setting hub height to median available height: {hub_height}"
             )
             logger.info(msg)
@@ -155,13 +154,13 @@ def check_hub_height(turbine_specs, wind_plant):
         if wind_plant.config.hub_height is not None:
             if hub_height != wind_plant.config.hub_height:
                 msg = (
-                    f"turbine hub height ({hub_height}) does not equal "
+                    f"Turbine hub height ({hub_height}) does not equal "
                     f"wind_plant.config.hub_height ({wind_plant.config.hub_height})"
                 )
                 logger.warning(msg)
         if hub_height != wind_plant.site.hub_height:
             msg = (
-                f"turbine hub height ({hub_height}) does not equal "
+                f"Turbine hub height ({hub_height}) does not equal "
                 f"site_info.hub_height ({wind_plant.site.hub_height})"
             )
             logger.warning(msg)
@@ -195,11 +194,19 @@ def get_pysam_turbine_specs(turbine_name, wind_plant):
             })
         return turbine_dict
 
-    raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
+    raise ValueError(f"Turbine {turbine_name} is missing some data, please try another turbine.")
     
 
 def get_floris_turbine_specs(turbine_name, wind_plant):
-    """Load turbine data from turbine-models library to use with FLORIS wind simulation.
+    """Load turbine data from turbine-models library to use with FLORIS wind simulation. 
+    
+    Sets turbine's rated tip speed ratio (TSR) to 8.0 if not included in turbine data.
+    Sets default values in the power thrust table as:
+    
+    - ``ref_air_density``: 1.225
+    - ``ref_tilt``: 5.0
+    - ``cosine_loss_exponent_yaw``: 1.88
+    - ``cosine_loss_exponent_tilt``: 1.88
 
     Args:
         turbine_name (str): name of turbine in turbine-models library
@@ -237,6 +244,10 @@ def get_floris_turbine_specs(turbine_name, wind_plant):
             "power_thrust_table": power_thrust_table,
         }
         return turbine_dict
-        
-    raise ValueError(f"turbine {turbine_name} is missing some data, please try another turbines")
+    
+    msg = (
+        f"Turbine {turbine_name} is missing some data, "
+        "please try another turbine."
+    )
+    raise ValueError(msg)
     

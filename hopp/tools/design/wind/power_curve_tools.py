@@ -11,7 +11,7 @@ def plot_power_curve(wind_speed, cp_curve, ct_curve):
     """
     fig1 = plt.figure()
     plt.plot(wind_speed, ct_curve, label="Coeff of Thrust")
-    plt.plot(wind_speed, cp_curve, label = "Coeff of Power")
+    plt.plot(wind_speed, cp_curve, label="Coeff of Power")
     plt.legend()
     plt.xlabel("Wind Speed [m/s]")
     plt.show()
@@ -28,7 +28,7 @@ def pad_power_curve(wind_speed, curve, ws_min = 0.0, ws_max = 50.0):
         ws_max (float, Optional): wind speed to end curve data at. Defaults to 50.0.
 
     Returns:
-       2-element tuple containing
+       2-element tuple containing:
 
        - **padded_wind_speed** (list): padded wind speed in m/s starting at ``ws_min`` and ending at ``ws_max``
        - **padded_curve** (list): padded curve data for wind speeds starting at ``ws_min`` and ending at ``ws_max``
@@ -121,7 +121,7 @@ def estimate_thrust_coefficient(wind_speed, cp_curve, plot=False, print_output=F
     Args:
         wind_speed (list | np.ndarray): list of wind speeds in m/s
         cp_curve (list | np.ndarray): power curve coefficients (Cp) at each wind speed in ``wind_speed``
-        plot (bool, Pptional): whether to plot Cp and Ct curve. Defaults to False.
+        plot (bool, Optional): whether to plot Cp and Ct curve. Defaults to False.
         print_output (bool, Optional): Whether to print Cp and Ct curves. Defaults to False.
     
     Raises:

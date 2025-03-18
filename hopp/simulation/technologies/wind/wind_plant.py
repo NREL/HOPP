@@ -217,9 +217,6 @@ class WindPlant(PowerSource):
             UserWarning: discrepancy in hub-height value
         """
 
-        if self.config.model_name != "pysam":
-            return
-        
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
         
@@ -227,7 +224,11 @@ class WindPlant(PowerSource):
             valid_name = check_turbine_library_for_turbine(self.config.turbine_name)
             if not valid_name:
                 print_turbine_name_list()
-                ValueError(f"turbine name {self.config.turbine_name} not found in floris or turbine-models library. Please try an available name.")
+                msg = (
+                    f"Turbine name {self.config.turbine_name} was not found the turbine-models library. "
+                    "Please try an available name."
+                )
+                ValueError(msg)
             else:
                 turbine_name = self.config.turbine_name
             turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
