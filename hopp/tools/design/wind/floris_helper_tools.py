@@ -27,22 +27,28 @@ def check_output_formatting(orig_dict):
         else:
             if isinstance(key, list):
                 for i,k in enumerate(key):
-                    if isinstance(orig_dict[k], str):
-                        orig_dict[k] = (orig_dict.get(key, []) + val[i])
-                    elif isinstance(orig_dict[k], bool):
-                        orig_dict[k] = (orig_dict.get(key, []) + val[i])
+                    if isinstance(orig_dict[k], (str,bool,int)):
+                        orig_dict[k] = (orig_dict.get(k, []) + val[i])
                     elif isinstance(orig_dict[k], (list, np.ndarray)):
-                        new_val = [float(v) for v in val[i]]
-                        orig_dict[k] = new_val
+                        orig_dict[k] = np.array(val, dtype=float).tolist()
                     else:
                         orig_dict[k] = float(val[i])
             elif isinstance(key,str):
-                if not isinstance(orig_dict[key], (str, bool)):
-                    if isinstance(orig_dict[key], (list, np.ndarray)):
-                        new_val = [float(v) for v in val]
-                        orig_dict[key] = new_val
+                if isinstance(orig_dict[key], (str, bool, int)):
+                    continue
+                if isinstance(orig_dict[key], (list, np.ndarray)):
+                    if any(isinstance(v,dict) for v in val):
+                        for vii,v in enumerate(val):
+                            if isinstance(v,dict):
+                                new_val = check_output_formatting(v)
+                            else:
+                                new_val = v if isinstance(v,(str,bool,int)) else float(v)
+                            orig_dict[key][vii] = new_val
                     else:
-                        orig_dict[key] = float(val)
+                        new_val = [v if isinstance(v,(str,bool,int)) else float(v) for v in val ]
+                        orig_dict[key] = new_val
+                else:
+                    orig_dict[key] = float(val)
     return orig_dict
 
 def write_floris_layout_to_file(layout_x,layout_y,output_dir,turbine_desc):
