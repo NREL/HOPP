@@ -58,7 +58,6 @@ class LDES(PowerSource):
         super().__init__(self.config.name, self.site, None, financial_model)
         self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
 
-
     @classmethod
     def default(cls, config, site):
         return cls(config=config, site=site, fin_model=config.fin_model)

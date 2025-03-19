@@ -87,7 +87,6 @@ def test_battery_initialization(site, subtests):
     with subtests.test("battery attribute system_capacity_kw"):
         assert battery.system_capacity_kw == config.system_capacity_kw
     with subtests.test("battery attribute system_capacity_kwh"):
-        import pdb; pdb.set_trace()
         assert battery.system_capacity_kwh == config.system_capacity_kwh
 
     with subtests.test("with custom financial model"):
