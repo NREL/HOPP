@@ -21,5 +21,5 @@ MHK Wave Generator class
 
 ## Wave Plant Cost Model
 
-For details on the cost model used in MHK Wave Plants, refer to the [MHK Cost Model](cost_model.md).
+For details on the cost model used in MHK Wave Plants, refer to the [MHK Cost Model](tools:mhk_costs).
 

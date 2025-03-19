@@ -35,14 +35,14 @@ class TidalResource(Resource):
 
         Notes:
             The tidal resource data should be in the format:
-            - Rows 1 and 2: Header rows with location info.
-            - Row 3: Column headings for time-series data 
-              (`Year`, `Month`, `Day`, `Hour`, `Minute`, `Speed`).
-            - Rows 4+: Data values:
-              - `Speed` (current speed) in meters/second.
+                - Rows 1 and 2: Header rows with location info.
+                - Row 3: Column headings for time-series data 
+                    - (`Year`, `Month`, `Day`, `Hour`, `Minute`, `Speed`).
+                - Rows 4+: Data values:
+                - `Speed` (current speed) in meters/second.
 
             Example file: 
-            `hopp/simulation/resource_files/tidal/Tidal_resource_timeseries.csv`
+                `hopp/simulation/resource_files/tidal/Tidal_resource_timeseries.csv`
         """
         super().__init__(lat, lon, year)
 
