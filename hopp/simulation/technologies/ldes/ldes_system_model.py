@@ -41,7 +41,8 @@ class LDES(PowerSource):
 
     SOC: float = field(default=minimum_SOC)
 
-    params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None)
+    params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None, duration=None)
+
 
     def __attrs_post_init__(self):
 
@@ -135,9 +136,7 @@ class LDES(PowerSource):
 
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
-        
 
-        
         #
         # - must have
         #     [x] power capacity
