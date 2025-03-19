@@ -25,7 +25,9 @@
     + Updated wind layout parameters.
 * Added TidalResource to load tidal resource data for simulating tidal energy.
 * Added MHKTidalPlant to simulate tidal energy.
-* Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages
+* Add tidal energy to HybridSimulation.
+* Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages.
+* Add tidal energy to dispatch.
 
 ## Version 3.1.1, Dec. 18, 2024
 
