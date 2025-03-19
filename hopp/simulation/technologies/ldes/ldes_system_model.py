@@ -14,6 +14,7 @@ class Params:
     # h: float # Heat transfer between battery and environment [W/m2K]
     nominal_energy: float # nominal installed energy [kWh]
     nominal_voltage: float # nominal DC voltage [V] - > not used for dispatch
+    duration: float
     # charge_rate: float
     # discharge_rate: float
     # mass: float 
@@ -87,6 +88,8 @@ class LDES(PowerSource):
     def sizing(self, rating_kw, rating_kwh):
         self.system_capacity_kw = rating_kw
         self.system_capacity_kwh = rating_kwh
+        self.params.nominal_energy = rating_kwh
+        self.params.duration = rating_kwh/rating_kw
 
     def calc_degradation_rate_eff_per_hour(lifetime_yrs: float, eol_efficiency: float) -> float:
         """Calculate the degradation rate per hour of operation
@@ -129,11 +132,16 @@ class LDES(PowerSource):
             verbosity (int, optional): Verbosity level (0, or 1). 
                 0 means no extra printing, 1 means more printing. Defaults to 0.
         """
+
+        # need to set
+        # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
+        
+
         
         #
         # - must have
-        #     - power capacity
-        #     - duration
+        #     [x] power capacity
+        #     [x] duration
         #     - dicharge penalty
 
         # - team agrees that
