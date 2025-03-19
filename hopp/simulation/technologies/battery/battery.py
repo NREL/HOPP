@@ -341,6 +341,7 @@ class Battery(PowerSource):
         elif self.value("control_mode") == 0.0:
             control = [cur_MA * 1e6 for cur_MA in self.dispatch.current]    # MA -> A
         else:
+            import pdb; pdb.set_trace()
             raise ValueError("Stateful battery module 'control_mode' invalid value.")
 
         time_step_duration = self.dispatch.time_duration

@@ -12,13 +12,21 @@ from hopp.utilities.validators import range_val
 class Params:
     # cp: float # specific heat capacity [J/KgK]
     # h: float # Heat transfer between battery and environment [W/m2K]
+
     nominal_energy: float # nominal installed energy [kWh]
     nominal_voltage: float # nominal DC voltage [V] - > not used for dispatch
     duration: float
+    valid_control_modes = [0.0, 1.0] # control mode 0 is power in kW, control mode 1 is current in A
+    control_mode: float = field(default=0.0, validator=validators.in_(valid_control_modes)) # TODO how set?
     # charge_rate: float
     # discharge_rate: float
     # mass: float 
     # surface_area: float
+
+@define
+class State:
+    SOC: float = field(default=None)
+    # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
 
 @define
 class LDES(PowerSource):
@@ -27,11 +35,9 @@ class LDES(PowerSource):
     site = field(default=None)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
     chemistry: str = field(default="LDES", validator=validators.in_(["LDES", "AES"]))
-    valid_control_modes = [0.0, 1.0] # control mode 0 is power in kW, control mode 1 is current in A
-    control_mode: float = field(default=1.0, validator=validators.in_(valid_control_modes))
 
-    dt_hr: float = field(default=1.0, validator=validators.gt(0.0))
-    input_current: float = field(default=0.0)
+    dt_hr: float = field(default=1.0, validator=validators.gt(0.0)) #TODO how set?
+    input_current: float = field(default=0.0) # TODO how set?
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
@@ -39,10 +45,9 @@ class LDES(PowerSource):
     system_capacity_kw: float = field(default=0.0)
     system_capacity_kwh: float = field(default=0.0)
 
-    SOC: float = field(default=minimum_SOC)
+    state: State = field(default=State(SOC=initial_SOC))
 
     params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None, duration=None)
-
 
     def __attrs_post_init__(self):
 
@@ -57,12 +62,15 @@ class LDES(PowerSource):
         system_model = self
         financial_model = self.import_financial_model(financial_model, system_model, self.config.name)
         self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
+        self.initial_SOC = self.config.initial_SOC
+        self.state.SOC = self.initial_SOC
         super().__init__(self.config.name, self.site, None, financial_model)
-        self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
+        # self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
 
     @classmethod
     def default(cls, config, site):
-        return cls(config=config, site=site, fin_model=config.fin_model)
+        return cls(config=config, site=site, fin_model=config.fin_model, chemistry=config.chemistry,
+                   minimum_SOC=config.minimum_SOC, maximum_SOC=config.maximum_SOC, initial_SOC=config.initial_SOC)
     
     # def __attrs_post_init__(self):
     #     """Auto-populate _parameters with class attributes on initialization. Method generated using ChatGPT"""
@@ -73,6 +81,9 @@ class LDES(PowerSource):
     #     if val is None:
     #         return getattr(self, key)  # Get the attribute directly
     #     setattr(self, key, val)  # Set attribute, which auto-updates _parameters
+
+    def setup(self):
+        pass
 
     def export(self):
         """Export class data as a dictionary. Method generated using ChatGPT"""
@@ -134,6 +145,7 @@ class LDES(PowerSource):
                 0 means no extra printing, 1 means more printing. Defaults to 0.
         """
 
+        import pdb; pdb.set_trace()
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
 
@@ -180,6 +192,23 @@ class LDES(PowerSource):
         # Type
         # :
         # sequence
+
+
+    @property
+    def control_mode(self):
+        return self.params.control_mode
+    
+    @control_mode.setter
+    def SOC(self, control_mode):
+        self.params.control_mode = control_mode
+ 
+    @property
+    def SOC(self) -> float:
+        return self.state.SOC
+    
+    @SOC.setter
+    def SOC(self, SOC):
+        self.state.SOC = SOC
 
 
     @property
