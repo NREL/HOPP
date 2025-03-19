@@ -29,6 +29,10 @@
 * Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages.
 * Add tidal energy to dispatch.
 
+* Integrated [turbine-models library](https://github.com/NREL/turbine-models/tree/master). For further details on the following updates, users are referred [here](https://github.com/NREL/HOPP/pull/435)
+    + Wind turbines from the turbine-models library can now be simulated by specifying the turbine name. This feature is compatible with FLORIS and PySAM WindPower simulations.
+    + Added wind turbine power-curve tools to estimate thrust coefficient, power coefficient, and power-curve.
+
 ## Version 3.1.1, Dec. 18, 2024
 
 * Enhanced PV plant functionality: added tilting solar panel support, improved system design handling, and refined tilt angle calculations.

@@ -646,13 +646,14 @@ def test_hybrid_wind_only_floris(hybrid_config, subtests):
     )
     technologies = hybrid_config["technologies"]
     wind_only = {key: technologies[key] for key in ("wind", "grid")}
-
+    hybrid_config["site"].update({"hub_height":90.0})
     wind_only["wind"]["model_name"] = "floris"
     wind_only["wind"]["floris_config"] = floris_config_path
     wind_only["wind"]["timestep"] = [0, 8760]
     wind_only["wind"]["num_turbines"] = 4
     wind_only["wind"]["turbine_rating_kw"] = 5000
     wind_only["wind"]["layout_mode"] = "floris_layout"
+    hybrid_config["site"]["hub_height"] = 90.0
 
 
     hybrid_config["technologies"] = wind_only
@@ -1847,6 +1848,7 @@ def test_hybrid_wind_only_floris_elevation_adjusted(hybrid_config, subtests):
     wind_only["wind"]["num_turbines"] = 4
     wind_only["wind"]["turbine_rating_kw"] = 5000
     wind_only["wind"]["layout_mode"] = "floris_layout"
+    hybrid_config["site"]["hub_height"] = 90.0
 
     hybrid_config["technologies"] = wind_only
     hi = HoppInterface(hybrid_config)
