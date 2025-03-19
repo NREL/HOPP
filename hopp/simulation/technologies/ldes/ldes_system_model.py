@@ -6,6 +6,8 @@ from hopp.simulation.technologies.financial import CustomFinancialModel, Financi
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.utilities.validators import range_val
 
+# from hopp.simulation.technologies.battery import BatteryConfig
+
 @define
 class Params:
     # cp: float # specific heat capacity [J/KgK]
@@ -19,29 +21,29 @@ class Params:
 
 @define
 class LDES(PowerSource):
-    valid_chemistry_options = ["LDES", "AES"]
-    chemistry: str = field(default=None, validator=validators.in_(valid_chemistry_options))
 
+    config = field(default=None)
+    site = field(default=None)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    chemistry: str = field(default="LDES", validator=validators.in_(["LDES", "AES"]))
     valid_control_modes = [0.0, 1.0] # control mode 0 is power in kW, control mode 1 is current in A
     control_mode: float = field(default=1.0, validator=validators.in_(valid_control_modes))
 
     dt_hr: float = field(default=1.0, validator=validators.gt(0.0))
+    input_current: float = field(default=0.0)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
     initial_SOC: float = field(default=10, validator=range_val(0, 100))
 
-    system_capacity_kw: float = field(default=None)
-    system_capacity_kwh: float = field(default=None)
+    system_capacity_kw: float = field(default=0.0)
+    system_capacity_kwh: float = field(default=0.0)
 
     SOC: float = field(default=minimum_SOC)
 
     params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None)
 
-
-    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-
     def __attrs_post_init__(self):
-        
+
         if self.config.fin_model is None:
             raise AttributeError("Financial model must be set in `config.fin_model`")
 
@@ -49,13 +51,17 @@ class LDES(PowerSource):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
-
+        financial_model._system_model = self
+        system_model = self
+        financial_model = self.import_financial_model(financial_model, system_model, self.config.name)
+        self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
         super().__init__(self.config.name, self.site, None, financial_model)
+        self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
 
 
     @classmethod
-    def default(cls, chemistry):
-        return cls(chemistry=chemistry)
+    def default(cls, config, site):
+        return cls(config=config, site=site, fin_model=config.fin_model)
     
     # def __attrs_post_init__(self):
     #     """Auto-populate _parameters with class attributes on initialization. Method generated using ChatGPT"""

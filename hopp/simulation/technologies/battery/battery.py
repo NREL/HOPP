@@ -9,14 +9,13 @@ import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
-from hopp.simulation.technologies.ldes import LDES
+from hopp.simulation.technologies.ldes.ldes_system_model import LDES
 
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.validators import contains, gt_zero, range_val
-
 
 @dataclass
 class BatteryOutputs:
@@ -128,7 +127,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             system_model = PySAMBatteryModel.default(self.config.chemistry)
         elif self.config.system_model_source == "hopp":
-            system_model = LDES.default(self.config.chemistry)
+            system_model = LDES.default(self.config, self.site)
         else:
             raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 
@@ -167,6 +166,8 @@ class Battery(PowerSource):
             self._system_model.sizing(self.config.system_capacity_kw,
                                       self.config.system_capacity_kwh,
                                       )
+            self.system_capacity_kw = self._system_model.system_capacity_kw
+            self.system_capacity_kwh = self._system_model.system_capacity_kwh
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
