@@ -9,14 +9,13 @@ import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
-from hopp.simulation.technologies.ldes import LDES
+from hopp.simulation.technologies.ldes.ldes_system_model import LDES
 
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.validators import contains, gt_zero, range_val
-
 
 @dataclass
 class BatteryOutputs:
@@ -128,7 +127,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             system_model = PySAMBatteryModel.default(self.config.chemistry)
         elif self.config.system_model_source == "hopp":
-            system_model = LDES.default(self.config.chemistry)
+            system_model = LDES.default(self.config, self.site)
         else:
             raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 
@@ -167,6 +166,8 @@ class Battery(PowerSource):
             self._system_model.sizing(self.config.system_capacity_kw,
                                       self.config.system_capacity_kwh,
                                       )
+            self.system_capacity_kw = self._system_model.system_capacity_kw
+            self.system_capacity_kwh = self._system_model.system_capacity_kwh
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
@@ -214,6 +215,9 @@ class Battery(PowerSource):
                                             size_kwh,
                                             voltage_volts,
                                             module_specs=Battery.module_specs)
+        else:
+            self._system_model.params.nominal_voltage = voltage_volts
+            self._system_model.params.nominal_energy = size_kwh
             
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
@@ -225,7 +229,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             return self._system_model.ParamsPack.nominal_energy
         else:
-            return self._system_model.params.nominal
+            return self._system_model.params.nominal_energy
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
@@ -375,7 +379,7 @@ class Battery(PowerSource):
         """
         if not self._system_model:
             return
-        self._system_model.execute(0)
+        self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
@@ -387,12 +391,15 @@ class Battery(PowerSource):
         Args:
             time_step: time step where outputs will be stored.
         """
-        for attr in self.outputs.stateful_attributes:
-            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
-                getattr(self.outputs, attr)[time_step] = self.value(attr)
+        for attr in self.outputs.stateful_attributes: # TODO include State in LDES model
+            if self.config.system_model_source == "pysam":
+                if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
             else:
-                if attr == 'gen':
-                    getattr(self.outputs, attr)[time_step] = self.value('P')
+                if hasattr(self._system_model.state, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
+            if attr == 'gen':
+                getattr(self.outputs, attr)[time_step] = self.value('P')
 
     def validate_replacement_inputs(self, project_life):
         """
