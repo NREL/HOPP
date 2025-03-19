@@ -43,6 +43,7 @@ class LDES(PowerSource):
 
     params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None, duration=None)
 
+
     def __attrs_post_init__(self):
 
         if self.config.fin_model is None:
@@ -135,8 +136,6 @@ class LDES(PowerSource):
 
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
-        import pdb; pdb.set_trace()
-
 
         #
         # - must have
