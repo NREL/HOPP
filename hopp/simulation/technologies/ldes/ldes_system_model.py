@@ -3,10 +3,44 @@ from attrs import define, field, validators, fields_dict, setters
 from typing import Optional, Tuple, Union, Sequence
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 
+from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.utilities.validators import range_val
+from hopp.simulation.base import BaseClass
+
 
 # from hopp.simulation.technologies.battery import BatteryConfig
+
+
+@define 
+class LDESConfig(BaseClass):
+    """
+    Configuration class for `LDES`.
+
+    Args:
+        tracking: default True -> `LDES`
+        system_capacity_kwh: LDES energy capacity [kWh]
+        system_capacity_kw: LDES rated power capacity [kW]
+        chemistry: LDES chemistry option
+            - "LDES" generic long-duration energy storage
+            - "AEF" Aqueous electrolyte flow battery
+        minimum_SOC: Minimum state of charge [%]
+        maximum_SOC: Maximum state of charge [%]
+        initial_SOC: Initial state of charge [%]
+        fin_model: Financial model. Can be any of the following:
+            - a dict representing a `CustomFinancialModel`
+            - an object representing a `CustomFinancialModel` or a `Singleowner.Singleowner` instance
+    """
+    system_capacity_kwh: float = field(validator=validators.gt(0.0))
+    system_capacity_kw: float = field(validator=validators.gt(0.0))
+    system_model_source: str = field(default="pysam", validator=validators.in_(["pysam", "hopp"]))
+    chemistry: str = field(default="LDES", validator=validators.in_(["LDES", "AEF"]))
+    tracking: bool = field(default=True)
+    minimum_SOC: float = field(default=10, validator=range_val(0, 100))
+    maximum_SOC: float = field(default=90, validator=range_val(0, 100))
+    initial_SOC: float = field(default=10, validator=range_val(0, 100))
+    fin_model: Optional[Union[str, dict, FinancialModelType]] = field(default=None)
+    name: str = field(default="LDES")
 
 @define
 class Params:
@@ -30,26 +64,18 @@ class State:
 
 @define
 class LDES(PowerSource):
-
-    config = field(default=None)
-    site = field(default=None)
-    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-    chemistry: str = field(default="LDES", validator=validators.in_(["LDES", "AES"]))
-
-    dt_hr: float = field(default=1.0, validator=validators.gt(0.0)) #TODO how set?
-    input_current: float = field(default=0.0) # TODO how set?
-    minimum_SOC: float = field(default=10, validator=range_val(0, 100))
-    maximum_SOC: float = field(default=90, validator=range_val(0, 100))
-    initial_SOC: float = field(default=10, validator=range_val(0, 100))
-
-    system_capacity_kw: float = field(default=0.0)
-    system_capacity_kwh: float = field(default=0.0)
-
-    state: State = field(default=State(SOC=initial_SOC))
-
-    params: Params = Params(nominal_energy=system_capacity_kwh, nominal_voltage=None, duration=None)
-
+    """self.name = name
+        self.site = site
+        self._system_model = system_model
+        self._financial_model = financial_model
+        self._layout = None
+        self._dispatch = PowerSourceDispatch"""
+    
+    config: LDESConfig = field()
+    site: SiteInfo = field()
+    
     def __attrs_post_init__(self):
+        
 
         if self.config.fin_model is None:
             raise AttributeError("Financial model must be set in `config.fin_model`")
@@ -58,20 +84,23 @@ class LDES(PowerSource):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
-        financial_model._system_model = self
         system_model = self
         financial_model = self.import_financial_model(financial_model, system_model, self.config.name)
         self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
         self.initial_SOC = self.config.initial_SOC
         self.state.SOC = self.initial_SOC
+
+        self.state = State(SOC=self.config.initial_SOC)
+
+        self.params = Params(nominal_energy=self.config.system_capacity_kwh, 
+                            nominal_voltage=None, 
+                            duration=self.config.system_capacity_kw/self.config.system_capacity_kwh,
+                           )
+        
+
         super().__init__(self.config.name, self.site, None, financial_model)
         # self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
 
-    @classmethod
-    def default(cls, config, site):
-        return cls(config=config, site=site, fin_model=config.fin_model, chemistry=config.chemistry,
-                   minimum_SOC=config.minimum_SOC, maximum_SOC=config.maximum_SOC, initial_SOC=config.initial_SOC)
-    
     # def __attrs_post_init__(self):
     #     """Auto-populate _parameters with class attributes on initialization. Method generated using ChatGPT"""
     #     self._parameters = {name: getattr(self, name) for name in fields_dict(self.__class__) if not name.startswith("_")}
@@ -199,7 +228,7 @@ class LDES(PowerSource):
         return self.params.control_mode
     
     @control_mode.setter
-    def SOC(self, control_mode):
+    def control_mode(self, control_mode):
         self.params.control_mode = control_mode
  
     @property
