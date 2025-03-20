@@ -127,7 +127,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             system_model = PySAMBatteryModel.default(self.config.chemistry)
         elif self.config.system_model_source == "hopp":
-            system_model = LDES(self.config.as_dict(), self.site)
+            system_model = LDES(self.config, self.site)
         else:
             raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 

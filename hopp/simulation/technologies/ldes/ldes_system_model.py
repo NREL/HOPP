@@ -84,21 +84,26 @@ class LDES(PowerSource):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
-        system_model = self
-        financial_model = self.import_financial_model(financial_model, system_model, self.config.name)
-        self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
+
+        self.financial_model = self.import_financial_model(financial_model, self, self.config.name)
+
+        self._system_capacity_kw = self.config.system_capacity_kw
+        self._system_capacity_kwh = self.config.system_capacity_kwh
         self.initial_SOC = self.config.initial_SOC
-        self.state.SOC = self.initial_SOC
 
         self.state = State(SOC=self.config.initial_SOC)
+        self.state.SOC = self.initial_SOC
 
         self.params = Params(nominal_energy=self.config.system_capacity_kwh, 
                             nominal_voltage=None, 
                             duration=self.config.system_capacity_kw/self.config.system_capacity_kwh,
                            )
         
+        self.params.nominal_energy = self.config.system_capacity_kwh
+        self.params.duration = self.config.system_capacity_kwh / self.config.system_capacity_kw
+        
 
-        super().__init__(self.config.name, self.site, None, financial_model)
+        super().__init__(self.config.name, self.site, self, financial_model)
         # self.sizing(self.config.system_capacity_kw, rating_kwh=self.config.system_capacity_kwh)
 
     # def __attrs_post_init__(self):
@@ -126,12 +131,6 @@ class LDES(PowerSource):
         elif self.chemistry == "AES":
             return 1
         
-    def sizing(self, rating_kw, rating_kwh):
-        self.system_capacity_kw = rating_kw
-        self.system_capacity_kwh = rating_kwh
-        self.params.nominal_energy = rating_kwh
-        self.params.duration = rating_kwh/rating_kw
-
     def calc_degradation_rate_eff_per_hour(lifetime_yrs: float, eol_efficiency: float) -> float:
         """Calculate the degradation rate per hour of operation
 
@@ -247,6 +246,26 @@ class LDES(PowerSource):
     @property
     def nominal_energy(self) -> float:
         return self.system_capacity_kwh
+
+    @property
+    def system_capacity_kw(self) -> float:
+        """Battery power rating [kW]"""
+        return self._system_capacity_kw
+
+    @system_capacity_kw.setter
+    def system_capacity_kw(self, size_kw: float):
+        self.financial_model.value("system_capacity", size_kw)
+        self.system_capacity_kw = size_kw
+
+    @property
+    def system_capacity_kwh(self) -> float:
+        """Battery energy capacity [kWh]"""
+        return self._system_capacity_kwh
+
+    @system_capacity_kwh.setter
+    def system_capacity_kwh(self, size_kwh: float):
+        self.financial_model.value("batt_computed_bank_capacity", size_kwh)
+        self.system_capacity_kwh = size_kwh
 
     # @ property
     # def footprint_area() -> float:
