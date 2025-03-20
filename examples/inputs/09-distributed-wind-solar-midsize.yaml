@@ -41,6 +41,7 @@ technologies:
     layout_params:
       row_D_spacing: 5.0
       turbine_D_spacing: 5.0
+    verbose: False
     
   battery:
     system_capacity_kwh: 4000
