@@ -122,16 +122,6 @@ def test_batterystateless_dispatch(subtests):
     with subtests.test("n_cycles[47]"):
         assert battery.outputs.n_cycles[47] == 1
 
-    # Run battery stateless as system model to compare
-    technologies['battery']['tracking'] = False
-    model_sl = pyomo.ConcreteModel(name='ldes')
-    model_sl.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
-    model_sl.price = pyomo.Param(model_sl.forecast_horizon,
-                                 within=pyomo.Reals,
-                                 initialize=prices,
-                                 mutable=True,
-                                 units=u.USD / u.MWh)
-    
 def test_batterystateless_cycle_limits(subtests):
     expected_objective = 22513      # objective is less than above due to cycling limits
     
