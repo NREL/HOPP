@@ -1,5 +1,5 @@
 from attrs import define, field, validators, fields_dict
-
+import numpy as np
 from typing import Optional, Union
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 
@@ -64,8 +64,8 @@ class State:
     Q: float = field(default=None)
     SOC: float = field(default=None)
     T_batt: float = field(default=None)
-    gen: float = field(default=None)
-    n_cycles: float = field(default=None)
+    gen: float = field(default=0)
+    n_cycles: float = field(default=0)
     input_power: float = field(default=None)
     input_current: float = field(default=None)
     # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
@@ -101,6 +101,7 @@ class LDES(PowerSource):
 
         self.state = State()
         self.state.SOC = self.initial_SOC
+        self.state.P = self.SOC*self.system_capacity_kw
 
         self.params = Params(nominal_energy=self.config.system_capacity_kwh, 
                             nominal_voltage=None, 
@@ -180,9 +181,43 @@ class LDES(PowerSource):
             verbosity (int, optional): Verbosity level (0, or 1). 
                 0 means no extra printing, 1 means more printing. Defaults to 0.
         """
-        print(self.state.input_power)
-        import pdb; pdb.set_trace()
-        pass
+        
+        # TODO add degradation
+        # TODO switch to SOC control
+        
+        dt_hr = self.value('dt_hr')
+        max_soc_dec = self.maximum_SOC/100.0
+        min_soc_dec = self.minimum_SOC/100.0
+        prev_soc_dec = self.state.SOC/100.0
+
+        control_power = self.input_power
+        
+        if self.control_mode == 0.0:
+            raise(ValueError(f"control_mode {self.control_mode} has not been implemented. Must be one of [1.0]."))
+        elif self.control_mode == 1.0:
+
+            # check power capacity constraint
+            if abs(control_power) > self.system_capacity_kw:
+                control_power = np.sign(control_power)*self.system_capacity_kw
+
+            # check energy capacity constraint
+            if control_power*dt_hr + prev_soc_dec*self.params.nominal_energy > self.params.nominal_energy*max_soc_dec:
+                control_power = (max_soc_dec - prev_soc_dec)*self.params.nominal_energy/dt_hr
+                
+            elif control_power*dt_hr + prev_soc_dec*self.params.nominal_energy < self.params.nominal_energy*min_soc_dec:
+                control_power = (prev_soc_dec - min_soc_dec)*self.params.nominal_energy/dt_hr
+                
+        else:
+            raise(ValueError(f"control_mode {self.control_mode} has not been implemented. Must be one of [1.0]."))
+
+        # update state
+        self.state.P = control_power
+        self.state.gen = self.state.P
+        self.state.SOC += control_power*dt_hr/self.system_capacity_kwh
+
+
+        # import pdb; pdb.set_trace()
+        # print()
 
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']

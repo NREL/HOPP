@@ -9,6 +9,7 @@ from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
 from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
+from hopp.simulation.technologies.ldes.ldes_system_model import LDES, LDESConfig
 from hopp.simulation.technologies.dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
@@ -64,7 +65,7 @@ def test_batterystateless_dispatch(subtests):
     # Run battery stateful as system model first
     technologies = technologies_input.copy()
     technologies['battery']['tracking'] = True
-    model = pyomo.ConcreteModel(name='battery_only')
+    model = pyomo.ConcreteModel(name='ldes_only')
     model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
     model.price = pyomo.Param(model.forecast_horizon,
                               within=pyomo.Reals,
@@ -112,96 +113,64 @@ def test_batterystateless_dispatch(subtests):
             dispatch_power = battery.dispatch.power[i] * 1e3
             assert battery.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
-#     assert battery.outputs.dispatch_lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
-#     assert battery.outputs.n_cycles[23] == 0
-#     assert battery.outputs.n_cycles[47] == 1
+    with subtests.test("dispatch_lifecycles_per_day"):
+        assert battery.outputs.dispatch_lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
 
-#     # Run battery stateless as system model to compare
-#     technologies['battery']['tracking'] = False
-#     model_sl = pyomo.ConcreteModel(name='battery_stateless')
-#     model_sl.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
-#     model_sl.price = pyomo.Param(model_sl.forecast_horizon,
-#                                  within=pyomo.Reals,
-#                                  initialize=prices,
-#                                  mutable=True,
-#                                  units=u.USD / u.MWh)
+    with subtests.test("n_cycles[23]"):
+        assert battery.outputs.n_cycles[23] == 0
     
-#     config = BatteryStatelessConfig.from_dict(technologies['battery'])
-#     battery_sl = BatteryStateless(site, config=config)
-#     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
-#                                                  model_sl.forecast_horizon,
-#                                                  battery_sl._system_model,
-#                                                  battery_sl._financial_model,
-#                                                  'battery',
-#                                                  HybridDispatchOptions())
+    with subtests.test("n_cycles[47]"):
+        assert battery.outputs.n_cycles[47] == 1
+
+    # Run battery stateless as system model to compare
+    technologies['battery']['tracking'] = False
+    model_sl = pyomo.ConcreteModel(name='ldes')
+    model_sl.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+    model_sl.price = pyomo.Param(model_sl.forecast_horizon,
+                                 within=pyomo.Reals,
+                                 initialize=prices,
+                                 mutable=True,
+                                 units=u.USD / u.MWh)
     
-#     model_sl.test_objective = pyomo.Objective(
-#         rule=create_test_objective_rule,
-#         sense=pyomo.maximize)
-
-#     battery_sl.dispatch.initialize_parameters()
-#     battery_sl.dispatch.update_time_series_parameters(0)
-#     assert_units_consistent(model_sl)
-#     results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
-
-#     assert results.solver.termination_condition == TerminationCondition.optimal
-#     assert pyomo.value(model_sl.test_objective) == pytest.approx(expected_objective, 1e-5)
-
-#     assert sum(battery_sl.dispatch.charge_power) == pytest.approx(sum_charge_power, 1e-2)
-#     assert sum(battery_sl.dispatch.discharge_power) == pytest.approx(sum_discharge_power, 1e-2)
-
-#     battery_sl.simulate_with_dispatch(48, 0)
-#     for i in range(24):
-#         dispatch_power = battery_sl.dispatch.power[i] * 1e3
-#         assert battery_sl.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
-
-#     battery_dispatch = np.array(battery.dispatch.power)[0:48]
-#     battery_actual = np.array(battery.generation_profile[0:dispatch_n_look_ahead]) * 1e-3   # convert to MWh
-#     battery_sl_dispatch = np.array(battery_sl.dispatch.power)[0:48]
-#     battery_sl_actual = np.array(battery_sl.generation_profile)[0:48] * 1e-3   # convert to MWh
-
-#     assert sum(battery_dispatch - battery_sl_dispatch) == 0
-#     assert sum(abs(battery_actual - battery_dispatch)) <= 33
-#     assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == 0
-#     assert sum(abs(battery_actual - battery_sl_actual)) <= 33
-#     assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
-
-
-# def test_batterystateless_cycle_limits():
-#     expected_objective = 22513      # objective is less than above due to cycling limits
+def test_batterystateless_cycle_limits(subtests):
+    expected_objective = 22513      # objective is less than above due to cycling limits
     
-#     technologies = technologies_input.copy()
-#     technologies['battery']['tracking'] = False
-#     model_sl = pyomo.ConcreteModel(name='battery_stateless')
-#     model_sl.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
-#     model_sl.price = pyomo.Param(model_sl.forecast_horizon,
-#                                  within=pyomo.Reals,
-#                                  initialize=prices,
-#                                  mutable=True,
-#                                  units=u.USD / u.MWh)
+    technologies = technologies_input.copy()
+    technologies['battery']['tracking'] = False
+    model_sl = pyomo.ConcreteModel(name='battery_stateless')
+    model_sl.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+    model_sl.price = pyomo.Param(model_sl.forecast_horizon,
+                                 within=pyomo.Reals,
+                                 initialize=prices,
+                                 mutable=True,
+                                 units=u.USD / u.MWh)
     
-#     config = BatteryConfig.from_dict(technologies['battery'])
-#     battery_sl = BatteryStateless(site, config=config)
-#     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
-#                                                  model_sl.forecast_horizon,
-#                                                  battery_sl._system_model,
-#                                                  battery_sl._financial_model,
-#                                                  'battery',
-#                                                  HybridDispatchOptions({'max_lifecycle_per_day': 1}))
+    config = BatteryConfig.from_dict(technologies['battery'])
+    battery_sl = BatteryStateless(site, config=config)
+    battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
+                                                 model_sl.forecast_horizon,
+                                                 battery_sl._system_model,
+                                                 battery_sl._financial_model,
+                                                 'battery',
+                                                 HybridDispatchOptions({'max_lifecycle_per_day': 1}))
     
-#     model_sl.test_objective = pyomo.Objective(
-#         rule=create_test_objective_rule,
-#         sense=pyomo.maximize)
+    model_sl.test_objective = pyomo.Objective(
+        rule=create_test_objective_rule,
+        sense=pyomo.maximize)
 
-#     battery_sl.dispatch.initialize_parameters()
-#     battery_sl.dispatch.update_time_series_parameters(0)
-#     assert_units_consistent(model_sl)
-#     results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
+    battery_sl.dispatch.initialize_parameters()
+    battery_sl.dispatch.update_time_series_parameters(0)
+    assert_units_consistent(model_sl)
+    results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
 
-#     assert results.solver.termination_condition == TerminationCondition.optimal
-#     assert pyomo.value(model_sl.test_objective) == pytest.approx(expected_objective, 1e-3)
+    with subtests.test("termination_condition"):
+        assert results.solver.termination_condition == TerminationCondition.optimal
+    
+    with subtests.test("test_objective"):
+        assert pyomo.value(model_sl.test_objective) == pytest.approx(expected_objective, 1e-3)
 
-#     battery_sl.simulate_with_dispatch(48, 0)
+    battery_sl.simulate_with_dispatch(48, 0)
 
-#     assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
+    with subtests.test("lifecycles_per_day"):
+        assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
 
