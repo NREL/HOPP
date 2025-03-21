@@ -148,9 +148,10 @@ class Battery(PowerSource):
         super().__init__("Battery", self.site, system_model, financial_model)
 
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
-        self.system_capacity_kw = self.config.system_capacity_kw
-        self.chemistry = self.config.chemistry
+        
+        self.system_capacity_kw = self.config.system_capacity_kw ## failing here on the set
 
+        self.chemistry = self.config.chemistry
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
@@ -163,9 +164,6 @@ class Battery(PowerSource):
             self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
 
         else:
-            self._system_model.sizing(self.config.system_capacity_kw,
-                                      self.config.system_capacity_kwh,
-                                      )
             self.system_capacity_kw = self._system_model.system_capacity_kw
             self.system_capacity_kwh = self._system_model.system_capacity_kwh
 
@@ -242,7 +240,7 @@ class Battery(PowerSource):
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.value("system_capacity", size_kw)
+        self._financial_model.system_capacity = size_kw
         self._system_capacity_kw = size_kw
 
     @property
@@ -341,7 +339,6 @@ class Battery(PowerSource):
         elif self.value("control_mode") == 0.0:
             control = [cur_MA * 1e6 for cur_MA in self.dispatch.current]    # MA -> A
         else:
-            import pdb; pdb.set_trace()
             raise ValueError("Stateful battery module 'control_mode' invalid value.")
 
         time_step_duration = self.dispatch.time_duration

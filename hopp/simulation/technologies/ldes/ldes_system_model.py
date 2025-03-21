@@ -1,13 +1,12 @@
-from attrs import define, field, validators, fields_dict, setters
+from attrs import define, field, validators, fields_dict
 
-from typing import Optional, Tuple, Union, Sequence
+from typing import Optional, Union
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.utilities.validators import range_val
 from hopp.simulation.base import BaseClass
-
 
 # from hopp.simulation.technologies.battery import BatteryConfig
 
@@ -50,8 +49,9 @@ class Params:
     nominal_energy: float # nominal installed energy [kWh]
     nominal_voltage: float # nominal DC voltage [V] - > not used for dispatch
     duration: float
-    valid_control_modes = [0.0, 1.0] # control mode 0 is power in kW, control mode 1 is current in A
-    control_mode: float = field(default=0.0, validator=validators.in_(valid_control_modes)) # TODO how set?
+    valid_control_modes = [0.0, 1.0] # control mode 1 is power in kW, control mode 0 is current in A
+    control_mode: float = field(default=1.0, validator=validators.in_(valid_control_modes)) # TODO how set?
+    dt_hr: float = field(default=1.0, validator=validators.gt(0.0))
     # charge_rate: float
     # discharge_rate: float
     # mass: float 
@@ -59,7 +59,15 @@ class Params:
 
 @define
 class State:
+    I: float = field(default=None)
+    P: float = field(default=None)
+    Q: float = field(default=None)
     SOC: float = field(default=None)
+    T_batt: float = field(default=None)
+    gen: float = field(default=None)
+    n_cycles: float = field(default=None)
+    input_power: float = field(default=None)
+    input_current: float = field(default=None)
     # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
 
 @define
@@ -91,7 +99,7 @@ class LDES(PowerSource):
         self._system_capacity_kwh = self.config.system_capacity_kwh
         self.initial_SOC = self.config.initial_SOC
 
-        self.state = State(SOC=self.config.initial_SOC)
+        self.state = State()
         self.state.SOC = self.initial_SOC
 
         self.params = Params(nominal_energy=self.config.system_capacity_kwh, 
@@ -164,7 +172,7 @@ class LDES(PowerSource):
 
         return eff_loss_pr_cycle
     
-    def execute(verbosity=0):
+    def execute(self, verbosity=0):
         """Execute battery simulation with the specified level of verbosity. This
         mimics the PySAM battery model execute function.
 
@@ -172,10 +180,13 @@ class LDES(PowerSource):
             verbosity (int, optional): Verbosity level (0, or 1). 
                 0 means no extra printing, 1 means more printing. Defaults to 0.
         """
-
+        print(self.state.input_power)
         import pdb; pdb.set_trace()
+        pass
+
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
+        # input_power, input_current
 
         #
         # - must have
@@ -227,9 +238,65 @@ class LDES(PowerSource):
         return self.params.control_mode
     
     @control_mode.setter
-    def control_mode(self, control_mode):
-        self.params.control_mode = control_mode
- 
+    def control_mode(self, control_mode_in):
+        self.params.control_mode = control_mode_in
+
+    @property
+    def input_current(self):
+        return self.params.input_current
+    
+    @input_current.setter
+    def input_current(self, input_current_in):
+        self.state.input_current = input_current_in
+
+    @property
+    def input_power(self):
+        return self.state.input_power
+    
+    @input_power.setter
+    def input_power(self, input_power_in):
+        self.state.input_power = input_power_in
+
+    @property
+    def dt_hr(self):
+        return self.params.dt_hr
+    
+    @dt_hr.setter
+    def dt_hr(self, dt_hr_in):
+        self.params.control_mode = dt_hr_in
+
+    @property
+    def minimum_SOC(self):
+        return self.config.minimum_SOC
+    
+    @minimum_SOC.setter
+    def minimum_SOC(self, minimum_SOC_in):
+        self.config.minimum_SOC = minimum_SOC_in
+
+    @property
+    def maximum_SOC(self):
+        return self.config.maximum_SOC
+    
+    @maximum_SOC.setter
+    def maximum_SOC(self, maximum_SOC_in):
+        self.config.maximum_SOC = maximum_SOC_in
+
+    @property
+    def initial_SOC(self):
+        return self.config.initial_SOC
+    
+    @initial_SOC.setter
+    def initial_SOC(self, initial_SOC):
+        self.config.initial_SOC = initial_SOC
+
+    @property
+    def chemistry(self):
+        return self.config.chemistry
+    
+    @chemistry.setter
+    def chemistry(self, chemistry_in):
+        self.config.chemistry = chemistry_in
+
     @property
     def SOC(self) -> float:
         return self.state.SOC
@@ -237,7 +304,6 @@ class LDES(PowerSource):
     @SOC.setter
     def SOC(self, SOC):
         self.state.SOC = SOC
-
 
     @property
     def nominal_voltage() -> float:
