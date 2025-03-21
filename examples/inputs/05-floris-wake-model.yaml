@@ -34,7 +34,7 @@ technologies:
   pv:
     system_capacity_kw: 50000
   wind:
-    num_turbines: 4
+    num_turbines: 3
     turbine_rating_kw: 5000.0
     model_name: floris
     timestep: [0, 8760]

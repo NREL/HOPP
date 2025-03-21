@@ -8,8 +8,6 @@ from hopp.simulation.technologies.power_source import PowerSource, SiteInfo, Seq
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCosts, MHKCostModelInputs
 from hopp.utilities.validators import gt_zero, range_val
-#TODO: Add dispatch for Wave
-# hopp.dispatch.power_sources.wave_dispatch import WaveDispatch
 
 
 @define
@@ -18,22 +16,20 @@ class MHKConfig(BaseClass):
     Configuration class for MHKWavePlant.
 
     Args:
-        device_rating_kw: Rated power of the MHK device in kilowatts
-        num_devices: Number of MHK devices in the system
-        wave_power_matrix: Wave power matrix
-        fin_model: Optional financial model. Can be any of the following:
+        device_rating_kw (float): Rated power of the MHK device in kilowatts
+        num_devices (int): Number of MHK devices in the system
+        wave_power_matrix (List[List[float]]): Wave power matrix
+        fin_model (dict | obj): Optional financial model. Can be any of the following:
 
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` instance
-
-        layout_mode: TODO
-        loss_array_spacing: Array spacing loss in % (default: 0)
-        loss_resource_overprediction: Resource overprediction loss
+        loss_array_spacing (float): Array spacing loss in % (default: 0)
+        loss_resource_overprediction (float): Resource overprediction loss
             in % (default: 0)
-        loss_transmission: Transmission loss in % (default: 0)
-        loss_downtime: Array/WEC downtime loss in % (default: 0)
-        loss_additional: Additional losses in % (default: 0)
+        loss_transmission (float): Transmission loss in % (default: 0)
+        loss_downtime (float): Array/WEC downtime loss in % (default: 0)
+        loss_additional (float): Additional losses in % (default: 0)
     """
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
@@ -55,7 +51,7 @@ class MHKWavePlant(PowerSource):
     Args:
         site: Site information
         config: MHK system configuration parameters
-        cost_model_inputs: An optional dictionary containing input parameters for
+        cost_model_inputs (dict): An optional dictionary containing input parameters for
             cost modeling.
 
         """
@@ -154,8 +150,7 @@ class MHKWavePlant(PowerSource):
         Sets the system capacity by adjusting the number of devices
         """
         new_num_devices = round(wave_size_kw / self.device_rated_power)
-        if self.number_devices != new_num_devices:
-            self.number_devices = new_num_devices
+        self.number_devices = new_num_devices
 
     def simulate(self, interconnect_kw: float, project_life: int = 25, lifetime_sim=False):
         """
@@ -181,7 +176,7 @@ class MHKWavePlant(PowerSource):
     @device_rated_power.setter
     def device_rated_power(self, device_rate_power: float):
         self._system_model.MHKWave.device_rated_power = device_rate_power
-        if self.mhk_costs != None:
+        if self.mhk_costs is not None:
             self.mhk_costs.device_rated_power = device_rate_power
 
     @property
@@ -191,7 +186,7 @@ class MHKWavePlant(PowerSource):
     @number_devices.setter
     def number_devices(self, number_devices: int):
         self._system_model.MHKWave.number_devices = number_devices
-        if self.mhk_costs != None:
+        if self.mhk_costs is not None:
             self.mhk_costs.number_devices = number_devices
 
     @property
@@ -217,27 +212,23 @@ class MHKWavePlant(PowerSource):
         """
         self.system_capacity_by_num_devices(size_kw)
 
-    #### These are also in Power Source but overwritten here because MhkWave 
-    #### Expects 3-hr timeseries data so values are inflated by 3x
-    #### TODO: If additional system models are added will need to revise these properties so correct values are assigned
     @property
     def annual_energy_kwh(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("annual_energy") / 3 
+            return self._system_model.value("annual_energy") 
         else:
             return 0
     
     @property
     def capacity_factor(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("capacity_factor") / 3
+            return self._system_model.value("capacity_factor")
         else:
             return 0
         
-    ### Not in Power Source but affected by hourly data
     @property
     def numberHours(self) -> float:
         if self.system_capacity_kw > 0:
-            return self._system_model.value("numberHours") / 3
+            return self._system_model.value("numberHours")
         else:
             return 0

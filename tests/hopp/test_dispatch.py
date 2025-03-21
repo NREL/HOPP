@@ -67,7 +67,7 @@ technologies = {
 }
 
 def test_solar_dispatch(site):
-    expected_objective = 34300.55
+    expected_objective = 34021.43
 
     dispatch_n_look_ahead = 48
 
@@ -110,7 +110,7 @@ def test_solar_dispatch(site):
     # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
+    assert model.pv[0].cost_per_generation.value == pytest.approx(round(19/8760*1000,6), 1e-3)
     gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
     assert gen == pytest.approx(588.46, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
@@ -345,11 +345,11 @@ def test_wave_dispatch():
     dispatch_n_look_ahead = 48
 
     data = {
-		"lat": 44.6899,
-		"lon": 124.1346,
-		"year": 2010,
-		"tz": -7,
-	}
+        "lat": 44.6899,
+        "lon": 124.1346,
+        "year": 2010,
+        "tz": -7,
+    }
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
@@ -362,14 +362,14 @@ def test_wave_dispatch():
     config = MHKConfig.from_dict(mhk_config)
 
     cost_model_input = MHKCostModelInputs.from_dict({
-		'reference_model_num':3,
-		'water_depth': 100,
-		'distance_to_shore': 80,
-		'number_rows': 10,
-		'device_spacing':600,
-		'row_spacing': 600,
-		'cable_system_overbuild': 20
-	})
+        'reference_model_num':3,
+        'water_depth': 100,
+        'distance_to_shore': 80,
+        'number_rows': 10,
+        'device_spacing':600,
+        'row_spacing': 600,
+        'cable_system_overbuild': 20
+    })
 
     wave = MHKWavePlant(site, config, cost_model_input)
 
@@ -413,7 +413,7 @@ def test_wave_dispatch():
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
 def test_wind_dispatch(site):
-    expected_objective = 19947.1769
+    expected_objective = 20071.18
 
     dispatch_n_look_ahead = 48
 
@@ -660,7 +660,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 49012
+    expected_objective = 48837.60
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -761,7 +761,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 28445
+    expected_objective = 28134.87
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -973,7 +973,9 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
 
 def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
-    desired_schedule = 8760*[20]
+    desired_schedule = 8760 * [20]
+    # Using a non-uniform schedule to test the baseload heuristic bugfix
+    desired_schedule[:2000] = [10.] * 2000
 
     desired_schedule_site = SiteInfo(flatirons_site,
                                      desired_schedule=desired_schedule)
@@ -998,9 +1000,9 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
     hybrid_plant = hi.system
 
-    assert hybrid_plant.grid.time_load_met == pytest.approx(92.87, 1e-2)
-    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
-    assert hybrid_plant.grid.total_number_hours == pytest.approx(3844, 1e-2)
+    assert hybrid_plant.grid.time_load_met == pytest.approx(94.429, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.659, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4270, 1e-2)
 
 def test_dispatch_load_following_heuristic_with_wave(site, subtests):
     dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}

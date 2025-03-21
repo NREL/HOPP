@@ -50,7 +50,7 @@ class Grid(PowerSource):
     schedule_curtailed: NDArrayFloat = field(init=False)
     schedule_curtailed_percentage: float = field(init=False, default=0.)
     total_gen_max_feasible_year1: NDArrayFloat = field(init=False)
-    config_name: Optional[str] = field(default="GenericSystemSingleOwner")
+    config_name: Optional[str] = field(default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
         """
@@ -145,12 +145,12 @@ class Grid(PowerSource):
                 max(schedule - gen, 0) 
                 for schedule, gen in zip(desired_schedule, self.generation_profile)
             ])
-            self.missed_load_percentage = sum(self.missed_load)/sum(desired_schedule) * 100
+            self.missed_load_percentage = (sum(self.missed_load)/sum(desired_schedule)) * 100
 
             # Calculate curtailed schedule and curtailed schedule percentage
             self.schedule_curtailed = np.array([gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)])
-            self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule) * 100
+            self.schedule_curtailed_percentage = (sum(self.schedule_curtailed)/sum(lifetime_schedule)) * 100
 
             # NOTE: This is currently only happening for load following, would be good to make it more general
             #           i.e. so that this analysis can be used when load following isn't being used (without storage)

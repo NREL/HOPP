@@ -1,6 +1,6 @@
 import csv, os
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional, List
 from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
@@ -13,16 +13,19 @@ TAP_BASE_URL = "https://dw-tap.nrel.gov/v2/srw"
 
 
 class WindResource(Resource):
-    """ Class to manage Wind Resource data
-
-    Attributes:
-        hub_height_meters - the system height
-            TODO: if optimizer will modify hub height, need to download a range rather than a single
-        file_resource_heights - dictionary of heights and filenames to download from Wind Toolkit
-        filename - the combined resource filename
+    """ Class to manage Wind Resource data from API calls or preloaded data.
     """
 
-    allowed_hub_height_meters = [10, 40, 60, 80, 100, 120, 140, 160, 200]
+    allowed_hub_height_meters: List[int] = [10, 40, 60, 80, 100, 120, 140, 160, 200]
+    
+    #: the hub-height for wind resource data (meters)
+    hub_height_meters: float
+    # TODO: if optimizer will modify hub height, need to download a range rather than a single
+    
+    #: dictionary of heights and filenames to download from Wind Toolkit
+    file_resource_heights: dict
+
+
     def __init__(
         self, 
         lat: float, 
@@ -33,29 +36,38 @@ class WindResource(Resource):
         filepath: Union[str, Path] ="", 
         source: str ="WTK", 
         use_api: bool = False,
+        resource_data: Optional[dict] = None,
         **kwargs
     ):
-        """
+        """Resource class to download wind resource data using API call or set with preloaded dictionary
 
         Args:
-            lat: latitude
-            lon: longitude
-            year: year
-            wind_turbine_hub_ht: turbine hub height
-            path_resource: directory where to save downloaded files
-            filepath: file path of resource file to load
-            source: Which API to use. Options are TAP and WIND Toolkit (WTK).
-            use_api: Make an API call even if there's an existing file. Defaults to False
+            lat (float): latitude corresponding to location for wind resource data
+            lon (float): longitude corresponding to location for wind resource data
+            year (int): year for resource data. must be between 2007 and 2014
+            wind_turbine_hub_ht (float): turbine hub height (m)
+            path_resource (Union[str, Path], optional): filepath to resource_files directory. Defaults to ROOT_DIR/"simulation"/"resource_files".
+            filepath (Union[str, Path], optional): file path of resource file to load
+            source (str): Which API to use. Options are TAP and WIND Toolkit (WTK).
+            use_api (bool, optional): Make an API call even if there's an existing file. Defaults to False.
+            resource_data (Optional[dict], optional): dictionary of preloaded and formatted wind resource data. Defaults to None.
             kwargs: extra kwargs
         """
-        super().__init__(lat, lon, year)      
+        super().__init__(lat, lon, year)   
+
+        # if resource_data is input as a dictionary then set_data   
+        if isinstance(resource_data,dict):
+            self.data = resource_data
+            self.hub_height_meters = wind_turbine_hub_ht
+            return 
         
+        # if resource_data is not provided, download or load resource data
+        if isinstance(path_resource,str):
+            path_resource = Path(path_resource).resolve()
         if os.path.isdir(path_resource):
             self.path_resource = path_resource
-
-        self.path_resource = os.path.join(self.path_resource, 'wind')
-
-        self.__dict__.update(kwargs)
+        if path_resource.parts[-1]!="wind":
+            self.path_resource = self.path_resource / 'wind'
 
         self.file_resource_heights = None
         self.update_height(wind_turbine_hub_ht)
@@ -96,18 +108,18 @@ class WindResource(Resource):
             heights[0] = height_low
             heights.append(height_high)
 
-        file_resource_base = os.path.join(self.path_resource, str(self.latitude) + "_" + str(self.longitude) + "_windtoolkit_" + str(
-            self.year) + "_" + str(self.interval) + "min")
-        file_resource_full = file_resource_base
+        filename_base = f"{self.latitude}_{self.longitude}_windtoolkit_{self.year}_{self.interval}min"
+        file_resource_full = filename_base
         file_resource_heights = dict()
 
         for h in heights:
-            file_resource_heights[int(h)] = file_resource_base + '_' + str(int(h)) + 'm.srw'
-            file_resource_full += "_" + str(int(h)) + 'm'
+            h_int = int(h)
+            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.srw')
+            file_resource_full += f'_{h_int}m'
         file_resource_full += ".srw"
 
         self.file_resource_heights = file_resource_heights
-        self.filename = file_resource_full
+        self.filename = self.path_resource / file_resource_full
 
     def update_height(self, hub_height_meters):
         self.hub_height_meters = hub_height_meters
@@ -183,9 +195,11 @@ class WindResource(Resource):
         self.data = self.filename
 
     @Resource.data.setter
-    def data(self, data_file):
+    def data(self, data_info):
         """
         Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
         """
-
-        self._data = SRW_to_wind_data(data_file)
+        if isinstance(data_info,dict):
+            self._data = data_info
+        else:
+            self._data = SRW_to_wind_data(data_info)
