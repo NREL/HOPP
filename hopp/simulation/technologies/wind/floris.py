@@ -234,6 +234,7 @@ class Floris(BaseClass):
         """
         Return all the floris system configuration in a dictionary for the financial model
         """
+        import pdb; pdb.set_trace()
         config = {
             'system_capacity': self.system_capacity,
             'annual_energy': self.annual_energy,
