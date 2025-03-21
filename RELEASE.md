@@ -9,7 +9,7 @@
     + PySAM MHKWave update marine energy device cost curves.
     + PySAM Detailed PV update module and inverter libraries, snow module, tracking, losses.
 
-* Wind-focused usability additions [here](https://github.com/NREL/HOPP/pull/429#issue-2852391571)
+* Wind-focused usability additions that are detailed [here](https://github.com/NREL/HOPP/pull/429#issue-2852391571)
     + Feature add: new wind layout method called `basicgrid` that makes the most-square layout that has the option to be site-constrained.
     + Updated wind layout methods to classes
     + Bug-fix: grid angle converted from degrees to radians in `make_grid_lines()` function in `wind_layout_tools.py`
