@@ -173,7 +173,7 @@ class LDES(PowerSource):
 
         return eff_loss_pr_cycle
     
-    def execute(self, verbosity=0):
+    def execute(self, cycles, verbosity=0):
         """Execute battery simulation with the specified level of verbosity. This
         mimics the PySAM battery model execute function.
 
@@ -183,13 +183,12 @@ class LDES(PowerSource):
         """
         
         # TODO add degradation
-        # TODO switch to SOC control
-        
+        # TODO get cycles
+
         dt_hr = self.value('dt_hr')
         max_soc_dec = self.maximum_SOC/100.0
         min_soc_dec = self.minimum_SOC/100.0
         prev_soc_dec = self.state.SOC/100.0
-
         control_power = self.input_power
         
         if self.control_mode == 0.0:

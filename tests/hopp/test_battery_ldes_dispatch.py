@@ -8,8 +8,7 @@ from pyomo.opt import TerminationCondition
 from pyomo.util.check_units import assert_units_consistent
 
 from hopp.simulation.technologies.sites import SiteInfo, flatirons_site
-from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
-from hopp.simulation.technologies.ldes.ldes_system_model import LDES, LDESConfig
+from hopp.simulation.technologies.battery import Battery, BatteryConfig
 from hopp.simulation.technologies.dispatch import SimpleBatteryDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import HybridDispatchBuilderSolver, HybridDispatchOptions
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
@@ -59,7 +58,7 @@ def create_test_objective_rule(m):
                 for t in m.battery.index_set())
 
 
-def test_batterystateless_dispatch(subtests):
+def test_LDES_dispatch(subtests):
     expected_objective = 28957.15
 
     # Run battery stateful as system model first
@@ -122,7 +121,7 @@ def test_batterystateless_dispatch(subtests):
     with subtests.test("n_cycles[47]"):
         assert battery.outputs.n_cycles[47] == 1
 
-def test_batterystateless_cycle_limits(subtests):
+def test_LDES_cycle_limits(subtests):
     expected_objective = 22513      # objective is less than above due to cycling limits
     
     technologies = technologies_input.copy()
@@ -136,7 +135,7 @@ def test_batterystateless_cycle_limits(subtests):
                                  units=u.USD / u.MWh)
     
     config = BatteryConfig.from_dict(technologies['battery'])
-    battery_sl = BatteryStateless(site, config=config)
+    battery_sl = Battery(site, config=config)
     battery_sl._dispatch = SimpleBatteryDispatch(model_sl,
                                                  model_sl.forecast_horizon,
                                                  battery_sl._system_model,
@@ -161,6 +160,6 @@ def test_batterystateless_cycle_limits(subtests):
 
     battery_sl.simulate_with_dispatch(48, 0)
 
-    with subtests.test("lifecycles_per_day"):
-        assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
+    with subtests.test("dispatch_lifecycles_per_day"):
+        assert battery_sl.outputs.dispatch_lifecycles_per_day[0:2] == pytest.approx([0.75048, 1], rel=1e-3)
 

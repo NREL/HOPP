@@ -352,7 +352,7 @@ class Battery(PowerSource):
             else:
                 index_time_step = None
 
-            self.simulate_power(time_step=index_time_step)
+            self.simulate_power(time_step=index_time_step) #, cycles=self.dispatch.lifecycles[t])
 
         # Store Dispatch model values
         if sim_start_time is not None:
@@ -368,7 +368,7 @@ class Battery(PowerSource):
 
         # logger.info("battery.outputs at start time {}".format(sim_start_time, self.outputs))
 
-    def simulate_power(self, time_step=None):
+    def simulate_power(self, time_step=None):#, cycles=0):
         """
         Runs battery simulate and stores values if time step is provided
 
@@ -377,7 +377,10 @@ class Battery(PowerSource):
         """
         if not self._system_model:
             return
-        self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
+        if self.config.system_model_source == "pysam":
+            self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
+        else:
+            self._system_model.execute(0)
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
