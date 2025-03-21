@@ -32,6 +32,9 @@
 * Integrated [turbine-models library](https://github.com/NREL/turbine-models/tree/master). For further details on the following updates, users are referred [here](https://github.com/NREL/HOPP/pull/435)
     + Wind turbines from the turbine-models library can now be simulated by specifying the turbine name. This feature is compatible with FLORIS and PySAM WindPower simulations.
     + Added wind turbine power-curve tools to estimate thrust coefficient, power coefficient, and power-curve.
+* Added two distributed wind-hybrid examples that highlight the turbine-models library package and other recent features for wind system modeling and simulations. These examples are:
+    - `examples/08-distributed-residential-example.ipynb` 
+    - `examples/09-distributed-residential-midsize.ipynb` 
 
 ## Version 3.1.1, Dec. 18, 2024
 
