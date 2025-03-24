@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Union, Sequence
 
 from attrs import define, field
+import numpy as np
 
 import PySAM.Singleowner as Singleowner
 import PySAM.Windpower as Windpower
@@ -14,6 +15,8 @@ from hopp.simulation.technologies.layout.wind_layout import (
     WindCustomParameters,
     WindGridParameters,
 )
+import hopp.tools.design.wind.turbine_library_interface_tools as turb_lib_interface
+from hopp.tools.design.wind.turbine_library_tools import check_turbine_library_for_turbine, print_turbine_name_list
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites import SiteInfo
 from hopp.simulation.technologies.wind.floris import Floris
@@ -66,17 +69,26 @@ class WindConfig(BaseClass):
             - a dict representing a `CustomFinancialModel`
 
             - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+        verbose (bool): if True, print simulation progress statements. Defaults to True. 
+        store_turbine_performance_results (bool): If running FLORIS, whether to save speed and power timeseries
+            for each turbine in the farm. Defaults to False. 
     """
+    # TODO: put `resource_parse_method`, `store_turbine_performance_results`, and `verbose` in "floris_kwargs" dictionary
     num_turbines: int = field(validator=gt_zero)
-    turbine_rating_kw: float = field(validator=gt_zero)
+    turbine_rating_kw: Optional[float] = field(default = None)
     rotor_diameter: Optional[float] = field(default=None)
     layout_params: Optional[
         Union[
-            dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters
+            dict, WindBoundaryGridParameters, WindBasicGridParameters, WindCustomParameters, WindGridParameters
         ]
     ] = field(default=None)
     hub_height: Optional[float] = field(default=None)
     turbine_name: Optional[str] = field(default=None)
+    turbine_group: str = field(
+        default="none",
+        validator=contains(["offshore", "onshore", "distributed", "none"]),
+        converter=(str.strip, str.lower)
+    )
     layout_mode: str = field(
         default="grid",
         validator=contains(["boundarygrid", "grid", "basicgrid", "custom", "floris_layout"]),
@@ -100,15 +112,16 @@ class WindConfig(BaseClass):
     timestep: Optional[Tuple[int, int]] = field(default=(0,8760))
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
     name: str = field(default="WindPlant")
+    verbose: bool = field(default = True)
+    store_turbine_performance_results: bool = field(default = False)
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
             raise ValueError("Timestep (Tuple[int, int]) required for floris")
 
-        if self.layout_mode == 'boundarygrid' and self.layout_params is None:
-            raise ValueError(
-                "Parameters of WindBoundaryGridParameters required for boundarygrid layout mode"
-            )
+        if self.turbine_rating_kw is None and self.turbine_name is None:
+            if self.model_name == "pysam" and self.model_input_file is None:
+                raise ValueError("Parameters of turbine_rating_kw or turbine_name are required")
 
 
 @define
@@ -139,7 +152,8 @@ class WindPlant(PowerSource):
             financial_model = self.config.fin_model
 
         if self.config.model_name == 'floris':
-            print('FLORIS is the system model...')
+            if self.config.verbose:
+                print('FLORIS is the system model...')
             system_model = Floris(self.site, self.config)
             if (
                 self.config.num_turbines == len(system_model.wind_farm_xCoordinates)
@@ -191,17 +205,84 @@ class WindPlant(PowerSource):
 
         self._dispatch = None
 
-        self.turb_rating = self.config.turbine_rating_kw
+        if self.config.turbine_rating_kw is not None:
+            self.turb_rating = self.config.turbine_rating_kw
         self.num_turbines = self.config.num_turbines
+            
+        if self.config.model_name=="pysam":
+            self.initialize_pysam_wind_turbine()
+        
+        
+    def initialize_pysam_wind_turbine(self):
+        """Initialize wind turbine parameters for PySAM simulation.
+
+        Raises:
+            ValueError: if invalid turbine name is provided. Print list of valid turbine names before error is raised. 
+            ValueError: discrepancy in rotor_diameter value
+            ValueError: discrepancy in hub-height value
+        """
+
         if self.config.rotor_diameter is not None:
             self.rotor_diameter = self.config.rotor_diameter
+        
+        if self.config.turbine_name is not None:
+            valid_name = check_turbine_library_for_turbine(self.config.turbine_name,turbine_group=self.config.turbine_group)
+            if not valid_name:
+                print_turbine_name_list()
+                msg = (
+                    f"Turbine name {self.config.turbine_name} was not found the turbine-models library. "
+                    "Please try an available name."
+                )
+                ValueError(msg)
+            else:
+                turbine_name = self.config.turbine_name
+            turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
+            self._system_model.Turbine.assign(turbine_dict)
+            self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
+            self.turb_rating = np.round(max(turbine_dict["wind_turbine_powercurve_powerout"]), decimals = 3)
 
-        if self.config.model_name=="pysam":
-            if self.config.hub_height is not None:
-                self._system_model.Turbine.wind_turbine_hub_ht = self.config.hub_height
-            if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
-                air_dens_losses = calculate_air_density_losses(self.site.elev)
-                self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
+            if self.config.rotor_diameter is not None:
+                if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
+                    msg = (
+                        f"Input rotor diameter ({self.config.rotor_diameter}) does not match does not match rotor diameter "
+                        f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})."
+                        f"Please correct the value for rotor_diameter in the hopp config input "
+                        f"to {self._system_model.Turbine.wind_turbine_rotor_diameter}."
+                    )
+                    raise ValueError(msg)
+        
+        if self.config.hub_height is not None:
+            if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+                msg = (
+                    f"Input hub-height ({self.config.hub_height}) does not match hub-height "
+                    f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
+                    f"Please correct the value for hub_height in the hopp config input "
+                    f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
+                )
+
+                raise ValueError(msg)
+        
+        hub_height = self._system_model.Turbine.wind_turbine_hub_ht
+        if hub_height != self.site.wind_resource.hub_height_meters:
+            if hub_height >= min(self.site.wind_resource.data["heights"]) and hub_height<=max(self.site.wind_resource.data["heights"]):
+                self.site.wind_resource.hub_height_meters = float(hub_height)
+                self.site.hub_height = float(hub_height)
+                logger.info(f"updating wind resource hub-height to {hub_height}m")
+            else:  
+                logger.warning(f"updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                self.site.hub_height = hub_height
+                data = {
+                    "lat": self.site.wind_resource.latitude,
+                    "lon": self.site.wind_resource.longitude,
+                    "year": self.site.wind_resource.year,
+                }
+                wind_resource = self.site.initialize_wind_resource(data)
+                self.site.wind_resource = wind_resource
+                self._system_model.value("wind_resource_data", self.site.wind_resource.data)
+
+        if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
+            air_dens_losses = calculate_air_density_losses(self.site.elev)
+            self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
 
     @property
     def wake_model(self) -> str:
@@ -235,15 +316,19 @@ class WindPlant(PowerSource):
     @num_turbines.setter
     def num_turbines(self, n_turbines: int):
         
-        if (
-            self._layout.layout_mode == "custom"
-            and n_turbines != len(self._system_model.value("wind_farm_xCoordinates"))
-        ):
-            n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
-            raise UserWarning(
-                f"Using custom layout and input number of turbines ({n_turbines}) does not equal "
-                f"length of layout ({n_turbs_layout})."
-            )
+        if self._layout.layout_mode == "custom":
+            if n_turbines == len(self._layout.parameters.layout_x):
+                self._layout.set_num_turbines(n_turbines)
+            else:
+                if n_turbines != len(self._system_model.value("wind_farm_xCoordinates")):
+                    n_turbs_layout = len(self._system_model.value("wind_farm_xCoordinates"))
+                    msg = (
+                        f"Using custom wind farm layout and input number of turbines ({n_turbines}) "
+                        f"does not equal length of layout ({n_turbs_layout}). "
+                        f"Please either update num_turbines in the hopp config to {n_turbs_layout} "
+                        f"Or change the layout to include {n_turbines} unique turbine positions."
+                    )
+                    raise ValueError(msg)
         self._layout.set_num_turbines(n_turbines)
 
     @property
@@ -391,6 +476,9 @@ class WindPlant(PowerSource):
             elif layout_mode == "boundarygrid":
                 layout_params = WindBoundaryGridParameters(**layout_params)
             elif layout_mode is None:
-                raise UserWarning("if providing layout_params as dictionary, please specify layout mode")
+                msg = (
+                    "If providing layout_params as a dictionary, please specify layout_mode."
+                )
+                raise ValueError(msg)
         
         self._layout.set_layout_params(wind_capacity_kW, params = layout_params)

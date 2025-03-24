@@ -5,7 +5,6 @@ from attrs import define, field
 import numpy as np
 
 from floris import FlorisModel, TimeSeries
-from floris.turbine_library.turbine_previewer import INTERNAL_LIBRARY
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.sites import SiteInfo
 # avoid circular dep
@@ -18,13 +17,13 @@ from hopp.tools.resource.wind_tools import (
 )
 from hopp.utilities import load_yaml
 from hopp.utilities.log import hybrid_logger as logger
-
+import hopp.tools.design.wind.floris_helper_tools as floris_tools
 
 @define
 class Floris(BaseClass):
+    
     site: SiteInfo = field()
     config: "WindConfig" = field()
-    verbose: bool = field(default = True)
 
     _operational_losses: float = field(init=False)
     _timestep: Tuple[int, int] = field(init=False)
@@ -46,7 +45,6 @@ class Floris(BaseClass):
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
-    #TODO: add option to store turbine-powers and velocities or not
     turb_velocities: np.ndarray = field(init = False)
     turb_powers: np.ndarray = field(init = False)
 
@@ -63,7 +61,7 @@ class Floris(BaseClass):
             ValueError: "A floris configuration must be provided"
             ValueError: "A timestep is required."
         """
-        
+
         if self.config.floris_config is None:
             raise ValueError("A floris configuration must be provided")
         if self.config.timestep is None:
@@ -88,7 +86,6 @@ class Floris(BaseClass):
             self.speeds, self.wind_dirs = parse_resource_data(self.site.wind_resource)
         elif self.config.resource_parse_method == "weighted_average":
             self.speeds, self.wind_dirs = weighted_parse_resource_data(self.site.wind_resource)
-
         self.system_capacity = self.nTurbs * self.turb_rating
 
         # time to simulate
@@ -100,60 +97,89 @@ class Floris(BaseClass):
             self.end_idx = 8759
         
 
-    def initialize_from_floris(self,floris_config):
+    def initialize_from_floris(self, floris_config):
+        """Initialize wind turbine parmeters and set in floris_config.
+
+        Args:
+            floris_config (dict): floris input dictionary
+
+        Raises:
+            ValueError: if rotor_diameter in WindConfig doesnt match rotor diameter in floris_config
+            ValueError: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
+            ValueError: if hub_height in WindConfig doesnt match hub-height in floris_config
+
+
+        Returns:
+            dict: updated floris_config
         """
-        Please populate all the wind farm parameters
-        """
+        floris_config = self.initialize_wind_turbine(floris_config)
         
-        if self.config.turbine_name is None:
-            # NOTE: eventually the turbine name provided in the config will be used 
-            # to load a turbine from the turbine-models library.
-            if isinstance(floris_config["farm"]["turbine_type"][0],dict):
-                self.turbine_name = floris_config["farm"]["turbine_type"][0]["turbine_type"]
-
-            # load file from internal floris library
-            if isinstance(floris_config["farm"]["turbine_type"][0],str):
-                self.turbine_name = floris_config["farm"]["turbine_type"][0]
-                turb_dict = load_yaml(
-                    INTERNAL_LIBRARY / "{}.yaml".format(floris_config["farm"]["turbine_type"][0])
-                )
-                floris_config["farm"]["turbine_type"][0] = turb_dict
-
         # see if rotor diameter was input in config but not set in floris config
         if self.config.rotor_diameter is not None:
-            floris_config["farm"]["turbine_type"][0].setdefault(
-                "rotor_diameter",self.config.rotor_diameter
-            )
+            floris_config["farm"]["turbine_type"][0].setdefault("rotor_diameter",self.config.rotor_diameter)
         # see if hub-height was input in config but not set in floris config
         if self.config.hub_height is not None:
-            floris_config["farm"]["turbine_type"][0].setdefault(
-                "hub_height", self.config.hub_height
-            )
-        # NOTE: hub-height should also be checked against wind resource hub-height
-
+            floris_config["farm"]["turbine_type"][0].setdefault("hub_height",self.config.hub_height)
+        
         # set attributes:
+        hub_height = floris_config["farm"]["turbine_type"][0]["hub_height"]
         self.wind_turbine_rotor_diameter = floris_config["farm"]["turbine_type"][0]["rotor_diameter"]
         self.wind_turbine_powercurve_powerout = floris_config["farm"]["turbine_type"][0]["power_thrust_table"]["power"]
         self.wind_farm_xCoordinates = floris_config["farm"]["layout_x"]
         self.wind_farm_yCoordinates = floris_config["farm"]["layout_y"]
         self.nTurbs = len(self.wind_farm_xCoordinates)  
-
+            
         self.turb_rating = max(self.wind_turbine_powercurve_powerout)
+        
         if self.config.turbine_rating_kw is not None:
             if self.config.turbine_rating_kw != self.turb_rating:
-                raise UserWarning(
+                msg = (
                     f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
-                    f"rating from floris power-curve ({self.turb_rating} kW)"
+                    f"rating from floris power-curve ({self.turb_rating} kW). "
+                    "Please either remove turbine_rating_kw from the hopp config input "
+                    f"or correct the value to {self.turb_rating}."
                 )
+                raise ValueError(msg)
+        if self.config.rotor_diameter is not None:
+            if self.config.rotor_diameter != self.wind_turbine_rotor_diameter:
+                msg = (
+                    f"Input rotor diameter ({self.config.rotor_diameter}) does not match "
+                    f"rotor diameter from floris config ({self.wind_turbine_rotor_diameter}). "
+                    "Please either remove rotor_diameter from the hopp config input "
+                    f"or correct the value to {self.wind_turbine_rotor_diameter}."
+                )
+                raise ValueError(msg)
+        if self.config.hub_height is not None:
+            if self.config.hub_height != hub_height:
+                msg = (
+                    f"Input hub-height ({self.config.hub_height}) does not match "
+                    f"hub-height from floris config ({hub_height}). "
+                    "Please either remove hub_height from the hopp config input "
+                    "(under hopp_config['technologies']['wind'])"
+                    f"or correct the value to {hub_height}."
+                )
+                raise ValueError(msg)
+        if hub_height != self.site.wind_resource.hub_height_meters:
+            valid_min_height = hub_height >= min(self.site.wind_resource.data["heights"])
+            valid_max_height = hub_height <= max(self.site.wind_resource.data["heights"])
+            if valid_min_height and valid_max_height:
+                self.site.wind_resource.hub_height_meters = float(hub_height)
+                self.site.hub_height = float(hub_height)
+                logger.info(f"Updating wind resource hub-height to {hub_height}m")
+            else:  
+                logger.warning(f"Updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                self.site.hub_height = hub_height  
+                data = {
+                    "lat": self.site.wind_resource.latitude,
+                    "lon": self.site.wind_resource.longitude,
+                    "year": self.site.wind_resource.year,
+                }
+                wind_resource = self.site.initialize_wind_resource(data)
+                self.site.wind_resource = wind_resource
         
-        # check if user-input num_turbines equals number of turbines in layout
-        if self.nTurbs != self.config.num_turbines:
-            logger.warning(
-                f"num_turbines in WindConfig ({self.config.num_turbines}) does not equal "
-                f"number of turbines in floris config layout ({self.nTurbs})"
-            )
+       
         return floris_config
-
+    
     def value(self, name: str, set_value=None):
         """Set or retrieve attribute of `hopp.simulation.technologies.wind.floris.Floris`.
             if set_value = None, then retrieve value; otherwise overwrite variable's value.
@@ -169,14 +195,34 @@ class Floris(BaseClass):
             return self.__getattribute__(name)
 
     def set_floris_value(self, name, value):
+        """Set value of FlorisModel object using the `set` function.
+
+        Args:
+            name (str): name of parameter to update.
+            value (any): value to assign to specified `parameter`.
+        """
         if value is not None:
             self.fi.set(**{name:value})
-
+    
     def set_floris_param(self, param, value):
-        if value is not None:
-            self.fi.set_param(param, value)
+        """Set parameter of FlorisModel object using the `set_param` function.
 
+        Args:
+            param (list[str]): list of parameter keys in FlorisModel to update.
+            value (any): values to assign to the specified `param`.
+        """
+        if value is not None:
+            self.fi.set_param(param,value)
+    
     def get_floris_param(self, param):
+        """Get parameter of FlorisModel object using the `get_param` function.
+
+        Args:
+            param (list[str]): list of parameter keys in FlorisModel to retrieve.
+
+        Returns:
+            any: value of FlorisModel parameter 
+        """
         return self.fi.get_param(param)
 
     def execute(self, project_life):
@@ -186,20 +232,16 @@ class Floris(BaseClass):
             project_life (int): unused project life in years
         """
         
-        if self.verbose:
+        if self.config.verbose:
             print('Simulating wind farm output in FLORIS...')
 
         # check if user-input num_turbines equals number of turbines in layout
         if self.nTurbs != self.config.num_turbines:
-            # Log warning if discrepancy in number of turbines.
-            # Not raising a warning since wind farm capacity can be modified 
-            # before simulation begins.
-            logger.warning(
-                f"num_turbines input in WindConfig ({self.config.num_turbines}) does not equal "
-                f"number of turbines in floris model ({self.nTurbs})"
-            )
+            # log warning if discrepancy in number of turbines
+            # not raising a warning since wind farm capacity can be modified before simulation begins
+            logger.warning(f"num_turbines input in WindConfig ({self.config.num_turbines}) does not equal number of turbines in floris model ({self.nTurbs})")
         logger.info(f"simulating {self.nTurbs} turbines using FLORIS")
-
+        
         # find generation of wind farm
         power_turbines = np.zeros((self.nTurbs, 8760))
         power_farm = np.zeros(8760)
@@ -225,10 +267,12 @@ class Floris(BaseClass):
         self.gen = power_farm * operational_efficiency / 1000 # kW
 
         self.annual_energy = np.sum(self.gen) # kWh
-        self.capacity_factor = np.sum(self.gen) / (8760 * self.system_capacity) * 100
-        self.turb_powers = power_turbines * operational_efficiency / 1000 # kW
-        self.turb_velocities = self.fi.turbine_average_velocities
+        self.capacity_factor = np.sum(self.gen) / (len(power_farm) * self.system_capacity) * 100
         self.annual_energy_pre_curtailment_ac = np.sum(self.gen) # kWh
+        if self.config.store_turbine_performance_results:
+            self.turb_powers = power_turbines * operational_efficiency / 1000 # kW
+            self.turb_velocities = self.fi.turbine_average_velocities
+        
 
     def export(self):
         """
@@ -240,27 +284,75 @@ class Floris(BaseClass):
             'annual_energy': self.annual_energy,
         }
         return config
-
+    
     @property
     def wind_farm_layout(self):
         xcoords, ycoords = self.fi.get_turbine_layout()
         return xcoords, ycoords
-
+    
     def set_wind_farm_layout(self, xcoords, ycoords):
-        """
-        Sets the wind farm layout and updates relevant parameters.
+        """Set wind farm layout coordinates and update system capacity and number 
+        of turbines.
 
         Args:
-            xcoords (list[float]): A list of x-coordinates for turbine locations.
-            ycoords (list[float]): A list of y-coordinates for turbine locations.
+            xcoords (list[float]): x-coordinates of wind turbines in meters.
+            ycoords (list[float]): y-coordinates of wind turbines in meters.
 
         Raises:
-            ValueError: If x- and y-coordinates are not the same length, an error is raised.
+            ValueError: "WindPlant turbine coordinate arrays must have same length"
         """
         if len(xcoords) != len(ycoords):
             raise ValueError("WindPlant turbine coordinate arrays must have same length")
-        self.fi.set(layout_x=xcoords, layout_y=ycoords)
+        self.fi.set(
+            layout_x = xcoords,
+            layout_y = ycoords
+            )
         self.nTurbs = len(xcoords)
-        self.system_capacity = len(xcoords) * self.turb_rating
+        self.system_capacity = len(xcoords)*self.turb_rating
         self.value("wind_farm_xCoordinates", xcoords)
         self.value("wind_farm_yCoordinates", ycoords)     
+    
+    def initialize_wind_turbine(self, floris_config): 
+        """Update `floris_config` with turbine parameters. Checks the turbine library 
+        and floris internal library for a turbine with name matching either 
+        `config.turbine_name` or `floris_config["farm"]["turbine_type"][0]["turbine_type"]`. 
+        If no matching turbine is found, find the turbine with the closest 
+        matching name and raise a warning.
+
+        Args:
+            floris_config (dict): floris (version 4) input dictionary.
+
+        Returns:
+            dict: floris config with turbine model parameters updated in `floris_config["farm"]["turbine_type"][0]`
+        """
+        if self.config.turbine_name is None:
+            
+            # turbine data is included in floris_config
+            if isinstance(floris_config["farm"]["turbine_type"][0],dict):
+                self.turbine_name = floris_config["farm"]["turbine_type"][0]["turbine_type"]
+                return floris_config
+
+            # load file from internal floris library
+            if isinstance(floris_config["farm"]["turbine_type"][0],str):
+                turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(floris_config["farm"]["turbine_type"][0], self)
+                floris_config["farm"]["turbine_type"][0] = turbine_lib_res
+                return floris_config
+        
+        turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(self.config.turbine_name, self)
+        floris_config["farm"]["turbine_type"][0] = turbine_lib_res 
+        return floris_config
+
+    def update_wind_turbine(self, turbine_name):
+        """Update `FlorisModel` (`self.fi`) with with turbine parameters corresponding
+        to `turbine_name`. Used to update turbine parameters after Floris has been initialized.
+        Updates system capacity, rotor diameter, power-curve, and turb_rating.
+
+        Args:
+            turbine_name (str): name of turbine in either floris internal library or turbine-models library.
+        """
+        turbine_lib_res = floris_tools.check_libraries_for_turbine_name_floris(turbine_name, self)
+        self.fi.set(turbine_type=[turbine_lib_res])
+        self.value("wind_turbine_rotor_diameter", turbine_lib_res["rotor_diameter"])
+        self.value("wind_turbine_powercurve_powerout", turbine_lib_res["power_thrust_table"]["power"])
+        self.turb_rating = np.round(max(turbine_lib_res["power_thrust_table"]["power"]), decimals = 1)
+        self.system_capacity = self.nTurbs*self.turb_rating
