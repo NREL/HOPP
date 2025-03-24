@@ -162,7 +162,6 @@ class PowerSource(BaseClass):
                     except:
                         pass
             except Exception as e:
-                import pdb; pdb.set_trace()
                 raise IOError(f"{self.__class__}'s attribute {var_name} could not be set to {var_value}: {e}")
 
     def assign(self, input_dict: dict):

@@ -107,7 +107,6 @@ def test_LDES_dispatch(subtests):
         assert sum(battery.dispatch.discharge_power) == pytest.approx(sum_discharge_power, 1e-2)
 
     with subtests.test("round trip efficiency"): # TODO this test does not make sense because it just tests the thing against itself
-        import pdb; pdb.set_trace()
         assert (sum(battery.dispatch.charge_power) * battery.dispatch.round_trip_efficiency / 100.0
                 == pytest.approx(sum(battery.dispatch.discharge_power)))
 

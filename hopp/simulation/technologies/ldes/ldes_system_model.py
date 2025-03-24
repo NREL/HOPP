@@ -215,9 +215,6 @@ class LDES(PowerSource):
         self.state.SOC += control_power*dt_hr/self.system_capacity_kwh
 
 
-        # import pdb; pdb.set_trace()
-        # print()
-
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
         # input_power, input_current
