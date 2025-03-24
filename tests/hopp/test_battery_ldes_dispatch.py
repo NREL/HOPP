@@ -98,13 +98,18 @@ def test_LDES_dispatch(subtests):
     with subtests.test("test_objective"):
         assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
 
-    with subtests.test("charge_power"):
+    with subtests.test("charge_power"): # TODO this test does not make sense
         sum_charge_power = sum(battery.dispatch.charge_power)
         assert sum(battery.dispatch.charge_power) == pytest.approx(sum_charge_power, 1e-2)
 
-    with subtests.test("discharge_power"):
+    with subtests.test("discharge_power"): # TODO this test does not make sense because it just tests the thing against itself
         sum_discharge_power = sum(battery.dispatch.discharge_power)
         assert sum(battery.dispatch.discharge_power) == pytest.approx(sum_discharge_power, 1e-2)
+
+    with subtests.test("round trip efficiency"): # TODO this test does not make sense because it just tests the thing against itself
+        import pdb; pdb.set_trace()
+        assert (sum(battery.dispatch.charge_power) * battery.dispatch.round_trip_efficiency / 100.0
+                == pytest.approx(sum(battery.dispatch.discharge_power)))
 
     battery.simulate_with_dispatch(48, 0)
     for i in range(24):
