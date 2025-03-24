@@ -1,21 +1,15 @@
 # Release Notes
 
-## Unreleased, TBD
-* Added option and functionality to load wind and solar resource data from NSRDB and Wind Toolkit data files if user-specified.
-* Fixed a bug in site_info that set resource year to 2012 even if otherwise specified.
-* Minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
-* Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
-* Bug fix in load following heuristic method: only using beginning of variable load signals 
-* Feature add: added alternative method to defining site boundary.
-* Feature add: added function to adjust air density based on site elevation
-* Added weighted average wind resource parsing method option when using floris.
-* Updated PySAM version from 4.2.0 to 6.0.1. Main changes noted in [PR #425](https://github.com/NREL/HOPP/pull/425)
-* PySAM generation plant defaults have been updated. Current defaults can be found [here](https://github.com/NREL/SAM/tree/develop/api/api_autogen/library/defaults)
-* PySAM SingleOwner financial model update investment-tax credit and depreciation basis calculations to remove financing fees and reserve account funding from basis.
-* PySAM MHKWave update marine energy device cost curves.
-* PySAM Detailed PV update module and inverter libraries, snow module, tracking, losses.
-* Update deprecated methods in wave_resource.py 
-* For further details on the following updates, users are referred [here](https://github.com/NREL/HOPP/pull/429#issue-2852391571)
+## Version 3.2.0, March 21, 2025
+
+* Updates related to PySAM:
+    + Updated PySAM version from 4.2.0 to >6.0.0. Main changes noted in [PR #425](https://github.com/NREL/HOPP/pull/425)
+    + PySAM generation plant defaults have been updated. Current defaults can be found [here](https://github.com/NREL/SAM/tree/develop/api/api_autogen/library/defaults)
+    + PySAM SingleOwner financial model update investment-tax credit and depreciation basis calculations to remove financing fees and reserve account funding from basis.
+    + PySAM MHKWave update marine energy device cost curves.
+    + PySAM Detailed PV update module and inverter libraries, snow module, tracking, losses.
+
+* Wind-focused usability additions that are detailed [here](https://github.com/NREL/HOPP/pull/429#issue-2852391571)
     + Feature add: new wind layout method called `basicgrid` that makes the most-square layout that has the option to be site-constrained.
     + Updated wind layout methods to classes
     + Bug-fix: grid angle converted from degrees to radians in `make_grid_lines()` function in `wind_layout_tools.py`
@@ -23,11 +17,32 @@
     + Update: raise errors when using floris if theres a discrepancy between inputs in `WindConfig` and information in `floris_config` (such as `num_turbines` and the `floris_config` layout, and turbine parameters like rotor diameter and turbine rating.)
     + Integrated wind layout functionality when using floris
     + Updated wind layout parameters.
-* Added TidalResource to load tidal resource data for simulating tidal energy.
-* Added MHKTidalPlant to simulate tidal energy.
-* Add tidal energy to HybridSimulation.
-* Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages.
-* Add tidal energy to dispatch.
+    + Minor clean up to floris.py - removed unnecessary data exportation and fixed bug in value()
+
+* Integrated [turbine-models library](https://github.com/NREL/turbine-models/tree/master). For further details see [here](https://github.com/NREL/HOPP/pull/435)
+    + Wind turbines from the turbine-models library can now be simulated by specifying the turbine name. This feature is compatible with floris and PySAM WindPower simulations.
+    + Added wind turbine power-curve tools to estimate thrust coefficient, power coefficient, and power-curve.
+* Added two distributed wind-hybrid examples that highlight the turbine-models library package and other recent features for wind system modeling and simulations. These examples are:
+    - `examples/08-distributed-residential-example.ipynb` 
+    - `examples/09-distributed-residential-midsize.ipynb` 
+* Added tidal models
+    + Added TidalResource to load tidal resource data for simulating tidal energy.
+    + Added MHKTidalPlant to simulate tidal energy.
+    + Add tidal energy to HybridSimulation.
+    + Add tidal energy to dispatch.
+
+* Other feature additions:
+    + Added option and functionality to load wind and solar resource data from NSRDB and Wind Toolkit data files if user-specified.
+    + Added ability and option to initialize site_info with preloaded and formatted wind and solar resource data
+    + Feature add: added alternative method to defining site boundary.
+    + Feature add: added function to adjust air density based on site elevation
+    + Added weighted average wind resource parsing method option when using floris.
+    + Update deprecated methods in wave_resource.py 
+
+* Bug fixes:
+    + Remove erroneous 100 multiples for percentages and add clarifying parentheses for correct 100 multiples for percentages.
+    + Fixed a bug in site_info that set resource year to 2012 even if otherwise specified.
+    + Bug fix in load following heuristic method: only using beginning of variable load signals 
 
 ## Version 3.1.1, Dec. 18, 2024
 

@@ -1,0 +1,14 @@
+# PySAM Pvwattsv8 System Design Inputs: https://nrel-pysam.readthedocs.io/en/main/modules/Pvwattsv8.html#systemdesign-group 
+SystemDesign:
+  # use fixed roof mount system corresponding to array_type = 1.0
+  array_type: 1.0 # 0: fixed open rack 1: fixed roof mount 2: 1-axis tracking 3: 1-axis backtracking 4: 2-axis tracking
+  bifaciality: 0.0 # monofacial modules have no bifaciality
+  module_type: 1.0 # 0: standard 1: premium 2: thin film. Premium modules have an efficiency of 21%
+  losses: 15.0 # DC-losses represented as a percentage
+  # inverter specifications. Inverters convert DC-power from the solar panels to AC-power
+  dc_ac_ratio: 1.21 #inverter is (1/dc_ac_ratio) the capacity of the pv system.
+  inv_eff: 96.0 #inverter efficiency as a percentage
+  # panel layout and orientation
+  gcr: 0.3 # groud coverage ratio default value
+  azimuth: 180.0 # South-facing panels. East is 90, South is 180, West is 270
+  rotlim: 0.0 #no rotational limit because using a fixed-tilt panel

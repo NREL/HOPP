@@ -6,12 +6,12 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
-software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
+software assesses optimal designs for the deployment of distributed, commercial, and utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
 
 ## Software requirements
 
-- Python version 3.10, and 3.11 only (PySAM 4.2 is incompatible with 3.12)
+- Python version 3.10, and 3.11 only
 
 ## Installing from Package Repositories
 
