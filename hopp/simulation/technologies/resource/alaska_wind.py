@@ -4,80 +4,59 @@ from typing import Union, Optional, List
 import pandas as pd
 import urllib.parse
 
-# from PySAM.ResourceTools import CSV_to_wind_data
+from attrs import define, field
 
 from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
-from hopp.utilities.validators import gt_zero, contains, range_val
+from hopp.utilities.validators import range_val
 from hopp.simulation.technologies.resource.resource import Resource
 from hopp import ROOT_DIR
 from hopp.tools.resource.pysam_wind_tools import combine_wind_files
-#CSV_to_wind_data, combine_CSV_to_wind_data
 
 AK_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-alaska-v1-0-0-download.csv?"
-# AK_LED_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-led-alaska-download.csv?"
 
-
+@define
 class AlaskaWindData(Resource):
-    allowed_hub_height_meters: List[int] = [10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 250, 300, 500, 1000]
-    all_attributes: str = ('boundary_layer_height,friction_velocity_2m,inversemoninobukhovlength_2m,latent_heat_flux,precipitation_0m,'
-    'pressure_0m,pressure_100m,pressure_200m,pressure_500m,relativehumidity_2m,sensible_heat_flux,skin_temperature,'
-    'temperature_1000m,temperature_100m,temperature_200m,temperature_20m,temperature_2m,temperature_300m,temperature_40m,'
-    'temperature_500m,temperature_60m,temperature_80m,vertical_windspeed_120m,vertical_windspeed_200m,vertical_windspeed_20m,'
-    'vertical_windspeed_40m,vertical_windspeed_500m,vertical_windspeed_80m,virtual_potential_temperature_1000m,'
-    'virtual_potential_temperature_100m,virtual_potential_temperature_200m,virtual_potential_temperature_20m,'
-    'virtual_potential_temperature_2m,virtual_potential_temperature_300m,virtual_potential_temperature_40m,'
-    'virtual_potential_temperature_500m,virtual_potential_temperature_60m,virtual_potential_temperature_80m,'
-    'winddirection_1000m,winddirection_100m,winddirection_10m,winddirection_120m,winddirection_140m,winddirection_160m,'
-    'winddirection_180m,winddirection_200m,winddirection_20m,winddirection_250m,winddirection_300m,winddirection_40m,winddirection_500m,'
-    'winddirection_60m,winddirection_80m,windspeed_1000m,windspeed_100m,windspeed_10m,windspeed_120m,windspeed_140m,windspeed_160m,windspeed_180m,'
-    'windspeed_200m,windspeed_20m,windspeed_250m,windspeed_300m,windspeed_40m,windspeed_500m,windspeed_60m,windspeed_80m')
     
+    lat: float = field()
+    lon: float = field()
+    year: int = field(validator=range_val(2018, 2020))
+
     #: the hub-height for wind resource data (meters)
-    hub_height_meters: float
-    # TODO: if optimizer will modify hub height, need to download a range rather than a single
+    hub_height_meters: float = field(validator=range_val(10.0, 1000.0))
     
+    # OPTIONAL INPUTS
+    path_resource: Optional[Union[str, Path]] = field(default = ROOT_DIR / "simulation" / "resource_files")
+    filename: Optional[Union[str, Path]] = field(default = None)
+    use_api: Optional[bool] = field(default = False)
+    resource_data: Optional[dict] = field(default = None)
+
     #: dictionary of heights and filenames to download from Wind Toolkit
-    file_resource_heights: dict
+    file_resource_heights: dict = field(default = None)
+
+    # NOT INPUTS
+    allowed_hub_height_meters: List[int] = [10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 250, 300, 500, 1000]
     
-    def __init__(
-        self, 
-        lat: float, 
-        lon: float, 
-        year: int, #must be between 2018 and 2020
-        wind_turbine_hub_ht: float, 
-        path_resource: Union[str, Path] = ROOT_DIR / "simulation" / "resource_files", 
-        filepath: Union[str, Path] ="", 
-        use_api: bool = False,
-        resource_data: Optional[dict] = None,
-    ):
-        super().__init__(lat, lon, year)   
+
+    def __attrs_post_init__(self):
+        super().__init__(self.lat, self.lon, self.year)   
 
         # if resource_data is input as a dictionary then set_data   
-        if isinstance(resource_data,dict):
-            self.data = resource_data
-            self.hub_height_meters = wind_turbine_hub_ht
+        if isinstance(self.resource_data,dict):
+            self.data = self.resource_data
             return 
         
         # if resource_data is not provided, download or load resource data
-        if isinstance(path_resource,str):
-            path_resource = Path(path_resource).resolve()
-        if os.path.isdir(path_resource):
-            self.path_resource = path_resource
-        if path_resource.parts[-1]!="wind":
+        if isinstance(self.path_resource,str):
+            self.path_resource = Path(self.path_resource).resolve()
+        if self.path_resource.parts[-1]!="wind":
             self.path_resource = self.path_resource / 'wind'
 
-        self.file_resource_heights = None
-        self.update_height(wind_turbine_hub_ht)
-
-        if filepath == "":
-            self.filename = ""
+        if self.filename is None:
             self.calculate_heights_to_download()
-        else:
-            self.filename = filepath
 
         self.check_download_dir()
 
-        if not os.path.isfile(self.filename) or use_api:
+        if not os.path.isfile(self.filename) or self.use_api:
             self.download_resource()
         
         self.format_data()
