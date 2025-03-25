@@ -11,7 +11,7 @@ solar and storage.
 
 ## Software requirements
 
-- Python version 3.10, and 3.11 only (PySAM 4.2 is incompatible with 3.12)
+- Python version 3.10, and 3.11 only
 
 ## Installing from Package Repositories
 
