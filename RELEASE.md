@@ -1,5 +1,8 @@
 # Release Notes
 
+## Unreleased, TBD
+* Added ability to download wind resource data from WTK-LED for Alaska
+
 ## Version 3.2.0, March 21, 2025
 
 * Updates related to PySAM:
