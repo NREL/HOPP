@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import csv, os, re, copy
 from PySAM.ResourceTools import SRW_to_wind_data
-from hopp.utilities.utilities import load_dill_pickle
 
 def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     """Converts csv file of wind resource data to dataframe. This function is a slightly modified version of the function in 
@@ -48,26 +47,40 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     df['datetime'] = pd.to_datetime(
         df[['Year', 'Month', 'Day', 'Hour', 'Minute']])
     df.set_index('datetime', inplace=True)
-    df = df.resample('H').first()
+    df = df.resample('h').first()
 
     # --- drop leap days ---
     df = df.loc[~((df.index.month == 2) & (df.index.day == 29))]
 
+    # initialize data info:
+    data_fieldnames = ['temperature', 'direction', 'speed']
+    data_fieldnumbers = [0, 2, 3]
+
+    # make sure data fieldnames are lower-case
+    old_colnames = [c for c in df.columns.to_list() if "(" in c]
+    new_colnames = [c.split("(")[0].lower() + "(" + c.split("(")[1] for c in old_colnames]
+    df = df.rename(columns = dict(zip(old_colnames,new_colnames)))
+    
     # --- convert K to celsius ---
     df['temperature'] = df['air temperature at {}m (C)'.format(resource_height)]
-
+    
     # --- convert PA to atm ---
-    df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
-
+    if 'air pressure at 100m (Pa)' in new_colnames:
+        df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
+        data_fieldnames += ['pressure']
+        data_fieldnumbers += [1]
+    # if 'surface air pressure (Pa)' in new_colnames:
+    #     df['pressure'] = df['surface air pressure (Pa)'] / 101325
+    
     # --- rename ---
     rename_dict = {'wind speed at {}m (m/s)'.format(resource_height): 'speed',
                     'wind direction at {}m (deg)'.format(resource_height): 'direction'}
     df.rename(rename_dict, inplace=True, axis='columns')
 
     # --- clean up ---
-    df = df[['temperature', 'pressure', 'direction', 'speed']]
-    df.columns = [0, 1, 2, 3]
-    assert df.shape == (8760, 4)
+    df = df[data_fieldnames]
+    df.columns = data_fieldnumbers
+    assert df.shape == (8760, len(data_fieldnumbers))
 
     out = pd.concat([header, df], axis='rows')
     out.reset_index(drop=True, inplace=True)
@@ -184,6 +197,7 @@ def combine_wind_resource_data(wind_resource_data):
     height_field = [f"{f}-{h}m" for f,h in zip(fields,heights)]
     if any(height_field.count(ff)>1 for ff in height_field):
         duplicate_data_entries = [ff for ff in height_field if height_field.count(ff)>1]
+        duplicate_data_entries = list(set(duplicate_data_entries))
         for drop_data_entry in duplicate_data_entries:
             if drop_data_entry in height_field:
                 i_drop = height_field.index(drop_data_entry)
@@ -233,22 +247,6 @@ def combine_SRW_to_wind_data(file_resource_heights):
     combined_data = combine_wind_resource_data(wind_resource_data)
     return combined_data
 
-def combine_pickle_to_wind_data(file_resource_heights):
-    """Combine wind resource data stored in .pkl files for multiple resource heights.
-
-    Args:
-        file_resource_heights (dict): Keys are height in meters, values are corresponding filepaths.
-            example {40: path_to_file, 60: path_to_file2}
-
-    Returns:
-        dict: wind resource data dictionary of combined resource data
-    """
-    wind_resource_data = []
-    for wind_filepath in file_resource_heights.values():
-        d = load_dill_pickle(wind_filepath)
-        wind_resource_data.append(d)
-    combined_data = combine_wind_resource_data(wind_resource_data)
-    return combined_data
 
 def combine_wind_files(wind_resource_filepath,resource_heights):
     """_summary_
@@ -272,7 +270,6 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
     
     is_srw = any(f.split(".")[-1]=="srw" for f in file_resource_heights.values())
     is_csv = any(f.split(".")[-1]=="csv" for f in file_resource_heights.values())
-    is_pickle = any(f.split(".")[-1]=="pkl" for f in file_resource_heights.values())
     
     if is_srw:
         combined_data = combine_SRW_to_wind_data(file_resource_heights)
@@ -280,6 +277,4 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
     if is_csv:
         combined_data = combine_CSV_to_wind_data(file_resource_heights)
         return combined_data
-    if is_pickle:
-        combined_data = combine_pickle_to_wind_data(file_resource_heights)
-        return combined_data
+    
