@@ -41,7 +41,7 @@ class Floris(BaseClass):
     
     #results
     gen: list[float] = field(init = False)
-    annual_energy: float = field(init = False)
+    annual_energy: float = field(default=0.)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
@@ -98,15 +98,15 @@ class Floris(BaseClass):
         
 
     def initialize_from_floris(self, floris_config):
-        """Initialize wind turbine parmeters and set in floris_config.
+        """Initialize wind turbine parameters and set in floris_config.
 
         Args:
             floris_config (dict): floris input dictionary
 
         Raises:
-            ValueError: if rotor_diameter in WindConfig doesnt match rotor diameter in floris_config
-            ValueError: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
-            ValueError: if hub_height in WindConfig doesnt match hub-height in floris_config
+            ValueError: if rotor_diameter in WindConfig doesn't match rotor diameter in floris_config
+            ValueError: if turbine_rating_kw in WindConfig doesn't match turbine rating from power-curve
+            ValueError: if hub_height in WindConfig doesn't match hub-height in floris_config
 
 
         Returns:
