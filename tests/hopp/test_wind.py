@@ -212,7 +212,7 @@ def test_changing_system_capacity_floris(site):
 
 def test_alaska_wind_pysam():
     site_data = {
-        "lat": 66.86,
+        "lat": 66.68,
         "lon": -162.5,
         "year": 2019,
         "site_details":
@@ -230,20 +230,19 @@ def test_alaska_wind_pysam():
         "wind_resource_file": alaska_wind_resource_file,
         "wind_resource_region": "ak",
         "wind": True,
-        "solar":False,
+        "solar": False,
         "hub_height": 90.0,
     }
     site = SiteInfo.from_dict(site_info)
     config = WindConfig.from_dict({'num_turbines': 5, "turbine_rating_kw": 2000})
     model = WindPlant(site, config=config)
     model._system_model.execute(1)
-    print("done simulating")
-    assert model._system_model.Outputs.capacity_factor == approx(40.4,abs = 0.1)
+    assert model._system_model.Outputs.capacity_factor == approx(45.85,abs = 0.1)
 
 
 def test_alaska_wind_floris():
     site_data = {
-        "lat": 66.86,
+        "lat": 66.68,
         "lon": -162.5,
         "year": 2019,
         "site_details":
@@ -279,4 +278,4 @@ def test_alaska_wind_floris():
     config = WindConfig.from_dict(wind_config_input)
     model = WindPlant(site, config=config)
     model._system_model.execute(1)
-    assert model._system_model.annual_energy == approx(69703053,rel=1e-6)
+    assert model._system_model.annual_energy == approx(78514174,rel=1e-6)

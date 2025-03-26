@@ -532,7 +532,7 @@ def test_site_none_shape():
 
 def test_alaska_wind_resource():
     site_data = {
-        "lat": 66.86,
+        "lat": 66.68,
         "lon": -162.5,
         "year": 2019,
         "site_details":
