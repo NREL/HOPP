@@ -41,7 +41,7 @@ class Floris(BaseClass):
     
     #results
     gen: list[float] = field(init = False)
-    annual_energy: float = field(default=0.)
+    annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
@@ -281,7 +281,6 @@ class Floris(BaseClass):
         """
         config = {
             'system_capacity': self.system_capacity,
-            'annual_energy': self.annual_energy,
         }
         return config
     
