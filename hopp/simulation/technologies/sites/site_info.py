@@ -148,7 +148,7 @@ class SiteInfo(BaseClass):
     vertices: NDArrayFloat = field(init=False)
     polygon: Union[Polygon, BaseGeometry] = field(init=False)
     solar_resource: Optional[Union[SolarResource,HPCSolarData]] = field(default=None)
-    wind_resource: Optional[Union[WindResource,HPCWindData]] = field(default=None)
+    wind_resource: Optional[Union[WindResource,HPCWindData,AlaskaWindData]] = field(default=None)
     wave_resource: Optional[WaveResource] = field(init=False, default=None)
     tidal_resource: Optional[TidalResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
@@ -391,8 +391,8 @@ class SiteInfo(BaseClass):
                 return wind_resource
             if self.wind_resource_region == "ak":
                 wind_resource = AlaskaWindData(lat=wind_lat, lon=wind_lon, year=wind_year, hub_height_meters=self.hub_height,
-                                                    path_resource=self.path_resource, filepath=self.wind_resource_file)
-
+                                                    path_resource=self.path_resource, filename=self.wind_resource_file)
+                return wind_resource
         if isinstance(self.wind_resource,dict):
             if self.wind_resource_region == "conus":
                 wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)

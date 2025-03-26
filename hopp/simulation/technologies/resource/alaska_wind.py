@@ -88,7 +88,7 @@ class AlaskaWindData(Resource):
 
         for h in heights:
             h_int = int(h)
-            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.srw')
+            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.csv')
             file_resource_full += f'_{h_int}m'
         file_resource_full += ".csv"
 
