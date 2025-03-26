@@ -16,25 +16,30 @@ AK_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-alaska-v1
 
 @define
 class AlaskaWindData(Resource):
-    
+    #: latitude corresponding to location for wind resource data
     lat: float = field()
+    #: longitude corresponding to location for wind resource data
     lon: float = field()
+    #: year for resource data. must be between 2018 and 2020
     year: int = field(validator=range_val(2018, 2020))
 
     #: the hub-height for wind resource data (meters)
     hub_height_meters: float = field(validator=range_val(10.0, 1000.0))
     
-    # OPTIONAL INPUTS
+    #: filepath to resource_files directory. Defaults to ROOT_DIR/"simulation"/"resource_files".
     path_resource: Optional[Union[str, Path]] = field(default = ROOT_DIR / "simulation" / "resource_files")
+    #: file path of resource file to load or download
     filename: Optional[Union[str, Path]] = field(default = None)
+    #: Make an API call even if there's an existing file. Defaults to False.
     use_api: Optional[bool] = field(default = False)
+    #: dictionary of preloaded and formatted wind resource data. Defaults to None.
     resource_data: Optional[dict] = field(default = None)
 
     #: dictionary of heights and filenames to download from Wind Toolkit
     file_resource_heights: dict = field(default = None)
 
-    # NOT INPUTS
-    allowed_hub_height_meters: List[int] = [10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 250, 300, 500, 1000]
+    #: list of heights that wind resource data is available for downloading (meters)
+    allowed_hub_height_meters: list[int] = [10, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 250, 300, 500, 1000]
     
 
     def __attrs_post_init__(self):
@@ -96,6 +101,12 @@ class AlaskaWindData(Resource):
         self.filename = self.path_resource / file_resource_full
 
     def update_height(self, hub_height_meters):
+        """Update hub-height and corresponding attributes. 
+        Also updates ``file_resource_heights`` and ``filename``.
+
+        Args:
+            hub_height_meters (float): hub-height for wind resource data (meters)
+        """
         self.hub_height_meters = hub_height_meters
         self.calculate_heights_to_download()
 
@@ -136,7 +147,7 @@ class AlaskaWindData(Resource):
     @Resource.data.setter
     def data(self, data_info):
         """
-        Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
+        Sets the wind resource data to a dictionary in SAM Wind format.
         """
         if isinstance(data_info,dict):
             self._data = data_info

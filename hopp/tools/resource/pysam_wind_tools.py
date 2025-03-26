@@ -249,14 +249,16 @@ def combine_SRW_to_wind_data(file_resource_heights):
 
 
 def combine_wind_files(wind_resource_filepath,resource_heights):
-    """_summary_
+    """Combine wind resource data from the file or file(s) for wind resource data into a
+    dictionary that is formatted as needed for WindPlant.
 
     Args:
         wind_resource_filepath (list[str] | str): wind resource filenames
-        resource_heights (list[int]): list of resource data hub-heights
+        resource_heights (list[int]): list of resource data hub-heights from the allowed_hub_height_meters 
+            variable that are closest to the wind turbine hub-height.
 
     Returns:
-        dict: _description_
+        dict: wind resource data dictionary of combined resource data
     """
     resource_heights = [int(h) for h in resource_heights]
     
