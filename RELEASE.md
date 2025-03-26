@@ -2,6 +2,7 @@
 
 ## Unreleased, TBD
 * Added ability to download wind resource data from WTK-LED for Alaska
+* Loosened strictness of comparison for wind turbine config checking
 
 ## Version 3.2.0, March 21, 2025
 
