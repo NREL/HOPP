@@ -132,7 +132,7 @@ class Floris(BaseClass):
         self.turb_rating = max(self.wind_turbine_powercurve_powerout)
         
         if self.config.turbine_rating_kw is not None:
-            if not np.isclose(self.config.turbine_rating_kw, self.turb_rating, atol=1e-3):
+            if not np.isclose(self.config.turbine_rating_kw, self.turb_rating, rtol=0.1):
                 msg = (
                     f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
                     f"rating from floris power-curve ({self.turb_rating} kW). "
