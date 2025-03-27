@@ -137,7 +137,7 @@ class Battery(PowerSource):
             financial_model = self.config.fin_model
 
         if financial_model is None:
-            if self.config.system_model_source is "hopp":
+            if self.config.system_model_source == "hopp":
                 raise(ValueError("Must specify an instance of or input dict for the custom financial model when using 'hopp' as the `system_model_source`"))
             # default
             else:
