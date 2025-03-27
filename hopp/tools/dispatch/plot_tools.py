@@ -337,7 +337,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
 
     if plot_price:
         ax2 = ax1.twinx()
-        ax2.tick_params(which='y', labelsize=font_size)
+        ax2.tick_params(axis='y', labelsize=font_size)
         price = [p * hybrid.ppa_price[0] for p in hybrid.site.elec_prices.data[time_slice]]
         ax2.plot(time, price, color=price_color, label='Price')
         ax2.set_ylabel('Grid Price ($/kWh)', fontsize=font_size)
