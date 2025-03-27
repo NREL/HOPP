@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-* Loosened strictness of comparison for wind turbine config checking
+* Loosened strictness of comparison for wind turbine config checking and added tests
 
 ## Version 3.2.0, March 21, 2025
 
