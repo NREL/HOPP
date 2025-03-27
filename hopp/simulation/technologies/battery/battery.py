@@ -127,7 +127,7 @@ class Battery(PowerSource):
         if self.config.system_model_source == "pysam":
             system_model = PySAMBatteryModel.default(self.config.chemistry)
         elif self.config.system_model_source == "hopp":
-            system_model = LDES.default(self.config, self.site)
+            system_model = LDES(self.config, self.site)
         else:
             raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 
@@ -148,9 +148,10 @@ class Battery(PowerSource):
         super().__init__("Battery", self.site, system_model, financial_model)
 
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
-        self.system_capacity_kw = self.config.system_capacity_kw
-        self.chemistry = self.config.chemistry
+        
+        self.system_capacity_kw = self.config.system_capacity_kw ## failing here on the set
 
+        self.chemistry = self.config.chemistry
         if self.config.system_model_source == "pysam":
             BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
@@ -163,9 +164,6 @@ class Battery(PowerSource):
             self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
 
         else:
-            self._system_model.sizing(self.config.system_capacity_kw,
-                                      self.config.system_capacity_kwh,
-                                      )
             self.system_capacity_kw = self._system_model.system_capacity_kw
             self.system_capacity_kwh = self._system_model.system_capacity_kwh
 
@@ -242,7 +240,7 @@ class Battery(PowerSource):
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.value("system_capacity", size_kw)
+        self._financial_model.system_capacity = size_kw
         self._system_capacity_kw = size_kw
 
     @property
@@ -354,7 +352,7 @@ class Battery(PowerSource):
             else:
                 index_time_step = None
 
-            self.simulate_power(time_step=index_time_step)
+            self.simulate_power(time_step=index_time_step) #, cycles=self.dispatch.lifecycles[t])
 
         # Store Dispatch model values
         if sim_start_time is not None:
@@ -370,7 +368,7 @@ class Battery(PowerSource):
 
         # logger.info("battery.outputs at start time {}".format(sim_start_time, self.outputs))
 
-    def simulate_power(self, time_step=None):
+    def simulate_power(self, time_step=None):#, cycles=0):
         """
         Runs battery simulate and stores values if time step is provided
 
@@ -379,7 +377,10 @@ class Battery(PowerSource):
         """
         if not self._system_model:
             return
-        self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
+        if self.config.system_model_source == "pysam":
+            self._system_model.execute(0)   # TODO mimic this function in LDES model - needs to update SOC? - needs 
+        else:
+            self._system_model.execute(0)
 
         if time_step is not None:
             self.update_battery_stored_values(time_step)
