@@ -18,6 +18,7 @@ atr_electricity_consume: 3.561733081975984
 battery_LFP_EI: 20
 bio_capex_EI: 0.8023917580032691
 coal_capex_EI: 0.7870905519183622
+coke_supply_EI: 0.39783475314651884
 desal_H2O_supply_EI: 0.010889
 gas_capex_EI: 0.41713301095483096
 geothermal_binary_capex_EI: 20.43919040434449
