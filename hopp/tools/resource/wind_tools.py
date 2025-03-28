@@ -102,7 +102,8 @@ def parse_resource_data(wind_resource):
             hh2 = [h for h in height_lb if np.abs(h-wind_resource.hub_height_meters)==min_diff_lb][0]
 
     else:
-        hh1, hh2 = np.unique(wind_resource.data['heights'])
+        speed_heights = [wind_resource.data['heights'][ii] for ii in idx_ws]
+        hh1, hh2 = np.unique(speed_heights)
     
     if hh1 == wind_resource.hub_height_meters:
         idx_ws1 = [i for i in idx_ws if wind_resource.data['heights'][i] == hh1][0]
@@ -172,7 +173,8 @@ def weighted_parse_resource_data(wind_resource):
             hh2 = [h for h in height_lb if np.abs(h-wind_resource.hub_height_meters)==min_diff_lb][0]
 
     else:
-        hh1, hh2 = np.unique(wind_resource.data['heights'])
+        speed_heights = [wind_resource.data['heights'][ii] for ii in idx_ws]
+        hh1, hh2 = np.unique(speed_heights)
 
     # Weights corresponding to difference of resource height and hub-height
     weight1 = np.abs(hh1 - wind_resource.hub_height_meters)
