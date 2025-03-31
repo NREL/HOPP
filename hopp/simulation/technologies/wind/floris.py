@@ -98,15 +98,15 @@ class Floris(BaseClass):
         
 
     def initialize_from_floris(self, floris_config):
-        """Initialize wind turbine parmeters and set in floris_config.
+        """Initialize wind turbine parameters and set in floris_config.
 
         Args:
             floris_config (dict): floris input dictionary
 
         Raises:
-            ValueError: if rotor_diameter in WindConfig doesnt match rotor diameter in floris_config
-            ValueError: if turbine_rating_kw in WindConfig doesnt match turbine rating from power-curve
-            ValueError: if hub_height in WindConfig doesnt match hub-height in floris_config
+            ValueError: if rotor_diameter in WindConfig doesn't match rotor diameter in floris_config
+            ValueError: if turbine_rating_kw in WindConfig doesn't match turbine rating from power-curve
+            ValueError: if hub_height in WindConfig doesn't match hub-height in floris_config
 
 
         Returns:
@@ -132,7 +132,7 @@ class Floris(BaseClass):
         self.turb_rating = max(self.wind_turbine_powercurve_powerout)
         
         if self.config.turbine_rating_kw is not None:
-            if self.config.turbine_rating_kw != self.turb_rating:
+            if not np.isclose(self.config.turbine_rating_kw, self.turb_rating, rtol=0.1):
                 msg = (
                     f"Input turbine rating ({self.config.turbine_rating_kw} kW) does not match "
                     f"rating from floris power-curve ({self.turb_rating} kW). "
@@ -141,7 +141,7 @@ class Floris(BaseClass):
                 )
                 raise ValueError(msg)
         if self.config.rotor_diameter is not None:
-            if self.config.rotor_diameter != self.wind_turbine_rotor_diameter:
+            if not np.isclose(self.config.rotor_diameter, self.wind_turbine_rotor_diameter, atol=1e-4):
                 msg = (
                     f"Input rotor diameter ({self.config.rotor_diameter}) does not match "
                     f"rotor diameter from floris config ({self.wind_turbine_rotor_diameter}). "
@@ -150,7 +150,7 @@ class Floris(BaseClass):
                 )
                 raise ValueError(msg)
         if self.config.hub_height is not None:
-            if self.config.hub_height != hub_height:
+            if not np.isclose(self.config.hub_height, hub_height, atol=1e-4):
                 msg = (
                     f"Input hub-height ({self.config.hub_height}) does not match "
                     f"hub-height from floris config ({hub_height}). "
@@ -159,6 +159,7 @@ class Floris(BaseClass):
                     f"or correct the value to {hub_height}."
                 )
                 raise ValueError(msg)
+
         if hub_height != self.site.wind_resource.hub_height_meters:
             valid_min_height = hub_height >= min(self.site.wind_resource.data["heights"])
             valid_max_height = hub_height <= max(self.site.wind_resource.data["heights"])
@@ -280,7 +281,6 @@ class Floris(BaseClass):
         """
         config = {
             'system_capacity': self.system_capacity,
-            'annual_energy': self.annual_energy,
         }
         return config
     
