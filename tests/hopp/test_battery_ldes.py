@@ -99,6 +99,48 @@ def test_battery_initialization(site, subtests):
 
         assert battery._financial_model == fin_model
 
+def test_battery_initialization_with_replacement_schedule(site, subtests):
+
+    config_data["fin_model"]["battery_system"]["batt_replacement_option"] = 2
+    length = 29
+    refurb = [0]*length
+    n = 10
+    for i in range(n-1, length, n):
+        refurb[i] = 0.5
+    config_data["fin_model"]["battery_system"]["batt_replacement_schedule_percent"] = refurb
+
+    config_data["fin_model"]["name"] = "LDES"
+
+    config = BatteryConfig.from_dict(config_data)
+    battery = Battery(site, config=config)
+
+    with subtests.test("battery attribute not None _financial_model"):
+        assert battery._financial_model is not None
+    with subtests.test("battery attribute not None _system_model"):
+        assert battery._system_model is not None
+    with subtests.test("battery attribute not None outputs"):
+        assert battery.outputs is not None
+    with subtests.test("battery attribute chemistry"):
+        assert battery.chemistry == "LDES"
+    with subtests.test("battery attribute system_capacity_kw"):
+        assert battery.system_capacity_kw == config.system_capacity_kw
+    with subtests.test("battery attribute system_capacity_kwh"):
+        assert battery.system_capacity_kwh == config.system_capacity_kwh
+    with subtests.test("financial model attribute batt_replacement_option"):
+        assert battery._financial_model.BatterySystem.batt_replacement_option == 2
+    with subtests.test("financial model attribute batt_replacement_option"):
+        assert battery._financial_model.BatterySystem.batt_replacement_schedule_percent == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    with subtests.test("with custom financial model"):
+        data = deepcopy(config_data)
+        fin_model = MagicMock() # duck type a financial model for simplicity
+        data["fin_model"] = fin_model
+
+        config = BatteryConfig.from_dict(data)
+        battery = Battery(site, config=config)
+
+        assert battery._financial_model == fin_model
+
     # with subtests.test("battery mass"):
     #     assert battery.system_mass == pytest.approx(304454.0,1e-3) #TODO: verify system mass. Current value is just based on output at writing.
 
