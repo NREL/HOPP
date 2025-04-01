@@ -200,10 +200,10 @@ class LDES(PowerSource):
                 control_power = np.sign(control_power)*self.system_capacity_kw
 
             # check energy capacity constraint
-            if control_power*dt_hr + prev_soc_dec*self.params.nominal_energy > self.params.nominal_energy*max_soc_dec:
-                control_power = (max_soc_dec - prev_soc_dec)*self.params.nominal_energy/dt_hr
-                
-            elif control_power*dt_hr + prev_soc_dec*self.params.nominal_energy < self.params.nominal_energy*min_soc_dec:
+            if -(control_power*dt_hr) + prev_soc_dec*self.params.nominal_energy > self.params.nominal_energy*max_soc_dec:
+                control_power = -(max_soc_dec - prev_soc_dec)*self.params.nominal_energy/dt_hr
+
+            elif -(control_power*dt_hr) + prev_soc_dec*self.params.nominal_energy < self.params.nominal_energy*min_soc_dec:
                 control_power = (prev_soc_dec - min_soc_dec)*self.params.nominal_energy/dt_hr
                 
         else:
@@ -212,8 +212,7 @@ class LDES(PowerSource):
         # update state
         self.state.P = control_power
         self.state.gen = self.state.P
-        self.state.SOC += control_power*dt_hr/self.system_capacity_kwh
-
+        self.state.SOC += (-control_power*dt_hr/self.system_capacity_kwh ) * 100
 
         # need to set
         # ['I', 'P', 'Q', 'SOC', 'T_batt', 'gen', 'n_cycles']
@@ -364,6 +363,15 @@ class LDES(PowerSource):
         self.financial_model.value("batt_computed_bank_capacity", size_kwh)
         self.system_capacity_kwh = size_kwh
 
+    @property
+    def n_cycles(self) -> float:
+        """ Battery cycle count """
+        return self._n_cycles
+
+    @n_cycles.setter
+    def n_cycles(self, lifecycles: float):
+        self.dispatch.value("lifecycles", lifecycles)
+        self.n_cycles = lifecycles
     # @ property
     # def footprint_area() -> float:
     #     return None
