@@ -244,7 +244,7 @@ class Battery(PowerSource):
 
     @system_capacity_kw.setter
     def system_capacity_kw(self, size_kw: float):
-        self._financial_model.system_capacity = size_kw
+        self._financial_model.value("system_capacity", size_kw)
         self._system_capacity_kw = size_kw
 
     @property
@@ -405,13 +405,15 @@ class Battery(PowerSource):
             if self.config.system_model_source == "pysam":
                 if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
                     getattr(self.outputs, attr)[time_step] = self.value(attr)
+                elif attr == 'gen':
+                    getattr(self.outputs, attr)[time_step] = self.value('P')
             else:
                 if hasattr(self._system_model.state, attr):
                     getattr(self.outputs, attr)[time_step] = self.value(attr)
                     if attr == 'n_cycles' and self.dispatch.options.include_lifecycle_count:
                         getattr(self.outputs, attr)[time_step] = math.floor(self.dispatch.lifecycles[0])
-            if attr == 'gen':
-                getattr(self.outputs, attr)[time_step] = self.value('P')
+                elif attr == 'gen':
+                    getattr(self.outputs, attr)[time_step] = self.value('P')
 
     def validate_replacement_inputs(self, project_life):
         """
