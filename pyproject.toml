@@ -16,7 +16,7 @@ dependencies = [
     "Pillow",
     "Pyomo>=6.1.2",
     "fastkml<1",
-    "floris>=4.0",
+    "floris==4.3",
     "future",
     "global_land_mask",
     "hybridbosse",
