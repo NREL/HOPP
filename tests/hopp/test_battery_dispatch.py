@@ -104,16 +104,16 @@ def test_batterystateless_dispatch(subtests):
         assert sum(battery.dispatch.discharge_power) == pytest.approx(sum_discharge_power, 1e-2)
 
     battery.simulate_with_dispatch(48, 0)
-    for i in range(24):
+    for i in range(45):
         with subtests.test(f"battery.dispatch.power[{i}]"):
             dispatch_power = battery.dispatch.power[i] * 1e3
-            assert battery.outputs.P[i] == pytest.approx(dispatch_power*1E-3, rel=1E-3)
+            assert battery.outputs.P[i] == pytest.approx(dispatch_power, rel=1E-4)
 
-    for i in range(24):
+    for i in range(45):
         with subtests.test(f"battery.dispatch.soc[{i}]"):
-            dispatch_soc = battery.dispatch.soc[i] * 1e3
+            dispatch_soc = battery.dispatch.soc[i]
             # import pdb; pdb.set_trace()
-            assert battery.outputs.SOC[i] == pytest.approx(dispatch_soc*1E-3, rel=1E-3)
+            assert battery.outputs.SOC[i] == pytest.approx(dispatch_soc, rel=1E-5)
 
     with subtests.test("sum_charge_power"):
         assert battery.outputs.dispatch_lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
