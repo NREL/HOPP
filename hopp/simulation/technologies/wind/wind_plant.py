@@ -76,6 +76,8 @@ class WindConfig(BaseClass):
             Defaults to True.
         override_wind_resource_height (bool): Whether to ignore a possible discrepancy in wind resource height 
             and the turbine hub-height. Defaults to False.
+        override_powercurve_recalculation (bool): If False, recalculates the turbine power-curve for the rotor diameter and turbine rating. 
+            If True, only scales turbine power-curve for turbine rated power. Defaults to False. Only used if ``model_name = 'pysam'``
     """
     # TODO: put `resource_parse_method`, `store_turbine_performance_results`, and `verbose` in "floris_kwargs" dictionary
     num_turbines: int = field(validator=gt_zero)
@@ -120,7 +122,8 @@ class WindConfig(BaseClass):
     store_turbine_performance_results: bool = field(default = False)
     store_floris_config_dict: bool = field(default = True)
     override_wind_resource_height: bool = field(default = False)
-    
+    override_powercurve_recalculation: bool = field(default = False)
+
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
             raise ValueError("Timestep (Tuple[int, int]) required for floris")
@@ -217,58 +220,75 @@ class WindPlant(PowerSource):
             
         if self.config.model_name=="pysam":
             self.initialize_pysam_wind_turbine()
+    
+    def initalize_pysam_turbine_from_turbine_library(self, turbine_name):
+        """Initialize PySAM wind turbine from a turbine available in the turbine-models library.
+
+        Args:
+            turbine_name (str): name of turbine in turbine-models library.
+
+        Raises:
+            ValueError: rotor diameter from turbine library specs does not match hub-height in WindConfig.
+            ValueError: hub-height from turbine library specs does not match hub-height in WindConfig.
+        """
+        valid_name = check_turbine_library_for_turbine(turbine_name,turbine_group=self.config.turbine_group)
+        if not valid_name:
+            print_turbine_name_list()
+            msg = (
+                f"Turbine name {turbine_name} was not found the turbine-models library. "
+                "Please try an available name."
+            )
+            ValueError(msg)
         
+        turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
+        self._system_model.Turbine.assign(turbine_dict)
+        self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
+        self.turb_rating = np.round(max(turbine_dict["wind_turbine_powercurve_powerout"]), decimals = 3)
+
+        if self.config.rotor_diameter is not None:
+            if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
+                msg = (
+                    f"Input rotor diameter ({self.config.rotor_diameter}) does not match does not match rotor diameter "
+                    f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})."
+                    f"Please correct the value for rotor_diameter in the hopp config input "
+                    f"to {self._system_model.Turbine.wind_turbine_rotor_diameter}."
+                )
+                raise ValueError(msg)
+
+        if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+            msg = (
+                f"Input hub-height ({self.config.hub_height}) does not match hub-height "
+                f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
+                f"Please correct the value for hub_height in the hopp config input "
+                f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
+            )
+
+            raise ValueError(msg)
+
     def initialize_pysam_wind_turbine(self):
         """Initialize wind turbine parameters for PySAM simulation.
 
-        Raises:
-            ValueError: if invalid turbine name is provided. Print list of valid turbine names before error is raised. 
-            ValueError: discrepancy in rotor_diameter value
-            ValueError: discrepancy in hub-height value
         """
 
-        if self.config.rotor_diameter is not None:
-            self.rotor_diameter = self.config.rotor_diameter
         
         if self.config.turbine_name is not None:
-            valid_name = check_turbine_library_for_turbine(self.config.turbine_name,turbine_group=self.config.turbine_group)
-            if not valid_name:
-                print_turbine_name_list()
-                msg = (
-                    f"Turbine name {self.config.turbine_name} was not found the turbine-models library. "
-                    "Please try an available name."
-                )
-                ValueError(msg)
-            else:
-                turbine_name = self.config.turbine_name
-            turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
-            self._system_model.Turbine.assign(turbine_dict)
-            self.rotor_diameter = turbine_dict["wind_turbine_rotor_diameter"]
-            self.turb_rating = np.round(max(turbine_dict["wind_turbine_powercurve_powerout"]), decimals = 3)
-
+            self.initalize_pysam_turbine_from_turbine_library(self.config.turbine_name)
+        else:
             if self.config.rotor_diameter is not None:
-                if self.config.rotor_diameter != self._system_model.Turbine.wind_turbine_rotor_diameter:
-                    msg = (
-                        f"Input rotor diameter ({self.config.rotor_diameter}) does not match does not match rotor diameter "
-                        f"for turbine ({self._system_model.Turbine.wind_turbine_rotor_diameter})."
-                        f"Please correct the value for rotor_diameter in the hopp config input "
-                        f"to {self._system_model.Turbine.wind_turbine_rotor_diameter}."
-                    )
-                    raise ValueError(msg)
-        
-        if self.config.hub_height is not None:
-            if self.config.turbine_name is None and self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+                self.rotor_diameter = self.config.rotor_diameter # this will update the layout
+            if self.config.hub_height is not None:
                 self._system_model.value("wind_turbine_hub_ht", self.config.hub_height)
-            if self.config.turbine_name is not None and self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+            if self.config.turbine_rating_kw is not None:
+                self.turb_rating = self.config.turbine_rating_kw
+            if not self.config.override_powercurve_recalculation:
+                self.modify_powercurve(self.rotor_diameter, self.turb_rating)
                 msg = (
-                    f"Input hub-height ({self.config.hub_height}) does not match hub-height "
-                    f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
-                    f"Please correct the value for hub_height in the hopp config input "
-                    f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
+                    f"updating wind turbine power-curve for rotor diameter {self.rotor_diameter}m "
+                    f"and rating {self.turb_rating} kW"
                 )
+                logger.info(msg)
 
-                raise ValueError(msg)
-        
+        # check wind resource height against turbine hub-height
         hub_height = self._system_model.Turbine.wind_turbine_hub_ht
         if hub_height != self.site.wind_resource.hub_height_meters:
             if hub_height >= min(self.site.wind_resource.data["heights"]) and hub_height<=max(self.site.wind_resource.data["heights"]):
@@ -287,14 +307,11 @@ class WindPlant(PowerSource):
                     wind_resource = self.site.initialize_wind_resource(data)
                     self.site.wind_resource = wind_resource
                     self._system_model.value("wind_resource_data", self.site.wind_resource.data)
-
+        
+        # add losses for air density if specified and site elevation is input
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
             air_dens_losses = calculate_air_density_losses(self.site.elev)
             self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
-        
-        if self.config.rotor_diameter is not None and self.config.turbine_rating_kw is not None:
-            if self.config.turbine_name is None:
-                self.modify_powercurve(self.config.rotor_diameter, self.config.turbine_rating_kw)
 
     @property
     def wake_model(self) -> str:
