@@ -38,6 +38,7 @@ class Floris(BaseClass):
     wind_farm_xCoordinates: list[float] = field(init = False)
     wind_farm_yCoordinates: list[float] = field(init = False)
     system_capacity: float = field(init = False)
+    floris_config_input: dict = field(init = False)
     
     #results
     gen: list[float] = field(init = False)
@@ -77,7 +78,8 @@ class Floris(BaseClass):
             floris_config["flow_field"].update({"air_density":rho})
         
         floris_config = self.initialize_from_floris(floris_config)
-        
+        if self.config.store_floris_config_dict:
+            self.floris_config_input = floris_config
         self.fi = FlorisModel(floris_config)
         self._timestep = self.config.timestep
         self._operational_losses = self.config.operational_losses
@@ -149,7 +151,7 @@ class Floris(BaseClass):
                     f"or correct the value to {self.wind_turbine_rotor_diameter}."
                 )
                 raise ValueError(msg)
-        if self.config.hub_height is not None:
+        if self.config.hub_height is not None and not self.config.override_wind_resource_height:
             if not np.isclose(self.config.hub_height, hub_height, atol=1e-4):
                 msg = (
                     f"Input hub-height ({self.config.hub_height}) does not match "
@@ -168,15 +170,16 @@ class Floris(BaseClass):
                 self.site.hub_height = float(hub_height)
                 logger.info(f"Updating wind resource hub-height to {hub_height}m")
             else:  
-                logger.warning(f"Updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
-                self.site.hub_height = hub_height  
-                data = {
-                    "lat": self.site.wind_resource.latitude,
-                    "lon": self.site.wind_resource.longitude,
-                    "year": self.site.wind_resource.year,
-                }
-                wind_resource = self.site.initialize_wind_resource(data)
-                self.site.wind_resource = wind_resource
+                if not self.config.override_wind_resource_height:
+                    logger.warning(f"Updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                    self.site.hub_height = hub_height  
+                    data = {
+                        "lat": self.site.wind_resource.latitude,
+                        "lon": self.site.wind_resource.longitude,
+                        "year": self.site.wind_resource.year,
+                    }
+                    wind_resource = self.site.initialize_wind_resource(data)
+                    self.site.wind_resource = wind_resource
         
        
         return floris_config

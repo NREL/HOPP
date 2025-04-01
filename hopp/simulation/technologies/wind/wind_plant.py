@@ -72,6 +72,10 @@ class WindConfig(BaseClass):
         verbose (bool): if True, print simulation progress statements. Defaults to True. 
         store_turbine_performance_results (bool): If running FLORIS, whether to save speed and power timeseries
             for each turbine in the farm. Defaults to False. 
+        store_floris_config_dict (bool): If running FLORIS, whether to store the input dictionary as an attribute. 
+            Defaults to True.
+        override_wind_resource_height (bool): Whether to ignore a possible discrepancy in wind resource height 
+            and the turbine hub-height. Defaults to False.
     """
     # TODO: put `resource_parse_method`, `store_turbine_performance_results`, and `verbose` in "floris_kwargs" dictionary
     num_turbines: int = field(validator=gt_zero)
@@ -114,7 +118,9 @@ class WindConfig(BaseClass):
     name: str = field(default="WindPlant")
     verbose: bool = field(default = True)
     store_turbine_performance_results: bool = field(default = False)
-
+    store_floris_config_dict: bool = field(default = True)
+    override_wind_resource_height: bool = field(default = False)
+    
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
             raise ValueError("Timestep (Tuple[int, int]) required for floris")
@@ -212,7 +218,6 @@ class WindPlant(PowerSource):
         if self.config.model_name=="pysam":
             self.initialize_pysam_wind_turbine()
         
-        
     def initialize_pysam_wind_turbine(self):
         """Initialize wind turbine parameters for PySAM simulation.
 
@@ -252,7 +257,9 @@ class WindPlant(PowerSource):
                     raise ValueError(msg)
         
         if self.config.hub_height is not None:
-            if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+            if self.config.turbine_name is None and self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+                self._system_model.value("wind_turbine_hub_ht", self.config.hub_height)
+            if self.config.turbine_name is not None and self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
                 msg = (
                     f"Input hub-height ({self.config.hub_height}) does not match hub-height "
                     f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
@@ -269,20 +276,25 @@ class WindPlant(PowerSource):
                 self.site.hub_height = float(hub_height)
                 logger.info(f"updating wind resource hub-height to {hub_height}m")
             else:  
-                logger.warning(f"updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
-                self.site.hub_height = hub_height
-                data = {
-                    "lat": self.site.wind_resource.latitude,
-                    "lon": self.site.wind_resource.longitude,
-                    "year": self.site.wind_resource.year,
-                }
-                wind_resource = self.site.initialize_wind_resource(data)
-                self.site.wind_resource = wind_resource
-                self._system_model.value("wind_resource_data", self.site.wind_resource.data)
+                if not self.config.override_wind_resource_height:
+                    logger.warning(f"updating wind resource hub-height to {hub_height}m and redownloading wind resource data")
+                    self.site.hub_height = hub_height
+                    data = {
+                        "lat": self.site.wind_resource.latitude,
+                        "lon": self.site.wind_resource.longitude,
+                        "year": self.site.wind_resource.year,
+                    }
+                    wind_resource = self.site.initialize_wind_resource(data)
+                    self.site.wind_resource = wind_resource
+                    self._system_model.value("wind_resource_data", self.site.wind_resource.data)
 
         if self.config.adjust_air_density_for_elevation and self.site.elev is not None:
             air_dens_losses = calculate_air_density_losses(self.site.elev)
             self._system_model.Losses.assign({"turb_specific_loss":air_dens_losses})
+        
+        if self.config.rotor_diameter is not None and self.config.turbine_rating_kw is not None:
+            if self.config.turbine_name is None:
+                self.modify_powercurve(self.config.rotor_diameter, self.config.turbine_rating_kw)
 
     @property
     def wake_model(self) -> str:
