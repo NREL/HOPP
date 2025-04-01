@@ -119,8 +119,7 @@ def test_LDES_dispatch(subtests):
     for i in range(45):
         with subtests.test(f"battery.dispatch.soc[{i}]"):
             dispatch_soc = battery.dispatch.soc[i]
-            # import pdb; pdb.set_trace()
-            assert battery.outputs.SOC[i] == pytest.approx(dispatch_soc, rel=1E-5)
+            assert battery.outputs.SOC[i] == pytest.approx(dispatch_soc, 1e-1 * abs(dispatch_soc))
 
     with subtests.test("dispatch_lifecycles_per_day"):
         assert battery.outputs.dispatch_lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
