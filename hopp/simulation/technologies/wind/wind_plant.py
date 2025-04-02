@@ -76,8 +76,8 @@ class WindConfig(BaseClass):
             Defaults to True.
         override_wind_resource_height (bool): Whether to ignore a possible discrepancy in wind resource height 
             and the turbine hub-height. Defaults to False.
-        override_powercurve_recalculation (bool): If False, recalculates the turbine power-curve for the rotor diameter and turbine rating. 
-            If True, only scales turbine power-curve for turbine rated power. Defaults to False. Only used if ``model_name = 'pysam'``
+        recalculate_pysam_powercurve (bool): If True, recalculates the turbine power-curve for the rotor diameter and turbine rating. 
+            If False, only scales turbine power-curve for turbine rated power. Defaults to False. Only used if ``model_name = 'pysam'``
     """
     # TODO: put `resource_parse_method`, `store_turbine_performance_results`, and `verbose` in "floris_kwargs" dictionary
     num_turbines: int = field(validator=gt_zero)
@@ -122,7 +122,7 @@ class WindConfig(BaseClass):
     store_turbine_performance_results: bool = field(default = False)
     store_floris_config_dict: bool = field(default = True)
     override_wind_resource_height: bool = field(default = False)
-    override_powercurve_recalculation: bool = field(default = False)
+    recalculate_pysam_powercurve: bool = field(default = False)
 
     def __attrs_post_init__(self):
         if self.model_name == 'floris' and self.timestep is None:
@@ -254,16 +254,16 @@ class WindPlant(PowerSource):
                     f"to {self._system_model.Turbine.wind_turbine_rotor_diameter}."
                 )
                 raise ValueError(msg)
+        if self.config.hub_height is not None:
+            if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
+                msg = (
+                    f"Input hub-height ({self.config.hub_height}) does not match hub-height "
+                    f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
+                    f"Please correct the value for hub_height in the hopp config input "
+                    f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
+                )
 
-        if self.config.hub_height != self._system_model.Turbine.wind_turbine_hub_ht:
-            msg = (
-                f"Input hub-height ({self.config.hub_height}) does not match hub-height "
-                f"for turbine ({self._system_model.Turbine.wind_turbine_hub_ht}). "
-                f"Please correct the value for hub_height in the hopp config input "
-                f"to {self._system_model.Turbine.wind_turbine_hub_ht}."
-            )
-
-            raise ValueError(msg)
+                raise ValueError(msg)
 
     def initialize_pysam_wind_turbine(self):
         """Initialize wind turbine parameters for PySAM simulation.
@@ -280,7 +280,7 @@ class WindPlant(PowerSource):
                 self._system_model.value("wind_turbine_hub_ht", self.config.hub_height)
             if self.config.turbine_rating_kw is not None:
                 self.turb_rating = self.config.turbine_rating_kw
-            if not self.config.override_powercurve_recalculation:
+            if self.config.recalculate_pysam_powercurve:
                 self.modify_powercurve(self.rotor_diameter, self.turb_rating)
                 msg = (
                     f"updating wind turbine power-curve for rotor diameter {self.rotor_diameter}m "
