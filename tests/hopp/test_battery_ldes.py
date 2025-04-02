@@ -103,7 +103,7 @@ def test_battery_initialization_with_replacement_schedule(site, subtests):
 
     config_data_local = deepcopy(config_data)
     config_data_local["fin_model"]["battery_system"]["batt_replacement_option"] = 2
-    length = 29
+    length = 25
     refurb = [0]*length
     n = 10
     for i in range(n-1, length, n):
@@ -130,7 +130,7 @@ def test_battery_initialization_with_replacement_schedule(site, subtests):
     with subtests.test("financial model attribute batt_replacement_option"):
         assert battery._financial_model.BatterySystem.batt_replacement_option == 2
     with subtests.test("financial model attribute batt_replacement_option"):
-        assert battery._financial_model.BatterySystem.batt_replacement_schedule_percent == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        assert battery._financial_model.BatterySystem.batt_replacement_schedule_percent == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0]
 
     with subtests.test("with custom financial model"):
         data = deepcopy(config_data)

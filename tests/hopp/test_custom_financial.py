@@ -531,7 +531,8 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
     lcoe_expected_wave = 35.719370712383856
-    lcoe_expected_battery = 13.333128855903514
+    # lcoe_expected_battery = 13.333128855903514
+    lcoe_expected_battery = 18.018052581528185
     lcoe_expected_hybrid = 11.337551789830751
 
     total_installed_cost_expected = 93959704.39847898
@@ -541,6 +542,20 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
     wind_kw = 10000
     batt_kw = 5000
     wave_kw = 2860
+
+    fin_config_local = copy.deepcopy(DEFAULT_FIN_CONFIG)
+
+    fin_config_local["battery_system"]["batt_replacement_option"] = 2
+
+    length = 25
+    refurb = [0]*length
+    batt_bank_replacement = [0]*length
+    n = 10
+    for i in range(n-1, length, n):
+        refurb[i] = 0.5
+        batt_bank_replacement[i] = 1.0
+    fin_config_local["battery_system"]["batt_replacement_schedule_percent"] = refurb
+    fin_config_local["battery_system"]["batt_bank_replacement"] = batt_bank_replacement
 
     power_sources = {
         'pv': {
@@ -578,7 +593,7 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
         'battery': {
             'system_capacity_kwh': batt_kw * 4,
             'system_capacity_kw': batt_kw,
-            'fin_model': DEFAULT_FIN_CONFIG_LOCAL,
+            'fin_model': fin_config_local,
         },
         'grid': {
             'interconnect_kw': interconnect_kw,
@@ -591,8 +606,12 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
             "wind": {
                 "skip_financial": False # test that setting this to false allows financial calculations to run
             }
-        }
+        },
+        # "dispatch_options": {
+        #     "battery_dispatch": "load_following_heuristic",
+        # } 
     }
+
     hopp_config = {
         "site": site_internal,
         "technologies": power_sources,
@@ -662,7 +681,7 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
         assert lcoes.wind == approx(lcoe_expected_wind, 1e-3)
     with subtests.test("lcoe wave"):
         assert lcoes.wave == approx(lcoe_expected_wave, 1e-3)
-    with subtests.test("lcoe battery"): ############## left commented since I'm not sure calculating LCOE for battery this way makes sense
+    with subtests.test("lcoe battery"): 
         assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
     with subtests.test("lcoe hybrid"):
         assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
