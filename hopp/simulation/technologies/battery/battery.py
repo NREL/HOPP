@@ -431,7 +431,7 @@ class Battery(PowerSource):
         if self._financial_model.value('batt_replacement_option') == 2:
             if len(self._financial_model.value('batt_replacement_schedule_percent')) != project_life:
                 raise ValueError(f"Error in Battery model: `batt_replacement_schedule_percent` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_replacement_schedule_percent'))}")
-            if len(self._financial_model.value('batt_bank_replacement')) != project_life + 1:
+            if (len(self._financial_model.value('batt_bank_replacement')) != project_life + 1) and (self.config.system_model_source == "pysam"):
                 if len(self._financial_model.value('batt_bank_replacement')) == project_life:
                     # likely an input mistake: add a zero for financial year 0 
                     self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
