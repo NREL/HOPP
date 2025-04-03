@@ -544,7 +544,7 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
 
     fin_config_local = copy.deepcopy(DEFAULT_FIN_CONFIG)
 
-    # fin_config_local["battery_system"]["batt_replacement_option"] = 2
+    fin_config_local["battery_system"]["batt_replacement_option"] = 2
 
     length = 25
     refurb = [0]*length
@@ -553,7 +553,8 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
     for i in range(n-1, length, n):
         refurb[i] = 0.5
         batt_bank_replacement[i] = 10.0
-    # fin_config_local["battery_system"]["batt_replacement_schedule_percent"] = refurb
+
+    fin_config_local["battery_system"]["batt_replacement_schedule_percent"] = refurb
     # fin_config_local["battery_system"]["batt_bank_replacement"] = batt_bank_replacement
 
     power_sources = {
@@ -709,8 +710,8 @@ def test_hybrid_simple_pv_with_wind_wave_battery_replacement_schedule(subtests):
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
     lcoe_expected_wave = 35.719370712383856
-    # lcoe_expected_battery = 13.333128855903514
-    lcoe_expected_battery = 18.018052581528185
+    lcoe_expected_battery = 13.333128855903514
+    # lcoe_expected_battery = 18.018052581528185
     lcoe_expected_hybrid = 11.337551789830751
 
     total_installed_cost_expected = 93959704.39847898

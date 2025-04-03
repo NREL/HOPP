@@ -426,7 +426,7 @@ class CustomFinancialModel():
                 depr_period=self.value('depreciation_period'),
                 refurb=refurb,
             )
-
+        
         return pf
 
     @staticmethod
