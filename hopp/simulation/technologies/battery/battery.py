@@ -87,7 +87,6 @@ class BatteryConfig(BaseClass):
                 - "NMCGraphite"
             HOPP options:
                 - "LDES" generic long-duration energy storage
-                - "AEF" Aqueous electrolyte flow battery
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -98,7 +97,7 @@ class BatteryConfig(BaseClass):
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
     system_model_source: str = field(default="pysam", validator=contains(["pysam", "hopp"]))
-    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite", "LDES", "AEF"]))
+    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite", "LDES"]))
     tracking: bool = field(default=True)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))

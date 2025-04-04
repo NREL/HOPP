@@ -515,24 +515,24 @@ def test_hybrid_detailed_pv_with_wind_storage_dispatch(site, subtests):
 def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
 
     site_internal = create_default_site_info(wave=True, wave_resource_file=wave_resource_file)
-    # Test wind + simple PV (pvwattsv8) + storage with dispatch hybrid plant with custom financial model
+    # Test wind + simple PV (pvwattsv8) + LDES storage with dispatch hybrid plant with custom financial model
     annual_energy_expected_pv = 10761987
     annual_energy_expected_wind = 31951719
     annual_energy_expected_wave = 12132526
-    annual_energy_expected_battery = -103752
-    annual_energy_expected_hybrid = 54747904
+    annual_energy_expected_battery = -990.40
+    annual_energy_expected_hybrid = 54847035
 
     npv_expected_pv = -1640023
     npv_expected_wind = -5159400
     npv_expected_wave = -62903172
-    npv_expected_battery = -8183543
+    npv_expected_battery = -8155345
     npv_expected_hybrid = -77887529
 
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
     lcoe_expected_wave = 35.719370712383856
-    lcoe_expected_battery = 13.333128855903514
-    lcoe_expected_hybrid = 11.337551789830751
+    lcoe_expected_battery = 18.00083292429152
+    lcoe_expected_hybrid = 11.73049146274628
 
     total_installed_cost_expected = 93959704.39847898
 

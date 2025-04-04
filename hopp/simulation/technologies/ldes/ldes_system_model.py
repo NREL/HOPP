@@ -22,7 +22,6 @@ class LDESConfig(BaseClass):
         system_capacity_kw: LDES rated power capacity [kW]
         chemistry: LDES chemistry option
             - "LDES" generic long-duration energy storage
-            - "AEF" Aqueous electrolyte flow battery
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -33,7 +32,7 @@ class LDESConfig(BaseClass):
     system_capacity_kwh: float = field(validator=validators.gt(0.0))
     system_capacity_kw: float = field(validator=validators.gt(0.0))
     system_model_source: str = field(default="pysam", validator=validators.in_(["pysam", "hopp"]))
-    chemistry: str = field(default="LDES", validator=validators.in_(["LDES", "AEF"]))
+    chemistry: str = field(default="LDES", validator=validators.in_(["LDES"]))
     tracking: bool = field(default=True)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
