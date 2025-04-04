@@ -548,14 +548,11 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
 
     length = 25
     refurb = [0]*length
-    batt_bank_replacement = [0]*length
     n = 10
     for i in range(n-1, length, n):
         refurb[i] = 0.5
-        batt_bank_replacement[i] = 10.0
 
     fin_config_local["battery_system"]["batt_replacement_schedule_percent"] = refurb
-    # fin_config_local["battery_system"]["batt_bank_replacement"] = batt_bank_replacement
 
     power_sources = {
         'pv': {
@@ -609,9 +606,6 @@ def test_hybrid_simple_pv_with_wind_wave_ldes_storage_dispatch(subtests):
                 "skip_financial": False # test that setting this to false allows financial calculations to run
             }
         },
-        # "dispatch_options": {
-        #     "battery_dispatch": "load_following_heuristic",
-        # } 
     }
 
     hopp_config = {
@@ -704,17 +698,23 @@ def test_hybrid_simple_pv_with_wind_wave_battery_replacement_schedule(subtests):
     npv_expected_pv = -1640023
     npv_expected_wind = -5159400
     npv_expected_wave = -62903172
-    npv_expected_battery = -8183543
+    # npv_expected_battery = -8183543 # value expected if no battery replacement schedule is provided
+    npv_expected_battery = -8189905
     npv_expected_hybrid = -77887529
 
     lcoe_expected_pv = 3.104064331441355
     lcoe_expected_wind = 3.162940789633178
     lcoe_expected_wave = 35.719370712383856
-    lcoe_expected_battery = 13.333128855903514
-    # lcoe_expected_battery = 18.018052581528185
-    lcoe_expected_hybrid = 11.337551789830751
+    # lcoe_expected_battery = 13.333128855903514 # value expected if no battery replacement schedule is provided
+    lcoe_expected_battery = 18.018052581528185
+    # lcoe_expected_hybrid = 11.337551789830751 # value expected if no battery replacement schedule is provided
+    lcoe_expected_hybrid = 11.752110221207754
 
-    total_installed_cost_expected = 93959704.39847898
+    total_installed_cost_expected_pv = 4799592.0
+    total_installed_cost_expected_wind = 14540000.0
+    total_installed_cost_expected_wave = 66465112.4
+    total_installed_cost_expected_battery = 8155000.0
+    total_installed_cost_expected_hybrid = 93959704.4
 
     interconnect_kw = 20000
     pv_kw = 5000
@@ -784,9 +784,6 @@ def test_hybrid_simple_pv_with_wind_wave_battery_replacement_schedule(subtests):
                 "skip_financial": False # test that setting this to false allows financial calculations to run
             }
         },
-        # "dispatch_options": {
-        #     "battery_dispatch": "load_following_heuristic",
-        # } 
     }
 
     hopp_config = {
@@ -821,47 +818,57 @@ def test_hybrid_simple_pv_with_wind_wave_battery_replacement_schedule(subtests):
     npvs = hybrid_plant.net_present_values
     lcoes = hybrid_plant.lcoe_nom # cents/kWh
 
+    rtol = 1E-5
+    rtol_pv = 1E-3
     with subtests.test("with minimal params pv size"):
-        assert sizes.pv == approx(pv_kw, 1e-3)
+        assert sizes.pv == approx(pv_kw, rel=rtol_pv)
     with subtests.test("with minimal params wind size"):
-        assert sizes.wind == approx(wind_kw, 1e-3)
+        assert sizes.wind == approx(wind_kw, rel=rtol)
     with subtests.test("with minimal params wave size"):
-        assert sizes.wave == approx(wave_kw, 1e-3)
+        assert sizes.wave == approx(wave_kw, rel=rtol)
     with subtests.test("with minimal params batt kw size"):
-        assert sizes.battery == approx(batt_kw, 1e-3)
+        assert sizes.battery == approx(batt_kw, rel=rtol)
 
     with subtests.test("with minimal params pv aep"):
-        assert aeps.pv == approx(annual_energy_expected_pv, 1e-3)
+        assert aeps.pv == approx(annual_energy_expected_pv, rel=rtol_pv)
     with subtests.test("with minimal params wind aep"):
-        assert aeps.wind == approx(annual_energy_expected_wind, 1e-3)
+        assert aeps.wind == approx(annual_energy_expected_wind, rel=rtol)
     with subtests.test("with minimal params wave aep"):
-        assert aeps.wave == approx(annual_energy_expected_wave, 1e-3)
+        assert aeps.wave == approx(annual_energy_expected_wave, rel=rtol)
     with subtests.test("with minimal params battery aep"):
-        assert aeps.battery == approx(annual_energy_expected_battery, 1e-3)
+        assert aeps.battery == approx(annual_energy_expected_battery, rel=rtol)
     with subtests.test("with minimal params hybrid aep"):
-        assert aeps.hybrid == approx(annual_energy_expected_hybrid, 1e-3)
-
+        assert aeps.hybrid == approx(annual_energy_expected_hybrid, rel=rtol_pv)
+    
     with subtests.test("with minimal params pv npv"):
-        assert npvs.pv == approx(npv_expected_pv, 1e-3)
+        assert npvs.pv == approx(npv_expected_pv, rel=rtol_pv)
     with subtests.test("with minimal params wind npv"):
-        assert npvs.wind == approx(npv_expected_wind, 1e-3)
+        assert npvs.wind == approx(npv_expected_wind, rel=rtol)
     with subtests.test("with minimal params wave npv"):
-        assert npvs.wave == approx(npv_expected_wave, 1e-3)
+        assert npvs.wave == approx(npv_expected_wave, rel=rtol)
     with subtests.test("with minimal params batt npv"):
-        assert npvs.battery == approx(npv_expected_battery, 1e-3)
+        assert npvs.battery == approx(npv_expected_battery, rel=rtol)
     with subtests.test("with minimal params hybrid npv"):
-        assert npvs.hybrid == approx(npv_expected_hybrid, 1e-3)
+        assert npvs.hybrid == approx(npv_expected_hybrid, rel=rtol)
 
     with subtests.test("lcoe pv"):
-        assert lcoes.pv == approx(lcoe_expected_pv, 1e-3)
+        assert lcoes.pv == approx(lcoe_expected_pv, rel=rtol_pv)
     with subtests.test("lcoe wind"):
-        assert lcoes.wind == approx(lcoe_expected_wind, 1e-3)
+        assert lcoes.wind == approx(lcoe_expected_wind, rel=rtol)
     with subtests.test("lcoe wave"):
-        assert lcoes.wave == approx(lcoe_expected_wave, 1e-3)
+        assert lcoes.wave == approx(lcoe_expected_wave, rel=rtol)
     with subtests.test("lcoe battery"): 
-        assert lcoes.battery == approx(lcoe_expected_battery, 1e-3)
+        assert lcoes.battery == approx(lcoe_expected_battery, rel=rtol)
     with subtests.test("lcoe hybrid"):
-        assert lcoes.hybrid == approx(lcoe_expected_hybrid, 1e-3)
+        assert lcoes.hybrid == approx(lcoe_expected_hybrid, rel=rtol)
 
+    with subtests.test("total installed cost pv"):
+        assert hybrid_plant.pv.total_installed_cost == approx(total_installed_cost_expected_pv, rel=rtol)
+    with subtests.test("total installed cost wind"):
+        assert hybrid_plant.wind.total_installed_cost == approx(total_installed_cost_expected_wind, rel=rtol)
+    with subtests.test("total installed cost wave"):
+        assert hybrid_plant.wave.total_installed_cost == approx(total_installed_cost_expected_wave, rel=rtol)
+    with subtests.test("total installed cost battery"):
+        assert hybrid_plant.battery.total_installed_cost == approx(total_installed_cost_expected_battery, rel=rtol)
     with subtests.test("total installed cost"):
-        assert hybrid_plant.grid.total_installed_cost == approx(total_installed_cost_expected, 1E-6)
+        assert hybrid_plant.grid.total_installed_cost == approx(total_installed_cost_expected_hybrid, rel=rtol)

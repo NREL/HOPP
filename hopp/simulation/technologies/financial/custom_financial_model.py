@@ -415,10 +415,8 @@ class CustomFinancialModel():
         # ----------------------------------- Add capital and fixed items to ProFAST ----------------
         
         refurb = [0]
-        if "Battery" in self.name or "LDES" in self.name:
-            if self.BatterySystem.batt_replacement_option == 2:
-                refurb = self.BatterySystem.batt_replacement_schedule_percent
-
+        if self.BatterySystem.batt_replacement_option == 2:
+            refurb = list(self.BatterySystem.batt_replacement_schedule_percent)
         pf.add_capital_item(
                 name="Total installed cost",
                 cost=self.value('total_installed_cost'),

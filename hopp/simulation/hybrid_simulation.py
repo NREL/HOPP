@@ -585,6 +585,7 @@ class HybridSimulation(BaseClass):
             if max_val is not None:
                 hybrid_avg = min(max_val, hybrid_avg)
             self.grid.value(var_name, hybrid_avg)
+            
             return hybrid_avg
 
         def set_logical_or_for_hybrid(var_name):
@@ -663,6 +664,9 @@ class HybridSimulation(BaseClass):
 
         # Degradation of energy output year after year
         set_average_for_hybrid("degradation", non_storage_production_ratio)
+
+        # Battery replacement schedule
+        set_average_for_hybrid("batt_replacement_schedule_percent", cost_ratios)
 
         if self.battery:
             self.grid._financial_model.value('om_batt_replacement_cost', self.battery._financial_model.value('om_batt_replacement_cost'))
@@ -764,10 +768,15 @@ class HybridSimulation(BaseClass):
         if self.battery:
             # Copy over battery replacement information
             if isinstance(self.battery._financial_model, Singleowner.Singleowner):
-                self.grid.assign(self.battery._financial_model.BatterySystem.export())
+                dict_for_assign = self.battery._financial_model.BatterySystem.export()
+                self.grid.assign(dict_for_assign)
             else:
                 try:
-                    self.grid.assign(self.battery._financial_model.export_battery_values())
+                    dict_for_assign = self.battery._financial_model.export_battery_values()
+                    # do not copy over battery values that were averaged in `calculate_financials` if using CustomFinancial model
+                    if self.battery.value("batt_replacement_option") == 2:
+                        dict_for_assign.pop("batt_replacement_schedule_percent")
+                    self.grid.assign(dict_for_assign)
                 except:
                     raise NotImplementedError("Financial model cannot assign battery values.")
 
