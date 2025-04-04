@@ -2,7 +2,6 @@ from dataclasses import dataclass, asdict
 from typing import Optional, Sequence, List, Union
 import numpy as np
 import pandas as pd
-import rainflow
 import math
 
 
@@ -166,9 +165,6 @@ class Battery(PowerSource):
             self._system_model.ParamsCell.resistance = 0.001
             self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
 
-        else:
-            self.system_capacity_kw = self._system_model.system_capacity_kw
-            self.system_capacity_kwh = self._system_model.system_capacity_kwh
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
