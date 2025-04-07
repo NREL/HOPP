@@ -42,6 +42,9 @@ class Hopp(BaseClass):
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
         self.system.simulate(project_life, lifetime_sim)
+    
+    def simulate_power(self, project_life: int = 25, lifetime_sim: bool = False):
+        self.system.simulate_power(project_life, lifetime_sim)
 
     # I/O
 
