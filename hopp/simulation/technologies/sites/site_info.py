@@ -147,7 +147,7 @@ class SiteInfo(BaseClass):
     wave_resource: Optional[WaveResource] = field(init=False, default=None)
     tidal_resource: Optional[TidalResource] = field(init=False, default=None)
     elec_prices: Optional[ElectricityPrices] = field(init=False, default=None)
-    n_timesteps: int = field(init=False, default=None)
+    n_timesteps: Optional[int] = field(default=8760)
     n_periods_per_day: int = field(init=False)
     interval: int = field(init=False)
     urdb_label: str = field(init=False)

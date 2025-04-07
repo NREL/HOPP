@@ -16,6 +16,7 @@ from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
 from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant
 from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
 from hopp.simulation.technologies.tidal.mhk_tidal_plant import MHKTidalPlant, MHKTidalConfig
+from hopp.simulation.technologies.ghost.ghost_plant import GhostConfig, GhostPlant
 from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
 from hopp.simulation.technologies.grid import Grid, GridConfig
 from hopp.simulation.technologies.reopt import REopt
@@ -30,6 +31,7 @@ PowerSourceTypes = Union[
     DetailedPVPlant,
     WindPlant,
     MHKWavePlant,
+    GhostPlant,
     TowerPlant,
     TroughPlant,
     Battery,
@@ -39,7 +41,7 @@ PowerSourceTypes = Union[
 
 class HybridSimulationOutput:
     """Class for creating :class:`HybridSimulation` output structure"""
-    _keys = ("pv", "wind", "wave", "tidal", "battery", "tower", "trough", "hybrid")
+    _keys = ("pv", "wind", "wave", "tidal", "ghost", "battery", "tower", "trough", "hybrid")
 
     def __init__(self, power_sources):
         """
@@ -99,6 +101,7 @@ class TechnologiesConfig(BaseClass):
         wind: Wind config
         wave: Wave config
         tidal: Tidal config
+        ghost: Ghost config
         tower: CSP tower config
         trough: CSP trough config
         battery: Battery config. If `tracking` is False, uses `BatteryStatelessConfig`.
@@ -110,6 +113,7 @@ class TechnologiesConfig(BaseClass):
     wind: Optional[WindConfig] = field(default=None)
     wave: Optional[MHKConfig] = field(default=None)
     tidal: Optional[MHKTidalConfig] = field(default=None)
+    ghost: Optional[GhostConfig] = field(default=None)
     tower: Optional[TowerConfig] = field(default=None)
     trough: Optional[TroughConfig] = field(default=None)
     battery: Optional[Union[BatteryConfig, BatteryStatelessConfig]] = field(default=None)
@@ -139,6 +143,9 @@ class TechnologiesConfig(BaseClass):
 
         if "tidal" in data:
             config["tidal"] = MHKTidalConfig.from_dict(data["tidal"])
+        
+        if "ghost" in data:
+            config["ghost"] = GhostConfig.from_dict(data["ghost"])
 
         if "tower" in data:
             config["tower"] = TowerConfig.from_dict(data["tower"])
@@ -191,6 +198,7 @@ class HybridSimulation(BaseClass):
     wind: Optional[WindPlant] = field(init=False, default=None)
     wave: Optional[MHKWavePlant] = field(init=False, default=None)
     tidal: Optional[MHKTidalPlant] = field(init=False, default=None)
+    ghost: Optional[GhostPlant] = field(init=False, default=None)
     tower: Optional[TowerPlant] = field(init=False, default=None)
     trough: Optional[TroughPlant] = field(init=False, default=None)
     battery: Optional[Union[Battery, BatteryStateless]] = field(init=False, default=None)
@@ -240,6 +248,14 @@ class HybridSimulation(BaseClass):
             self.technologies["tidal"] = self.tidal
 
             logger.info("Created HybridSystem.tidal with system size {} mW".format(tidal_config))
+        
+        ghost_config = self.tech_config.ghost
+
+        if ghost_config is not None:
+            self.ghost = GhostPlant(self.site, config=ghost_config)
+            self.technologies["ghost"] = self.ghost
+
+            logger.info("Created HybridSystem.ghost with system size {} mW".format(ghost_config))
 
         tower_config = self.tech_config.tower
 
@@ -342,11 +358,13 @@ class HybridSimulation(BaseClass):
     def set_om_costs(self, pv_om_per_kw=None, wind_om_per_kw=None,
                             tower_om_per_kw=None, trough_om_per_kw=None, 
                             wave_om_per_kw=None, tidal_om_per_kw=None,
+                            ghost_om_per_kw=None,
                             battery_om_per_kw=None,
                             hybrid_om_per_kw=None,
                             pv_om_per_mwh=None,wind_om_per_mwh=None,
                             tower_om_per_mwh=None,trough_om_per_mwh=None,
                             wave_om_per_mwh=None,tidal_om_per_mwh=None,
+                            ghost_om_per_mwh=None,
                             battery_om_per_mwh=None,
                             hybrid_om_per_mwh=None,):
         """
@@ -393,6 +411,12 @@ class HybridSimulation(BaseClass):
                 self.tidal.om_capacity = tidal_om_per_kw
             if tidal_om_per_mwh:
                 self.tidal.om_production = tidal_om_per_mwh
+        
+        if self.ghost:
+            if ghost_om_per_kw:
+                self.ghost.om_capacity = ghost_om_per_kw
+            if ghost_om_per_mwh:
+                self.ghost.om_production = ghost_om_per_mwh
 
         if self.battery:
             if battery_om_per_kw:
@@ -458,6 +482,9 @@ class HybridSimulation(BaseClass):
         if self.tidal:
             self.tidal.total_installed_cost = self.tidal.calculate_total_installed_cost()
             total_cost += self.tidal.total_installed_cost
+        if self.ghost:
+            self.ghost.total_installed_cost = self.ghost.calculate_total_installed_cost(cost_kw)
+            total_cost += self.ghost.total_installed_cost
         if self.tower:
             self.tower.total_installed_cost = self.tower.calculate_total_installed_cost()
             total_cost += self.tower.total_installed_cost
@@ -688,7 +715,7 @@ class HybridSimulation(BaseClass):
         """
         self.setup_performance_models()
         # simulate non-dispatchable systems
-        non_dispatchable_systems = ['pv', 'wind','wave','tidal']
+        non_dispatchable_systems = ['pv', 'wind','wave','tidal','ghost']
         for system in non_dispatchable_systems:
             model = getattr(self, system)
             if model:
@@ -910,6 +937,10 @@ class HybridSimulation(BaseClass):
             cf.tidal = self.tidal.capacity_factor
             hybrid_generation += self.tidal.annual_energy_kwh
             hybrid_capacity += self.tidal.system_capacity_kw
+        if self.ghost:
+            cf.ghost = self.ghost.capacity_factor
+            hybrid_generation += self.ghost.annual_energy_kwh
+            hybrid_capacity += self.ghost.system_capacity_kw
         if self.tower:
             cf.tower = self.tower.capacity_factor
             hybrid_generation += self.tower.annual_energy_kwh
@@ -1098,6 +1129,8 @@ class HybridSimulation(BaseClass):
             outputs['Wave (MW)'] = self.wave.system_capacity_kw / 1000
         if self.tidal:
             outputs['Tidal (MW)'] = self.tidal.system_capacity_kw / 1000
+        if self.ghost:
+            outputs['Ghost (MW)'] = self.ghost.system_capacity_kw / 1000
         if self.tower:
             outputs['Tower (MW)'] = self.tower.system_capacity_kw / 1000
             outputs['Tower Hours of Storage (hr)'] = self.tower.tes_hours
