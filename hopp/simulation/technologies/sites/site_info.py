@@ -80,7 +80,7 @@ class SiteInfo(BaseClass):
         wind_resource (Optional): dictionary or object containing wind resource data.
         wind_resource_region (Optional): which region to use for wind resource data. Defaults to "conus". Options are: 
             
-            - "conus": continental united states
+            - "conus": continental United States
             - "ak": alaska
     """
     # User provided
