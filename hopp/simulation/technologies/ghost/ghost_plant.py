@@ -14,14 +14,32 @@ import PySAM.Singleowner as Singleowner
 class GhostConfig(BaseClass):
     n_timesteps: float = field(default = 8760)
     system_capacity_kw: float = field(default = 0.0)
+    system_capacity_kwac: Optional[float] = field(default = 0.0)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
     name: str = field(default="GhostPlant")
     generation_profile_kw: Optional[list[float]] = field(default = None)
     
+    # n_ghost_systems: Optional[int] = field(default = 1)
+    # sub_systems_name: Optional[Union[list[str],str]] = field(default = "")
+    
+    # def __attrs_post_init__(self):
+    #     if isinstance(self.system_capacity_kw,list):
+    #         self.n_ghost_systems = len(self.system_capacity_kw)
+    #         if isinstance(self.system_capacity_kwac,list) or self.system_capacity_kwac>0.0:
+    #             if len(self.system_capacity_kwac)!=len(self.system_capacity_kw):
+    #                 raise UserWarning("Please specify system capacity in kWac for all systems")
+    #         if len(self.generation_profile_kw)!=len(self.system_capacity_kw):
+    #             if len(self.system_capacity_kwac)!=len(self.system_capacity_kw):
+    #                 raise UserWarning("Please specify generation profiles for all systems")
+    #     if self.sub_systems_name == "" and self.n_ghost_systems>1:
+    #         self.sub_systems_name = [f"{i}" for i in range(1,self.n_ghost_systems)]
+
 
 @define 
 class GhostSystem(BaseClass):
     system_capacity: Optional[float] = field(default = 0.0)
+    system_capacity_ac: Optional[float] = field(default = 0.0)
+    system_name: Optional[str] = field(default = "ghost_system")
     n_timesteps: float = field(default = 8760)
 
     #results
@@ -30,6 +48,8 @@ class GhostSystem(BaseClass):
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
+    # other stuff for multiple systems
+
     def __attrs_post_init__(self):
         if self.gen is None:
             self.gen = np.zeros(self.n_timesteps)
@@ -39,7 +59,9 @@ class GhostSystem(BaseClass):
             self.capacity_factor = 100*(np.sum(self.gen)/(len(self.gen)*self.system_capacity))
         else:
             self.capacity_factor = 0.0
-            
+        if self.system_capacity_ac==0.0 and self.system_capacity>0:
+            self.system_capacity_ac = self.system_capacity
+
 
     def value(self, name: str, set_value=None):
         """Set or retrieve attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`.
@@ -100,7 +122,21 @@ class GhostPlant(PowerSource):
     config_name: str = field(init=False, default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
-        system_model = GhostSystem(self.config.system_capacity_kw,self.config.n_timesteps,gen=self.config.generation_profile_kw)
+        # if self.config.n_ghost_systems==1:
+        system_model = GhostSystem(
+            self.config.system_capacity_kw,
+            self.config.n_timesteps,
+            gen=self.config.generation_profile_kw,
+            system_capacity_ac = self.config.system_capacity_kwac
+            )
+        # if self.config.n_ghost_systems>1:
+        #     for ii,system_capacity_kw in enumerate(self.config.system_capacity_kw):
+        #         subsystem_model = GhostSystem(
+        #             system_capacity_kw,
+        #             self.config.n_timesteps,
+        #             gen=self.config.generation_profile_kw[ii],
+        #             system_capacity_ac = self.config.system_capacity_kwac[ii]
+        #             )
         financial_model = None
         if isinstance(self.config.fin_model, str):
             if "singleowner" in self.config.fin_model.lower():
@@ -129,6 +165,14 @@ class GhostPlant(PowerSource):
     def system_capacity_kw(self, size_kw: float):
         self._system_model.update_system_capacity(size_kw)
     
+    @property
+    def system_capacity_kwac(self):
+        return self._system_model.value("system_capacity_ac")
+
+    @system_capacity_kw.setter
+    def system_capacity_kwac(self, size_kwac: float):
+        self._system_model.value("system_capacity_ac",size_kwac)
+
     @property
     def generation_profile(self):
         return self._system_model.value("gen")
