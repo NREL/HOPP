@@ -276,7 +276,9 @@ class Grid(PowerSource):
     @property
     def generation_profile_wo_battery(self) -> Sequence:
         """System power generated without battery [kW]"""
-        return self._financial_model.value('gen_without_battery')
+        # if 'gen_without_battery' in self._financial_model.SystemOutput.export().keys():
+        #     return self._financial_model.value('gen_without_battery')
+        return self._system_model.SystemOutput.gen
 
     @generation_profile_wo_battery.setter
     def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):

@@ -185,6 +185,8 @@ class PowerSource(BaseClass):
             W_ac_nom = min(self.system_capacity_kw * self.value('gross_net_conversion_factor'), interconnect_kw)
             # Note: Need to limit to interconnect size. Actual generation is limited by dispatch, but max feasible
             # generation (including storage) is not
+        elif type(self).__name__ == 'Ghost':
+            W_ac_nom = min(self.system_capacity_kwac, interconnect_kw)
         else:
             W_ac_nom = min(self.system_capacity_kw, interconnect_kw)
             # [kW]
