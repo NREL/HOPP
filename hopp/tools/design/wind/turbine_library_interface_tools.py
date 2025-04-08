@@ -4,7 +4,6 @@ import PySAM.Windpower as windpower
 from turbine_models.parser import Turbines
 import hopp.tools.design.wind.power_curve_tools as curve_tools
 from hopp.utilities.log import hybrid_logger as logger
-import hopp.simulation.technologies.wind.floris as floris_wrapper
 
 def extract_power_curve(turbine_specs: dict, model_name: str):
     """Creates power-curve for turbine based on available data and formats it for the corresponding simulation model.
@@ -96,7 +95,7 @@ def check_hub_height(turbine_specs, wind_plant):
 
     Args:
         turbine_specs (dict): turbine specs loaded from turbine-models library.
-        wind_plant (:obj:`hopp.simulation.technologies.wind.floris.Floris` | :obj:`hopp.simulation.technologies.wind.wind_plant.WindPlant`): wind 
+        wind_plant (None | :obj:`hopp.simulation.technologies.wind.floris.Floris` | :obj:`hopp.simulation.technologies.wind.wind_plant.WindPlant`): wind 
             plant object for either PySAM or FLORIS wind simulation model.
 
     Returns:
@@ -151,19 +150,20 @@ def check_hub_height(turbine_specs, wind_plant):
                 
     else:
         hub_height = turbine_specs["hub_height"]
-        if wind_plant.config.hub_height is not None:
-            if hub_height != wind_plant.config.hub_height:
+        if wind_plant is not None:
+            if wind_plant.config.hub_height is not None:
+                if hub_height != wind_plant.config.hub_height:
+                    msg = (
+                        f"Turbine hub height ({hub_height}) does not equal "
+                        f"wind_plant.config.hub_height ({wind_plant.config.hub_height})"
+                    )
+                    logger.warning(msg)
+            if hub_height != wind_plant.site.hub_height:
                 msg = (
                     f"Turbine hub height ({hub_height}) does not equal "
-                    f"wind_plant.config.hub_height ({wind_plant.config.hub_height})"
+                    f"site_info.hub_height ({wind_plant.site.hub_height})"
                 )
                 logger.warning(msg)
-        if hub_height != wind_plant.site.hub_height:
-            msg = (
-                f"Turbine hub height ({hub_height}) does not equal "
-                f"site_info.hub_height ({wind_plant.site.hub_height})"
-            )
-            logger.warning(msg)
 
     return hub_height
 
