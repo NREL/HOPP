@@ -38,7 +38,6 @@ class Resource(metaclass=ABCMeta):
         self.affiliation = 'NREL'
         self.reason = 'hybrid-analysis'
         self.mailing_list = 'true'
-        
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
         self.path_resource = os.path.join(ROOT_DIR, 'simulation', 'resource_files')
