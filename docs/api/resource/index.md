@@ -3,7 +3,8 @@
 These are the primary methods for accessing wind and solar resource data.
 
 - [Solar Resource (API)](resource:solar-resource)
-- [Wind Resource (API)](resource:wind-resource)
+- [Conus Wind Resource (API)](resource:wind-resource)
+- [Alaska Wind Resource (API)](resource:ak-wind-resource)
 - [Solar Resource (NSRDB Dataset on NREL HPC)](resource:nsrdb-data)
 - [Wind Resource (Wind Toolkit Dataset on NREL HPC)](resource:wtk-data)
 - [Wave Resource (Data)](resource:wave-resource)
