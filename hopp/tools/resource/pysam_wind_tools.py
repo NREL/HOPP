@@ -69,9 +69,11 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
         df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
         data_fieldnames += ['pressure']
         data_fieldnumbers += [1]
-    # if 'surface air pressure (Pa)' in new_colnames:
-    #     df['pressure'] = df['surface air pressure (Pa)'] / 101325
-    
+    if 'surface air pressure (Pa)' in new_colnames:
+        df['pressure'] = df['surface air pressure (Pa)'] / 101325
+        data_fieldnames += ['pressure']
+        data_fieldnumbers += [1]
+
     # --- rename ---
     rename_dict = {'wind speed at {}m (m/s)'.format(resource_height): 'speed',
                     'wind direction at {}m (deg)'.format(resource_height): 'direction'}
@@ -264,7 +266,8 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
     
     if isinstance(wind_resource_filepath,list):
         if len(wind_resource_filepath) != len(resource_heights):
-            raise ValueError("wind resource filepath must be a list of filenames that same length as")
+            raise ValueError("wind resource filepath must be a list of filenames that same length as resource heights")
+        filepaths = [wind_resource_filepath]*len(resource_heights)
         file_resource_heights = dict(zip(resource_heights,filepaths))
     elif isinstance(wind_resource_filepath,str):
         filepaths = [wind_resource_filepath]*len(resource_heights)
