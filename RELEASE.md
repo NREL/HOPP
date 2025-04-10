@@ -2,7 +2,9 @@
 
 ## Unreleased
 
+* Added GenericPlant model for simulating grid and battery performance without resimulating generation of other systems.
 * Loosened strictness of comparison for wind turbine config checking and added tests
+
 
 ## Version 3.2.0, March 21, 2025
 
