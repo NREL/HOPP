@@ -3,34 +3,34 @@ from pyomo.environ import ConcreteModel, Expression, NonNegativeReals, Set, unit
 from pyomo.network import Port
 
 if TYPE_CHECKING:
-    from hopp.simulation.technologies.ghost.ghost_plant import GhostSystem
-    from hopp.simulation.technologies.ghost.ghost_multi import GhostMultiSystem
+    from hopp.simulation.technologies.generic.generic_plant import GenericSystem
+    from hopp.simulation.technologies.generic.generic_multi import GenericMultiSystem
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import (
     PowerSourceDispatch,
 )
 
 
-class GhostDispatch(PowerSourceDispatch):
-    ghost_obj: Union[Expression, float]
-    _system_model: Union["GhostSystem","GhostMultiSystem"]
+class GenericDispatch(PowerSourceDispatch):
+    generic_obj: Union[Expression, float]
+    _system_model: Union["GenericSystem","GenericMultiSystem"]
     _financial_model: FinancialModelType
-    """Dispatch optimization model for ghost power source."""
+    """Dispatch optimization model for generic power source."""
 
     def __init__(
         self,
         pyomo_model: ConcreteModel,
         indexed_set: Set,
-        system_model: Union["GhostSystem","GhostMultiSystem"],
+        system_model: Union["GenericSystem","GenericMultiSystem"],
         financial_model: FinancialModelType,
-        block_set_name: str = "ghost",
+        block_set_name: str = "generic",
     ):
-        """Initialize GhostDispatch.
+        """Initialize GenericDispatch.
 
         Args:
             pyomo_model (ConcreteModel): Pyomo concrete model.
             indexed_set (Set): Indexed set.
-            system_model (GhostSystem): System model.
+            system_model (GenericSystem): System model.
             financial_model (FinancialModelType): Financial model.
             block_set_name (str): Name of the block set.
             
@@ -44,7 +44,7 @@ class GhostDispatch(PowerSourceDispatch):
         )
 
     def max_gross_profit_objective(self, hybrid_blocks):
-        """Ghost instance of maximum gross profit objective.
+        """Generic instance of maximum gross profit objective.
 
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
@@ -56,13 +56,13 @@ class GhostDispatch(PowerSourceDispatch):
                 -(1 / hybrid_blocks[t].time_weighting_factor)
                 * self.blocks[t].time_duration
                 * self.blocks[t].cost_per_generation
-                * hybrid_blocks[t].ghost_generation
+                * hybrid_blocks[t].generic_generation
                 for t in hybrid_blocks.index_set()
             )
         )
 
     def min_operating_cost_objective(self, hybrid_blocks):
-        """Ghost instance of minimum operating cost objective.
+        """Generic instance of minimum operating cost objective.
 
         Args:
             hybrid_blocks (Pyomo.block): A generalized container for defining hierarchical
@@ -73,12 +73,12 @@ class GhostDispatch(PowerSourceDispatch):
             hybrid_blocks[t].time_weighting_factor
             * self.blocks[t].time_duration
             * self.blocks[t].cost_per_generation
-            * hybrid_blocks[t].ghost_generation
+            * hybrid_blocks[t].generic_generation
             for t in hybrid_blocks.index_set()
         )
 
     def _create_variables(self, hybrid):
-        """Create Ghost variables to add to hybrid plant instance.
+        """Create Generic variables to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
@@ -89,23 +89,23 @@ class GhostDispatch(PowerSourceDispatch):
                 - load: Load from given technology.
 
         """
-        hybrid.ghost_generation = Var(
-            doc="Power generation of ghost devices [MW]",
+        hybrid.generic_generation = Var(
+            doc="Power generation of generic devices [MW]",
             domain=NonNegativeReals,
             units=units.MW,
             initialize=0.0,
         )
-        return hybrid.ghost_generation, 0
+        return hybrid.generic_generation, 0
 
     def _create_port(self, hybrid):
-        """Create ghost port to add to hybrid plant instance.
+        """Create generic port to add to hybrid plant instance.
 
         Args:
             hybrid: Hybrid plant instance.
 
         Returns:
-            Port: Ghost Port object.
+            Port: Generic Port object.
 
         """
-        hybrid.ghost_port = Port(initialize={"generation": hybrid.ghost_generation})
-        return hybrid.ghost_port
+        hybrid.generic_port = Port(initialize={"generation": hybrid.generic_generation})
+        return hybrid.generic_port

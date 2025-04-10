@@ -16,8 +16,8 @@ from hopp.simulation.technologies.dispatch.power_sources.tidal_dispatch import (
     TidalDispatch,
 )
 
-from hopp.simulation.technologies.dispatch.power_sources.ghost_dispatch import (
-    GhostDispatch,
+from hopp.simulation.technologies.dispatch.power_sources.generic_dispatch import (
+    GenericDispatch,
 )
 
 from hopp.simulation.technologies.dispatch.grid_dispatch import GridDispatch

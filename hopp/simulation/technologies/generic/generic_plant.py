@@ -8,17 +8,17 @@ from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import CustomFinancialModel, FinancialModelType
 from hopp.simulation.technologies.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
-from hopp.simulation.technologies.ghost.ghost_multi import GhostMultiSystem
+from hopp.simulation.technologies.generic.generic_multi import GenericMultiSystem
 
 @define
-class GhostConfig(BaseClass):
-    """Configuration class for GhostPlant
+class GenericConfig(BaseClass):
+    """Configuration class for GenericPlant
 
     Args:
         system_capacity_kw (float): system capacity in kW.
         system_capacity_kwac (float, Optional): system capacity in kWac. If not provided then defaults to system_capacity_kw.
         generation_profile_kw (list[float]): generation profile of system in kW.
-        subsystem_name (str, Optional): name of subsystem, mostly used if ``GhostMultiSystem`` is the system_model.
+        subsystem_name (str, Optional): name of subsystem, mostly used if ``GenericMultiSystem`` is the system_model.
         n_timesteps (float | int): number of timesteps in a year, defaults to 8760.
         fin_model (obj | dict | str): Optional financial model. Can be any of the following:
 
@@ -33,19 +33,19 @@ class GhostConfig(BaseClass):
     system_capacity_kw: float = field(default = 0.0)
     system_capacity_kwac: Optional[float] = field(default = 0.0)
     generation_profile_kw: Optional[list[float]] = field(default = None)
-    subsystem_name: Optional[str] = field(default="ghost_system")
+    subsystem_name: Optional[str] = field(default="generic_system")
 
     n_timesteps: Union[float,int] = field(default = 8760)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-    name: str = field(default="GhostPlant")
+    name: str = field(default="GenericPlant")
     
     
 
 @define 
-class GhostSystem(BaseClass):
+class GenericSystem(BaseClass):
     system_capacity: float = field(default = 0.0)
     system_capacity_ac: Optional[float] = field(default = 0.0)
-    system_name: Optional[str] = field(default = "ghost_system")
+    system_name: Optional[str] = field(default = "generic_system")
     n_timesteps: Optional[float] = field(default = 8760)
     t_step: Optional[Union[float,int]] = field(default = 1)
     
@@ -69,7 +69,7 @@ class GhostSystem(BaseClass):
         self.update_capacity_factor()
 
     def value(self, name: str, set_value=None):
-        """Set or retrieve attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`.
+        """Set or retrieve attribute of `hopp.simulation.technologies.generic.generic_plant.GenericSystem`.
             if set_value = None, then retrieve value; otherwise overwrite variable's value.
         
         Args:
@@ -92,10 +92,10 @@ class GhostSystem(BaseClass):
         return
 
     def export(self):
-        """Return all the ghost system configuration in a dictionary for the financial model
+        """Return all the generic system configuration in a dictionary for the financial model
         
         Returns:
-            dict: ghost system configuration for the financial model.
+            dict: generic system configuration for the financial model.
         """
 
         config = {
@@ -185,20 +185,20 @@ class GhostSystem(BaseClass):
         return E_net_max_feasible
 
 @define
-class GhostPlant(PowerSource):
+class GenericPlant(PowerSource):
     site: SiteInfo
-    config: Union[GhostConfig,list[GhostConfig]]
+    config: Union[GenericConfig,list[GenericConfig]]
     config_name: str = field(init=False, default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
         t_step = self.site.interval / 60
         
         if isinstance(self.config,list):
-            # requires GhostMultiSystem as system_model
+            # requires GenericMultiSystem as system_model
             subsystems = []
             subsystem_names = []
             for config in self.config:
-                sub = GhostSystem(
+                sub = GenericSystem(
                     system_capacity = config.system_capacity_kw,
                     n_timesteps = config.n_timesteps,
                     gen = config.generation_profile_kw,
@@ -208,12 +208,12 @@ class GhostPlant(PowerSource):
                     )
                 subsystems.append(sub)
                 subsystem_names.append(config.subsystem_name)
-            system_model = GhostMultiSystem(subsystems,subsystem_names=subsystem_names)
+            system_model = GenericMultiSystem(subsystems,subsystem_names=subsystem_names)
             fin_model = self.config[0].fin_model
             fin_model_name = self.config[0].name
         else:
-            # requires GhostSystem as system_model
-            system_model = GhostSystem(
+            # requires GenericSystem as system_model
+            system_model = GenericSystem(
                 system_capacity = self.config.system_capacity_kw,
                 n_timesteps = self.config.n_timesteps,
                 gen = self.config.generation_profile_kw,
@@ -240,7 +240,7 @@ class GhostPlant(PowerSource):
                 financial_model, system_model, self.config_name
             )
 
-        super().__init__("GhostPlant", self.site, system_model, financial_model)
+        super().__init__("GenericPlant", self.site, system_model, financial_model)
         self._dispatch = None
         self._layout = None
 

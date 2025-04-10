@@ -6,17 +6,17 @@ import numpy as np
 from hopp.simulation.base import BaseClass
 
 if TYPE_CHECKING:
-    from hopp.simulation.technologies.ghost.ghost_plant import GhostSystem
+    from hopp.simulation.technologies.generic.generic_plant import GenericSystem
 
 @define 
-class GhostMultiSystem(BaseClass):
-    subsystems: list["GhostSystem"]
+class GenericMultiSystem(BaseClass):
+    subsystems: list["GenericSystem"]
     subsystem_names: Optional[list[str]] = field(default = [])
 
     # plant-level
     system_capacity: Optional[float] = field(default = 0.0)
     system_capacity_ac: Optional[float] = field(default = 0.0)
-    system_name: Optional[str] = field(default = "ghost_multi")
+    system_name: Optional[str] = field(default = "generic_multi")
     n_timesteps: float = field(default = 8760)
     
     #results
@@ -39,7 +39,7 @@ class GhostMultiSystem(BaseClass):
         self.update_system_capacity(None)
 
     def value(self, name:str, set_value=None):
-        """Set or retrieve attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`.
+        """Set or retrieve attribute of `hopp.simulation.technologies.generic.generic_plant.GenericSystem`.
             if set_value = None, then retrieve value; otherwise overwrite variable's value.
         
         Args:
@@ -62,10 +62,10 @@ class GhostMultiSystem(BaseClass):
         return
 
     def export(self):
-        """Return all the ghost system configuration in a dictionary for the financial model
+        """Return all the generic system configuration in a dictionary for the financial model
         
         Returns:
-            dict: ghost system configuration for the financial model.
+            dict: generic system configuration for the financial model.
         """
 
         config = {
@@ -79,7 +79,7 @@ class GhostMultiSystem(BaseClass):
 
         Args:
             placeholder (None): unused placeholder value so this function parallels 
-            the function in ``hopp.simulation.technologies.ghost.ghost_plant.GhostSystem``
+            the function in ``hopp.simulation.technologies.generic.generic_plant.GenericSystem``
         """
 
         generation_profile_kW = np.zeros(self.n_timesteps)
@@ -97,7 +97,7 @@ class GhostMultiSystem(BaseClass):
 
         Args:
             placeholder (None): unused placeholder value so this function parallels 
-            the function in ``hopp.simulation.technologies.ghost.ghost_plant.GhostSystem``
+            the function in ``hopp.simulation.technologies.generic.generic_plant.GenericSystem``
         """
 
         system_capacity_kw = 0.0
@@ -123,13 +123,13 @@ class GhostMultiSystem(BaseClass):
         """Retrieve subsystem object with system_name==subsystem_name.
 
         Args:
-            subsystem_name (str): name of subsystem, `corresponding to GhostSystem.system_name`
+            subsystem_name (str): name of subsystem, `corresponding to GenericSystem.system_name`
 
         Raises:
             UserWarning: if subsystem_name doesn't match system_name of any subsystems.
 
         Returns:
-            :obj:`hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`: GhostSystem object
+            :obj:`hopp.simulation.technologies.generic.generic_plant.GenericSystem`: GenericSystem object
         """
         
         subs = [sub.system_name for sub in self.subsystems if sub.system_name==subsystem_name]
@@ -162,10 +162,10 @@ class GhostMultiSystem(BaseClass):
         self.update_system_capacity(None)
 
     def set_subsystem_value(self, subsystem_name:str, variable_name:str, value):
-        """Set attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`
+        """Set attribute of `hopp.simulation.technologies.generic.generic_plant.GenericSystem`
 
         Args:
-            subsystem_name (str): name of subsystem, corresponds to `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem.system_name`
+            subsystem_name (str): name of subsystem, corresponds to `hopp.simulation.technologies.generic.generic_plant.GenericSystem.system_name`
             variable_name (str): name of attribute to retrieve.
             value (Any): value to set for variable `variable_name`. 
         """
@@ -174,10 +174,10 @@ class GhostMultiSystem(BaseClass):
         subsystem.value(variable_name,value)
     
     def get_subsystem_value(self, subsystem_name:str, variable_name:str):
-        """Retrieve attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`
+        """Retrieve attribute of `hopp.simulation.technologies.generic.generic_plant.GenericSystem`
 
         Args:
-            subsystem_name (str): name of subsystem, corresponds to `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem.system_name`
+            subsystem_name (str): name of subsystem, corresponds to `hopp.simulation.technologies.generic.generic_plant.GenericSystem.system_name`
             variable_name (str): name of attribute to retrieve.
 
         Returns:
