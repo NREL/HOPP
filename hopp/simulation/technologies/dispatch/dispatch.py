@@ -22,7 +22,7 @@ class Dispatch:
     ):
 
         self.block_set_name = block_set_name
-        self.round_digits = int(8)
+        self.round_digits = int(4)
 
         self._model = pyomo_model
         self._blocks = pyomo.Block(index_set, rule=self.dispatch_block_rule)
