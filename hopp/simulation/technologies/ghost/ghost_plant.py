@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Optional, Tuple, Union, Sequence
+from typing import Optional, Union
 
 from attrs import define, field
 import numpy as np
@@ -13,13 +12,34 @@ from hopp.simulation.technologies.ghost.ghost_multi import GhostMultiSystem
 
 @define
 class GhostConfig(BaseClass):
-    n_timesteps: float = field(default = 8760)
+    """Configuration class for GhostPlant
+
+    Args:
+        system_capacity_kw (float): system capacity in kW.
+        system_capacity_kwac (float, Optional): system capacity in kWac. If not provided then defaults to system_capacity_kw.
+        generation_profile_kw (list[float]): generation profile of system in kW.
+        subsystem_name (str, Optional): name of subsystem, mostly used if ``GhostMultiSystem`` is the system_model.
+        n_timesteps (float | int): number of timesteps in a year, defaults to 8760.
+        fin_model (obj | dict | str): Optional financial model. Can be any of the following:
+
+            - a string representing an argument to `Singleowner.default`
+
+            - a dict representing a `CustomFinancialModel`
+
+            - an object representing a `CustomFinancialModel` or `Singleowner.Singleowner` instance
+
+    """
+
     system_capacity_kw: float = field(default = 0.0)
     system_capacity_kwac: Optional[float] = field(default = 0.0)
-    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
-    name: str = field(default="GhostPlant")
     generation_profile_kw: Optional[list[float]] = field(default = None)
     subsystem_name: Optional[str] = field(default="ghost_system")
+
+    n_timesteps: Union[float,int] = field(default = 8760)
+    fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    name: str = field(default="GhostPlant")
+    
+    
 
 @define 
 class GhostSystem(BaseClass):
@@ -36,17 +56,17 @@ class GhostSystem(BaseClass):
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
     def __attrs_post_init__(self):
+
         if self.gen is None:
             self.gen = np.zeros(self.n_timesteps)
+        
         self.annual_energy = np.sum(self.gen)
         self.annual_energy_pre_curtailment_ac = np.sum(self.gen)
-        if self.system_capacity>0:
-            self.capacity_factor = 100*(np.sum(self.gen)/(len(self.gen)*self.system_capacity))
-        else:
-            self.capacity_factor = 0.0
+        
         if self.system_capacity_ac==0.0 and self.system_capacity>0:
             self.system_capacity_ac = self.system_capacity
-
+        
+        self.update_capacity_factor()
 
     def value(self, name: str, set_value=None):
         """Set or retrieve attribute of `hopp.simulation.technologies.ghost.ghost_plant.GhostSystem`.
@@ -57,24 +77,36 @@ class GhostSystem(BaseClass):
             set_value (Optional): value to set for variable `name`. 
                 If `None`, then retrieve value. Defaults to None.
         """
+
         if set_value is not None:
             self.__setattr__(name, set_value)
         else:
             return self.__getattribute__(name)
     
     def execute(self, project_life):
+        """Empty execute function since generation is set during initialization.
+
+        Args:
+            project_life (int): unused project life in years
+        """
         return
 
     def export(self):
+        """Return all the ghost system configuration in a dictionary for the financial model
+        
+        Returns:
+            dict: ghost system configuration for the financial model.
         """
-        Return all the ghost system configuration in a dictionary for the financial model
-        """
+
         config = {
             'system_capacity': self.system_capacity,
         }
         return config
 
     def update_capacity_factor(self):
+        """Recalculate and update system capacity_factor as a percent (%)
+        """
+
         if self.system_capacity>0:
             capacity_factor = 100*(np.sum(self.gen)/(len(self.gen)*self.system_capacity))
         else:
@@ -82,10 +114,32 @@ class GhostSystem(BaseClass):
         self.value("capacity_factor",capacity_factor)
 
     def update_system_capacity(self,system_capacity_kw:Union[float,int]):
+        """Update ``system_capacity`` attribute and relcalculate ``capacity_factor``.
+
+        Note:
+            If system_capacity_ac is different than system_capacity, please be sure
+            to update system_capacity_ac using the `value()` function.
+
+        Args:
+            system_capacity_kw (float | int): system capacity in kW
+        """
+
+        if self.system_capacity==self.system_capacity_ac:
+            self.value("system_capacity_ac",system_capacity_kw)
         self.value("system_capacity",system_capacity_kw)
         self.update_capacity_factor()
 
     def update_generation_profile(self,generation_profile_kW:Union[list,np.ndarray]):
+        """Reset the generation profile and update corresponding attributes 
+        (`gen`, `annual_energy_pre_curtailment_ac`, `annual_energy`, and `capacity_factor`).
+
+        Args:
+            generation_profile_kW (Union[list,np.ndarray]): generation profile in kW
+
+        Raises:
+            ValueError: if input generation_profile_kW is not same length as gen attribute.
+        """
+
         if len(generation_profile_kW)==len(self.gen):
             if isinstance(generation_profile_kW,list):
                 generation_profile_kW = np.array(generation_profile_kW)
@@ -103,11 +157,28 @@ class GhostSystem(BaseClass):
         raise ValueError(msg)
     
     def calc_nominal_capacity(self,interconnect_kw: float):
+        """Calculates the nominal AC net system capacity.
+
+        Args:
+            interconnect_kw (float): grid interconnection limit in kW
+
+        Returns:
+            float: system's nominal AC net capacity [kW]
+        """
+
         W_ac_nom = min(self.system_capacity_ac, interconnect_kw)
         return W_ac_nom
     
     def calc_gen_max_feasible_kwh(self, interconnect_kw: float):
-        #t_step = self.site.interval / 60     
+        """Calculates the maximum feasible generation profile that could have occurred (year 1)
+
+        Args:
+            interconnect_kw (float): grid interconnection limit in kW
+
+        Returns:
+            list[float]: maximum feasible generation [kWh]
+        """
+
         W_ac_nom = self.calc_nominal_capacity(interconnect_kw)
         
         E_net_max_feasible = [min(x,W_ac_nom) * self.t_step for x in self.gen[0:self.n_timesteps]]      # [kWh]
@@ -120,9 +191,10 @@ class GhostPlant(PowerSource):
     config_name: str = field(init=False, default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
-        # if self.config.n_ghost_systems==1:
         t_step = self.site.interval / 60
+        
         if isinstance(self.config,list):
+            # requires GhostMultiSystem as system_model
             subsystems = []
             subsystem_names = []
             for config in self.config:
@@ -140,6 +212,7 @@ class GhostPlant(PowerSource):
             fin_model = self.config[0].fin_model
             fin_model_name = self.config[0].name
         else:
+            # requires GhostSystem as system_model
             system_model = GhostSystem(
                 system_capacity = self.config.system_capacity_kw,
                 n_timesteps = self.config.n_timesteps,
@@ -151,14 +224,6 @@ class GhostPlant(PowerSource):
             fin_model = self.config.fin_model
             fin_model_name = self.config.name
             
-        # if self.config.n_ghost_systems>1:
-        #     for ii,system_capacity_kw in enumerate(self.config.system_capacity_kw):
-        #         subsystem_model = GhostSystem(
-        #             system_capacity_kw,
-        #             self.config.n_timesteps,
-        #             gen=self.config.generation_profile_kw[ii],
-        #             system_capacity_ac = self.config.system_capacity_kwac[ii]
-        #             )
         
         financial_model = None
         if isinstance(fin_model, str):
@@ -169,7 +234,6 @@ class GhostPlant(PowerSource):
             else:
                 financial_model = fin_model
         if financial_model is None:
-            # default
             financial_model = Singleowner.default(self.config_name)
         else:
             financial_model = self.import_financial_model(
@@ -182,6 +246,8 @@ class GhostPlant(PowerSource):
 
     @property
     def system_capacity_kw(self):
+        """float: System capacity in kW.
+        """
         return self._system_model.value("system_capacity")
 
     @system_capacity_kw.setter
@@ -190,6 +256,8 @@ class GhostPlant(PowerSource):
     
     @property
     def system_capacity_kwac(self):
+        """float: AC system capacity in kW-AC.
+        """
         return self._system_model.value("system_capacity_ac")
 
     @system_capacity_kw.setter
@@ -198,6 +266,8 @@ class GhostPlant(PowerSource):
 
     @property
     def generation_profile(self):
+        """list[float]: generation profile in kW.
+        """
         return self._system_model.value("gen")
 
     @generation_profile.setter
@@ -205,9 +275,27 @@ class GhostPlant(PowerSource):
         self._system_model.update_generation_profile(generation_profile_kW)
     
     def calc_nominal_capacity(self, interconnect_kw: float):
+        """Calculates the nominal AC net system capacity.
+
+        Args:
+            interconnect_kw (float): grid interconnection limit in kW
+
+        Returns:
+            float: sum of subsystem's nominal AC net capacity [kW]
+        """
+
         W_ac_nom = self._system_model.calc_nominal_capacity(interconnect_kw)
         return W_ac_nom
     
     def calc_gen_max_feasible_kwh(self, interconnect_kw: float):
+        """Calculates the maximum feasible generation profile that could have occurred (year 1).
+
+        Args:
+            interconnect_kw (float): grid interconnection limit in kW
+
+        Returns:
+            list[float]: maximum feasible generation timeseries [kWh]
+        """
+
         E_net_max_feasible = self._system_model.calc_gen_max_feasible_kwh(interconnect_kw)
         return E_net_max_feasible
