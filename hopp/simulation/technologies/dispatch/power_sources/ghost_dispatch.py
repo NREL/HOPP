@@ -4,6 +4,7 @@ from pyomo.network import Port
 
 if TYPE_CHECKING:
     from hopp.simulation.technologies.ghost.ghost_plant import GhostSystem
+    from hopp.simulation.technologies.ghost.ghost_multi import GhostMultiSystem
 from hopp.simulation.technologies.financial import FinancialModelType
 from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch import (
     PowerSourceDispatch,
@@ -12,7 +13,7 @@ from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch i
 
 class GhostDispatch(PowerSourceDispatch):
     ghost_obj: Union[Expression, float]
-    _system_model: "GhostSystem"
+    _system_model: Union["GhostSystem","GhostMultiSystem"]
     _financial_model: FinancialModelType
     """Dispatch optimization model for ghost power source."""
 
@@ -20,7 +21,7 @@ class GhostDispatch(PowerSourceDispatch):
         self,
         pyomo_model: ConcreteModel,
         indexed_set: Set,
-        system_model: "GhostSystem",
+        system_model: Union["GhostSystem","GhostMultiSystem"],
         financial_model: FinancialModelType,
         block_set_name: str = "ghost",
     ):

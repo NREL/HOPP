@@ -113,7 +113,7 @@ class TechnologiesConfig(BaseClass):
     wind: Optional[WindConfig] = field(default=None)
     wave: Optional[MHKConfig] = field(default=None)
     tidal: Optional[MHKTidalConfig] = field(default=None)
-    ghost: Optional[GhostConfig] = field(default=None)
+    ghost: Optional[Union[GhostConfig,list[GhostConfig]]] = field(default=None)
     tower: Optional[TowerConfig] = field(default=None)
     trough: Optional[TroughConfig] = field(default=None)
     battery: Optional[Union[BatteryConfig, BatteryStatelessConfig]] = field(default=None)
@@ -145,7 +145,16 @@ class TechnologiesConfig(BaseClass):
             config["tidal"] = MHKTidalConfig.from_dict(data["tidal"])
         
         if "ghost" in data:
-            config["ghost"] = GhostConfig.from_dict(data["ghost"])
+            if any(isinstance(v,dict) for k,v in data["ghost"].items()):
+                ghost_configs = []
+                for name,subconfig in data["ghost"].items():
+                    if isinstance(subconfig,dict):
+                        subconfig.setdefault("subsystem_name", name)
+                        ghost_config = GhostConfig.from_dict(subconfig)
+                        ghost_configs.append(ghost_config)
+                config["ghost"] = ghost_configs
+            else:
+                config["ghost"] = GhostConfig.from_dict(data["ghost"])
 
         if "tower" in data:
             config["tower"] = TowerConfig.from_dict(data["tower"])
