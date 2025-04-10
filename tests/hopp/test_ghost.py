@@ -36,6 +36,7 @@ def site_info():
         "solar": True,
         "wind": True,
         "hub_height": 90.0,
+        # "follow_desired_schedule": True,
         "curtailment_value_type": "interconnect_kw",
         "desired_schedule": [18.0]*8760,
     }
@@ -55,6 +56,7 @@ def ghost_site():
     },
         "solar": False,
         "wind": False,
+        # "follow_desired_schedule": True,
         "curtailment_value_type": "interconnect_kw",
         "desired_schedule": [18.0]*8760,
         "n_timesteps": 8760,
@@ -111,6 +113,8 @@ def dispatch_options():
     }
     return dispatch_opt
 
+# def test_ghost_pv(hybrid_tech_config,site_info,dispatch_options,ghost_site,subtests):
+
 def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatch_options,ghost_site,subtests):
     hopp_config_renewables = {
         "site": site_info,
@@ -119,13 +123,14 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
     }
     # simulate renewables
     hi = HoppInterface(hopp_config_renewables)
-    hi.system.simulate_power(project_life = 1)
+    # hi.system.simulate_power(project_life = 1)
+    hi.system.simulate(project_life = 1)
     hybrid_plant = hi.system
 
     #self._system_model.SystemDesign.dc_ac_ratio
     pv_size_kwac = hybrid_plant.pv._system_model.SystemDesign.system_capacity/hybrid_plant.pv._system_model.SystemDesign.dc_ac_ratio
-    renewables_size_kw = hybrid_plant.wind.system_capacity_kw + hybrid_plant.pv._system_model.SystemDesign.system_capacity
-    renewables_size_kwac = hybrid_plant.wind.system_capacity_kw + pv_size_kwac
+    # renewables_size_kw = hybrid_plant.wind.system_capacity_kw + hybrid_plant.pv._system_model.SystemDesign.system_capacity
+    # renewables_size_kwac = hybrid_plant.wind.system_capacity_kw + pv_size_kwac
     wind_generation_profile = np.array(hybrid_plant.wind.generation_profile)
     pv_generation_profile = np.array(hybrid_plant.pv.generation_profile)
     wind_pv_generation = wind_generation_profile + pv_generation_profile
@@ -134,9 +139,16 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
         "site": ghost_site,
         "technologies": {
             "ghost": {
-                "system_capacity_kw": renewables_size_kw,
-                "system_capacity_kwac": renewables_size_kwac,
-                "generation_profile_kw": wind_pv_generation.tolist(),
+                "pv_system": {
+                    "system_capacity_kw": hybrid_plant.pv._system_model.SystemDesign.system_capacity,
+                    "system_capacity_kwac": pv_size_kwac,
+                    "generation_profile_kw": np.array(hybrid_plant.pv.generation_profile).tolist(),
+                },
+                "wind_system": {
+                    "system_capacity_kw": hybrid_plant.wind.system_capacity_kw,
+                    "system_capacity_kwac": hybrid_plant.wind.system_capacity_kw,
+                    "generation_profile_kw": np.array(hybrid_plant.wind.generation_profile).tolist(),
+                },
             },
             "battery": hybrid_tech_config["battery"],
             "grid": hybrid_tech_config["grid"],
@@ -145,7 +157,8 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
     }
 
     boo = HoppInterface(hopp_config_ghost)
-    boo.system.simulate_power(project_life = 1)
+    # boo.system.simulate_power(project_life = 1)
+    boo.system.simulate(project_life = 1)
     hybrid_ghost_plant = boo.system
 
     generation_hybrid = np.array(hybrid_plant.generation_profile.grid)
@@ -153,14 +166,15 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
     
     # hybrid nominal capacity is set after simulate_grid_connection()
     # calculated in calc_nominal_capacity() - which is AC capacity
-    with subtests.test("Hybrid Nominal Capacity"):
+    with subtests.test("hybrid_nominal_capacity"):
         assert hybrid_ghost_plant.grid.hybrid_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity,1e-6)
 
     # hybrid_size_kw input to simulate_grid_connection()
-    with subtests.test("Hybrid Capacity"):
+    with subtests.test("hybrid_size_kw"):
         assert hybrid_ghost_plant.grid.system_capacity_kw == approx(hybrid_plant.grid.system_capacity_kw)
     
     # check that generation profile was set properly
+    # AttributeError
     with subtests.test("Ghost Generation Profile"):
         np.testing.assert_allclose(
             hybrid_ghost_plant.generation_profile.ghost, 
@@ -169,9 +183,11 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
             )
 
     # check gen max feasible
-    with subtests.test("Generation Gen Max Feasible"):
+    # AttributeError
+    with subtests.test("total_gen_max_feasible_year1"):
         wind_gen_max_feasible = hybrid_plant.wind.calc_gen_max_feasible_kwh(hybrid_plant.interconnect_kw)
         pv_gen_max_feasible = hybrid_plant.pv.calc_gen_max_feasible_kwh(hybrid_plant.interconnect_kw)
+        battery_gen_max_feasible = hybrid_plant.battery.calc_gen_max_feasible_kwh(hybrid_plant.interconnect_kw)
         wind_pv_gen_max_feasible = np.array(wind_gen_max_feasible) + np.array(pv_gen_max_feasible)
         np.testing.assert_allclose(
             hybrid_ghost_plant.ghost.gen_max_feasible,
@@ -180,7 +196,8 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
             )
 
     # based on total_gen_max_feasible_year1 input to simulate_grid_connection()
-    with subtests.test("Grid Gen Max Feasible"):
+    # failing
+    with subtests.test("grid.gen_max_feasible"):
         np.testing.assert_allclose(
             hybrid_ghost_plant.grid.gen_max_feasible,
             hybrid_plant.grid.gen_max_feasible,
@@ -188,34 +205,42 @@ def test_ghost_hybrid_with_storage_dispatch(hybrid_tech_config,site_info,dispatc
             )
     
     # total_gen_max_feasible_year1 input to simulate_grid_connection()
-    with subtests.test("Total Gen Max Feasible"):
+    # failing
+    with subtests.test("grid.total_gen_max_feasible_year1"):
         np.testing.assert_allclose(
             hybrid_ghost_plant.grid.total_gen_max_feasible_year1,
             hybrid_plant.grid.total_gen_max_feasible_year1,
             rtol = 1e-6
             )
 
-    with subtests.test("Pre-Interconnect Grid generation profile"):
+    # failing
+    with subtests.test("system_pre_interconnect_kwac"):
         np.testing.assert_allclose(
             hybrid_ghost_plant.grid._system_model.Outputs.system_pre_interconnect_kwac, 
             hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac,
-            rtol = 1e-3
+            rtol = 1e-6,
         )
 
     with subtests.test("Grid AEP"):
         assert np.sum(generation_ghost) == approx(np.sum(generation_hybrid),1e-6)
     
     # total_gen is input to simulate_grid_connection
-    with subtests.test("Grid generation without battery"):
+    # failing
+    with subtests.test("generation_profile_wo_battery"):
         np.testing.assert_allclose(
             hybrid_ghost_plant.grid.generation_profile_wo_battery,
             hybrid_plant.grid.generation_profile_wo_battery,
-            rtol = 1e-6
+            rtol = 1e-6,
             )
     # grid.generation_profile input as total_gen to simulate_grid_connection()
     # hybrid_plant.grid.generation_profile
-    with subtests.test("Grid generation profile"):
-        np.testing.assert_allclose(generation_ghost, generation_hybrid,rtol = 1e-2)
+    # failing
+    with subtests.test("generation_profile.grid"):
+        np.testing.assert_allclose(
+            hybrid_ghost_plant.generation_profile.grid, 
+            hybrid_plant.generation_profile.grid,
+            rtol = 1e-6,
+            )
 
 def test_ghost_wind_with_storage_dispatch(hybrid_tech_config,site_info,dispatch_options,ghost_site,subtests):
     techs = ['wind','battery','grid']
@@ -253,6 +278,12 @@ def test_ghost_wind_with_storage_dispatch(hybrid_tech_config,site_info,dispatch_
     generation_hybrid = np.array(hybrid_plant.generation_profile.grid)
     generation_ghost = np.array(hybrid_ghost_plant.generation_profile.grid)
     
+    with subtests.test("Hybrid Nominal Capacity"):
+        assert hybrid_ghost_plant.grid.hybrid_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity,1e-6)
+
+    with subtests.test("Hybrid Capacity"):
+        assert hybrid_ghost_plant.grid.system_capacity_kw == approx(hybrid_plant.grid.system_capacity_kw)
+
     with subtests.test("Grid AEP"):
         assert np.sum(generation_ghost) == approx(np.sum(generation_hybrid),1e-6)
     
@@ -274,12 +305,13 @@ def test_ghost_pv_with_storage_dispatch(hybrid_tech_config,site_info,dispatch_op
     hi = HoppInterface(hopp_config_renewables)
     hi.system.simulate_power(project_life = 1)
     hybrid_plant = hi.system
-
+    pv_size_kwac = hybrid_plant.pv._system_model.SystemDesign.system_capacity/hybrid_plant.pv._system_model.SystemDesign.dc_ac_ratio
     hopp_config_ghost = {
         "site": ghost_site,
         "technologies": {
             "ghost": {
                 "system_capacity_kw": hybrid_plant.pv._system_model.SystemDesign.system_capacity,
+                "system_capacity_kwac": pv_size_kwac,
                 "generation_profile_kw": list(np.array(hybrid_plant.pv._system_model.Outputs.gen))
             },
             "battery": hybrid_tech_config["battery"],
@@ -295,6 +327,12 @@ def test_ghost_pv_with_storage_dispatch(hybrid_tech_config,site_info,dispatch_op
     generation_hybrid = np.array(hybrid_plant.generation_profile.grid)
     generation_ghost = np.array(hybrid_ghost_plant.generation_profile.grid)
     
+    with subtests.test("Hybrid Nominal Capacity"):
+        assert hybrid_ghost_plant.grid.hybrid_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity,1e-6)
+
+    with subtests.test("Hybrid Capacity"):
+        assert hybrid_ghost_plant.grid.system_capacity_kw == approx(hybrid_plant.grid.system_capacity_kw)
+
     with subtests.test("Grid AEP"):
         assert np.sum(generation_ghost) == approx(np.sum(generation_hybrid),1e-6)
     
