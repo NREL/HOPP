@@ -1,4 +1,4 @@
-(resource:ak-wind-resource)=
+(resource:bc-hrrr-wind-resource)=
 # Wind Resource from the Bias-Corrected NREL processed NOAA's HRRR Dataset (API)
 
 Wind resource data can be downloaded from the NREL processed High-Resolution Rapid Refresh (HRRR) dataset from the National Oceanic and Atmospheric Administration (NOAA) for the years 2015-2023. This data is available as an hourly operational forecast product. The data is bias-corrected so that it can be used in continuity with the legacy WIND toolkit data (2007-2013). The data is available over CONUS from the NREL Developer Network hosted Wind Integration National Dataset (WIND) Toolkit dataset [Wind Toolkit Data - BC-HRRR CONUS 60-minute (NOAA + NREL)](https://developer.nrel.gov/docs/wind/wind-toolkit/wtk-bchrrr-v1-0-0-download/). Using this functionality requires an NREL API key.
