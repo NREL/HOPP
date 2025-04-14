@@ -5,6 +5,7 @@ from PySAM.ResourceTools import SRW_to_wind_data
 
 from hopp.utilities.keys import get_developer_nrel_gov_key, get_developer_nrel_gov_email
 from hopp.simulation.technologies.resource.resource import Resource
+from hopp.tools.resource.pysam_wind_tools import combine_and_write_srw_files
 from hopp import ROOT_DIR
 
 
@@ -163,27 +164,10 @@ class WindResource(Resource):
         file_out: string
             File path to write combined srw file
         """
-        data = [None] * 2
-        for height, f in self.file_resource_heights.items():
-            if os.path.isfile(f):
-                with open(f) as file_in:
-                    csv_reader = csv.reader(file_in, delimiter=',')
-                    line = 0
-                    for row in csv_reader:
-                        if line < 2:
-                            data[line] = row
-                        else:
-                            if line >= len(data):
-                                data.append(row)
-                            else:
-                                data[line] += row
-                        line += 1
-
-        with open(self.filename, 'w', newline='') as fo:
-            writer = csv.writer(fo)
-            writer.writerows(data)
-
-        return os.path.isfile(self.filename)
+        
+        success = combine_and_write_srw_files(self.file_resource_heights,self.filename)
+        
+        return success
 
     def format_data(self):
         """
