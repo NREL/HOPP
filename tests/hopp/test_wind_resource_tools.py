@@ -141,7 +141,7 @@ def test_pysam_combine_wind_files_csv():
     )
     resource_heights = [80.0,100.0]
     wind_data = combine_wind_files(alaska_wind_resource_file,resource_heights)
-    assert len(wind_data["heights"]) == 7  
+    assert len(wind_data["heights"]) == 7
     
 def test_pysam_combine_wind_files_srw():
 
