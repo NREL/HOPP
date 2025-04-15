@@ -194,6 +194,7 @@ def combine_and_write_srw_files(file_resource_heights, output_filepath):
     with open(output_filepath, 'w', newline='') as fo:
         writer = csv.writer(fo)
         writer.writerows(data)
+    return os.path.isfile(output_filepath)
 
 def combine_wind_resource_data(wind_resource_data):
     """Combines dictionaries of wind resoure data.
