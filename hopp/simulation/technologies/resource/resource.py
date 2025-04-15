@@ -38,15 +38,14 @@ class Resource(metaclass=ABCMeta):
         self.affiliation = 'NREL'
         self.reason = 'hybrid-analysis'
         self.mailing_list = 'true'
-
         # paths
         self.path_current = os.path.dirname(os.path.abspath(__file__))
         self.path_resource = os.path.join(ROOT_DIR, 'simulation', 'resource_files')
-
+        self.filename = None #: filepath of resource data file, defaults to None
+        
         # update any passed in
         self.__dict__.update(kwargs)
 
-        self.filename = None #: filepath of resource data file, defaults to None
         self._data = dict()
 
     def check_download_dir(self):
@@ -77,7 +76,8 @@ class Resource(metaclass=ABCMeta):
                 r = requests.get(url)
                 if r:
                     localfile = open(filename, mode='w+')
-                    localfile.write(r.text)
+                    txt = r.text.replace("(Â°C)","(C)").replace("(Â°)","(deg)")
+                    localfile.write(txt)
                     localfile.close()
                     if os.path.isfile(filename):
                         success = True

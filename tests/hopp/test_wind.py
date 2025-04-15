@@ -7,6 +7,9 @@ from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.utilities import load_yaml
 from tests.hopp.utils import create_default_site_info
 from hopp import ROOT_DIR
+import os
+from hopp.simulation.technologies.sites import SiteInfo
+
 
 @fixture
 def site():
@@ -207,3 +210,72 @@ def test_changing_system_capacity_floris(site):
     assert model._system_model.nTurbs == new_num_turbs
     assert model._system_model.system_capacity == new_capacity_kW 
 
+def test_alaska_wind_pysam():
+    site_data = {
+        "lat": 66.68,
+        "lon": -162.5,
+        "year": 2019,
+        "site_details":
+            {
+            "site_area_km2": 1.0,
+            "site_shape":"square",
+            }
+    }
+    alaska_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "66.68_-162.5_WTK_Alaksa_2019_60min_80m_100m.csv"
+    )
+    site_info = {
+        "data": site_data,
+        "wind_resource_file": alaska_wind_resource_file,
+        "wind_resource_region": "ak",
+        "wind": True,
+        "solar": False,
+        "hub_height": 90.0,
+    }
+    site = SiteInfo.from_dict(site_info)
+    config = WindConfig.from_dict({'num_turbines': 5, "turbine_rating_kw": 2000})
+    model = WindPlant(site, config=config)
+    model._system_model.execute(1)
+    assert model._system_model.Outputs.capacity_factor == approx(45.85,abs = 0.1)
+
+
+def test_alaska_wind_floris():
+    site_data = {
+        "lat": 66.68,
+        "lon": -162.5,
+        "year": 2019,
+        "site_details":
+            {
+            "site_area_km2": 1.0,
+            "site_shape":"square",
+            }
+    }
+    alaska_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "66.68_-162.5_WTK_Alaksa_2019_60min_80m_100m.csv"
+    )
+    site_info = {
+        "data": site_data,
+        "wind_resource_file": alaska_wind_resource_file,
+        "wind_resource_region": "ak",
+        "wind": True,
+        "solar":False,
+        "hub_height": 90.0,
+    }
+    site = SiteInfo.from_dict(site_info)
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    wind_config_input = {
+        'num_turbines': 4,
+        "turbine_rating_kw": 5000,
+        "model_name": "floris",
+        "timestep": [1, 8760],
+        "resource_parse_method":"weighted_average",
+        "floris_config": floris_config_path
+    }
+    config = WindConfig.from_dict(wind_config_input)
+    model = WindPlant(site, config=config)
+    model._system_model.execute(1)
+    assert model._system_model.annual_energy == approx(78514174,rel=1e-6)

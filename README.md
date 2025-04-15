@@ -45,7 +45,7 @@ solar and storage.
 4. Install HOPP and its dependencies:
 
     ```bash
-    conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
+    conda install -y -c conda-forge coin-or-cbc glpk
     ```
 
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc.
