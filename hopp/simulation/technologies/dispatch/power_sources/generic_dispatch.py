@@ -12,10 +12,13 @@ from hopp.simulation.technologies.dispatch.power_sources.power_source_dispatch i
 
 
 class GenericDispatch(PowerSourceDispatch):
+    """Dispatch optimization model for generic power source.
+    Adapted from tidal_dispatch with minor changes.
+    """
+    
     generic_obj: Union[Expression, float]
     _system_model: Union["GenericSystem","GenericMultiSystem"]
     _financial_model: FinancialModelType
-    """Dispatch optimization model for generic power source."""
 
     def __init__(
         self,

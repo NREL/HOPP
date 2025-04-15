@@ -10,23 +10,51 @@ if TYPE_CHECKING:
 
 @define 
 class GenericMultiSystem(BaseClass):
+    """Represents physics of multiple user-defined generation technologies.
+    This class combines functionality of both PowerSource and hybrid_simulation.simulate_power() 
+    to ensure that individual technologies (or subsystems) are operated as part of the hybrid_plant 
+    in the same manner that they would be if they were represented as individual PowerSource objects.
+
+    Note: 
+        this functionality is not tested for financial calculations.
+
+    Args:
+        subsystems (list[GenericSystem]): list of each
+        subsystem_names (list[str], Optional): list of unique names to identify each subsystem.
+            If not provided or if duplicate names are used, it will append a number to the end of the names.
+        system_name (str, Optional): name of the MultiSystem, defaults to "generic_multi". 
+        n_timesteps (float | int, Optional): number of timesteps in the simulation, defaults to 8760.
+            This attribute is included so that GenericMulti does not require SiteInfo as an input.
+
+    Attributes:
+        system_capacity (float): system capacity of all subsystems in kW.
+        system_capacity_ac (float): system capacity of all subsystems in kW-AC.
+        gen (list[float]): generation profile of all subsystems in kW
+        annual_energy (float): annual energy production of all subsystems in kWh/year
+        capacity_factor (float): capacity factor of all the subsystems as a percent
+        annual_energy_pre_curtailment_ac (float): annual energy production of all subsystems in kWh/year
+    """
     subsystems: list["GenericSystem"]
     subsystem_names: Optional[list[str]] = field(default = [])
-
-    # plant-level
-    system_capacity: Optional[float] = field(default = 0.0)
-    system_capacity_ac: Optional[float] = field(default = 0.0)
     system_name: Optional[str] = field(default = "generic_multi")
-    n_timesteps: float = field(default = 8760)
-    
-    #results
-    gen: Optional[list[float]] = field(default = None)
+    n_timesteps: Union[float,int] = field(default = 8760)
+
+    # Multi-System aggregated values.
+    system_capacity: float = field(init = False) 
+    system_capacity_ac: float = field(init = False)
+    gen: list[float] = field(init = False)
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
     def __attrs_post_init__(self):
+        """Initialize some attributes and set defaults as needed. This method does the following:
+        
+        1) ensures that subsystem_names are unique and reassigns names to each subsystem if needed
 
+        2) updates generation profile and system capacity. This initializes the GenericMultiSystem attributes:
+            gen, annual_energy, annual_energy_pre_curtailment_ac, system_capacity, system_capacity_ac, and capacity_factor.
+        """
         if len(self.subsystem_names)==0:
             subsystem_names_original = [sub.system_name for sub in self.subsystem_names]
             for ni,sub_name in enumerate(subsystem_names_original):

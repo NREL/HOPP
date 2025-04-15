@@ -421,3 +421,114 @@ def test_generic_hybrid(hybrid_tech_config,site_info,dispatch_options,generic_si
 
     with subtests.test("generation_profile.grid"):
         np.testing.assert_allclose(generation_generic, generation_hybrid,rtol = 1e-6)
+
+
+def test_generic_wind_with_pv_and_storage_dispatch(hybrid_tech_config,site_info,dispatch_options,subtests):
+    """Test generic plant functionality with other generation technologies. GenericPlant is 
+    used to substitute the wind system and runs PV, battery, and grid as normal. 
+    This uses GenericMultiSystem as the GenericPlant system_model.
+    """
+
+    hopp_config_renewables = {
+        "site": site_info,
+        "technologies": hybrid_tech_config,
+        "config": {"dispatch_options":dispatch_options},
+    }
+    # simulate renewables
+    hi = HoppInterface(hopp_config_renewables)
+    hi.system.simulate(project_life = 1)
+    hybrid_plant = hi.system
+
+    wind_generation_profile = np.array(hybrid_plant.wind.generation_profile)
+    
+    hopp_config_generic = {
+        "site": site_info,
+        "technologies": {
+            "generic": {
+                "wind_system": {
+                    "system_capacity_kw": hybrid_plant.wind.system_capacity_kw,
+                    "system_capacity_kwac": hybrid_plant.wind.system_capacity_kw,
+                    "generation_profile_kw": np.array(hybrid_plant.wind.generation_profile).tolist(),
+                },
+            },
+            "pv": hybrid_tech_config["pv"],
+            "battery": hybrid_tech_config["battery"],
+            "grid": hybrid_tech_config["grid"],
+        },
+        "config": {"dispatch_options":dispatch_options},
+    }
+
+    generic_hi = HoppInterface(hopp_config_generic)
+    generic_hi.system.simulate(project_life = 1)
+    hybrid_generic_plant = generic_hi.system
+
+    generation_hybrid = np.array(hybrid_plant.generation_profile.grid)
+    generation_generic = np.array(hybrid_generic_plant.generation_profile.grid)
+    
+    # hybrid nominal capacity is set after simulate_grid_connection()
+    # calculated in calc_nominal_capacity() - which is AC capacity
+    with subtests.test("hybrid_nominal_capacity"):
+        assert hybrid_generic_plant.grid.hybrid_nominal_capacity == approx(hybrid_plant.grid.hybrid_nominal_capacity,1e-6)
+
+    # hybrid_size_kw input to simulate_grid_connection()
+    with subtests.test("hybrid_size_kw"):
+        assert hybrid_generic_plant.grid.system_capacity_kw == approx(hybrid_plant.grid.system_capacity_kw)
+    
+    # check that generation profile was set properly
+    with subtests.test("Generic Generation Profile"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.generation_profile.generic, 
+            wind_generation_profile,
+            rtol = 1e-6
+            )
+
+    # check gen max feasible
+    with subtests.test("total_gen_max_feasible_year1"):
+        wind_gen_max_feasible = hybrid_plant.wind.calc_gen_max_feasible_kwh(hybrid_plant.interconnect_kw)
+        np.testing.assert_allclose(
+            hybrid_generic_plant.generic.gen_max_feasible,
+            wind_gen_max_feasible,
+            rtol = 1e-6
+            )
+
+    # based on total_gen_max_feasible_year1 input to simulate_grid_connection()
+    with subtests.test("grid.gen_max_feasible"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.grid.gen_max_feasible,
+            hybrid_plant.grid.gen_max_feasible,
+            rtol = 1e-6
+            )
+    
+    # total_gen_max_feasible_year1 input to simulate_grid_connection()
+    with subtests.test("grid.total_gen_max_feasible_year1"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.grid.total_gen_max_feasible_year1,
+            hybrid_plant.grid.total_gen_max_feasible_year1,
+            rtol = 1e-6
+            )
+
+    with subtests.test("system_pre_interconnect_kwac"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.grid._system_model.Outputs.system_pre_interconnect_kwac, 
+            hybrid_plant.grid._system_model.Outputs.system_pre_interconnect_kwac,
+            rtol = 1e-6,
+        )
+
+    with subtests.test("Grid AEP"):
+        assert np.sum(generation_generic) == approx(np.sum(generation_hybrid),1e-6)
+    
+    # total_gen is input to simulate_grid_connection
+    with subtests.test("generation_profile_wo_battery"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.grid.generation_profile_wo_battery,
+            hybrid_plant.grid.generation_profile_wo_battery,
+            rtol = 1e-6,
+            )
+    
+    # hybrid_plant.grid.generation_profile
+    with subtests.test("generation_profile.grid"):
+        np.testing.assert_allclose(
+            hybrid_generic_plant.generation_profile.grid, 
+            hybrid_plant.generation_profile.grid,
+            rtol = 1e-6,
+            )

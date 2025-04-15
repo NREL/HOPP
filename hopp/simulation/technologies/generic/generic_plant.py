@@ -9,6 +9,8 @@ from hopp.simulation.technologies.financial import CustomFinancialModel, Financi
 from hopp.simulation.technologies.sites import SiteInfo
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.generic.generic_multi import GenericMultiSystem
+from hopp.utilities.validators import gt_zero
+import warnings
 
 @define
 class GenericConfig(BaseClass):
@@ -18,7 +20,7 @@ class GenericConfig(BaseClass):
         system_capacity_kw (float): system capacity in kW.
         system_capacity_kwac (float, Optional): system capacity in kWac. If not provided then defaults to system_capacity_kw.
         generation_profile_kw (list[float]): generation profile of system in kW.
-        subsystem_name (str, Optional): name of subsystem, mostly used if ``GenericMultiSystem`` is the system_model.
+        subsystem_name (str, Optional): name of subsystem, only used if ``GenericMultiSystem`` is the system_model.
         n_timesteps (float | int): number of timesteps in a year, defaults to 8760.
         fin_model (obj | dict | str): Optional financial model. Can be any of the following:
 
@@ -43,29 +45,70 @@ class GenericConfig(BaseClass):
 
 @define 
 class GenericSystem(BaseClass):
-    system_capacity: float = field(default = 0.0)
+    """Represents a single generic system defined by its system capacity and generation profile.
+
+    Args:
+        system_capacity (float): system capacity in kW. For DC-systems, 
+            this is likely equal to the system capacity in kW-DC.
+        gen (list[float]): generation profile in kW. 
+        system_capacity_ac (float, Optional): system capacity in kW-AC. Defaults to system_capacity if not specified.
+            Should be specified if `system_capacity_ac` is different than `system_capacity`. 
+            This input is helpful when representing DC-systems such as ``PVPlant``.
+        system_name (str, Optional): name of system, primarily used if using `GenericMultiSystem`.
+            Defaults to "generic_system".
+        n_timesteps (float | int, Optional): number of timesteps in a simulation. Defaults to 8760.
+        t_step (float | int, Optional): time step in hours. Defaults to 1.
+
+    Attributes:
+        annual_energy (float): annual energy production in kWh/year
+        capacity_factor (float): capacity factor of the system based on system_capacity as a percent
+        annual_energy_pre_curtailment_ac (float): annual energy production in kWh/year
+    """
+
+    system_capacity: float = field(validator=gt_zero)
+    gen: list[float]
+    
     system_capacity_ac: Optional[float] = field(default = 0.0)
     system_name: Optional[str] = field(default = "generic_system")
-    n_timesteps: Optional[float] = field(default = 8760)
+    n_timesteps: Optional[Union[float,int]] = field(default = 8760)
     t_step: Optional[Union[float,int]] = field(default = 1)
     
-    #results
-    gen: Optional[list[float]] = field(default = None)
+    # Calculated values
     annual_energy: float = field(init = False)
     capacity_factor: float = field(init = False)
     annual_energy_pre_curtailment_ac: float = field(init = False)
     
     def __attrs_post_init__(self):
+        """Initialize some attributes and set defaults if needed. This method does the following:
 
-        if self.gen is None:
-            self.gen = np.zeros(self.n_timesteps)
-        
+        1) calculate attributes:
+
+            - `annual_energy`
+
+            - `annual_energy_pre_curtailment_ac`
+
+            - `capacity_factor`
+
+        2) set `system_capacity_ac` to `system_capacity` if `system_capacity_ac` was not input.
+
+        Raises:
+            ValueError: if length of self.gen is not equal to self.n_timesteps
+        """
+
         self.annual_energy = np.sum(self.gen)
         self.annual_energy_pre_curtailment_ac = np.sum(self.gen)
         
-        if self.system_capacity_ac==0.0 and self.system_capacity>0:
+        if self.system_capacity_ac==0.0:
             self.system_capacity_ac = self.system_capacity
         
+        if len(self.gen)!=self.n_timesteps:
+            msg = (
+                f"Generation profile expected to have {self.n_timesteps} values but "
+                f"has {len(self.gen)} values."
+            )
+
+            raise ValueError(msg)
+
         self.update_capacity_factor()
 
     def value(self, name: str, set_value=None):
@@ -87,7 +130,8 @@ class GenericSystem(BaseClass):
         """Empty execute function since generation is set during initialization.
 
         Args:
-            project_life (int): unused project life in years
+            project_life (int): currently unused project life in years. 
+                May be used in financial calculation in the future.
         """
         return
 
@@ -114,7 +158,8 @@ class GenericSystem(BaseClass):
         self.value("capacity_factor",capacity_factor)
 
     def update_system_capacity(self,system_capacity_kw:Union[float,int]):
-        """Update ``system_capacity`` attribute and relcalculate ``capacity_factor``.
+        """Update ``system_capacity`` attribute and recalculate ``capacity_factor``.
+        Also updates ``system_capacity_ac`` if it was previously equal to ``system_capacity``.
 
         Note:
             If system_capacity_ac is different than system_capacity, please be sure
@@ -124,8 +169,15 @@ class GenericSystem(BaseClass):
             system_capacity_kw (float | int): system capacity in kW
         """
 
-        if self.system_capacity==self.system_capacity_ac:
+        if self.system_capacity!=self.system_capacity_ac:
+            msg = (
+                f"Resetting system_capacity for {self.system_name} but system_capacity_ac ({self.system_capacity_ac}) "
+                f"is different than system_capacity ({self.system_capacity}). Remember to update system_capacity_ac too."
+            )
+            warnings.warn(msg,UserWarning)
+        else:
             self.value("system_capacity_ac",system_capacity_kw)
+            
         self.value("system_capacity",system_capacity_kw)
         self.update_capacity_factor()
 
@@ -140,7 +192,7 @@ class GenericSystem(BaseClass):
             ValueError: if input generation_profile_kW is not same length as gen attribute.
         """
 
-        if len(generation_profile_kW)==len(self.gen):
+        if len(generation_profile_kW)==self.n_timesteps:
             if isinstance(generation_profile_kW,list):
                 generation_profile_kW = np.array(generation_profile_kW)
             
@@ -149,11 +201,9 @@ class GenericSystem(BaseClass):
             self.value("gen",list(generation_profile_kW))
             self.update_capacity_factor()
             return 
-        need_len = len(self.gen)
-        is_len = len(generation_profile_kW)
         msg = (
             "Generation profile is not correct length. "
-            f"Should be length {need_len} but is length {is_len}")
+            f"Should be length {self.n_timesteps} but is length {len(generation_profile_kW)}")
         raise ValueError(msg)
     
     def calc_nominal_capacity(self,interconnect_kw: float):
@@ -200,8 +250,8 @@ class GenericPlant(PowerSource):
             for config in self.config:
                 sub = GenericSystem(
                     system_capacity = config.system_capacity_kw,
-                    n_timesteps = config.n_timesteps,
                     gen = config.generation_profile_kw,
+                    n_timesteps = config.n_timesteps,
                     system_capacity_ac = config.system_capacity_kwac,
                     system_name = config.subsystem_name,
                     t_step = t_step,
@@ -215,8 +265,8 @@ class GenericPlant(PowerSource):
             # requires GenericSystem as system_model
             system_model = GenericSystem(
                 system_capacity = self.config.system_capacity_kw,
-                n_timesteps = self.config.n_timesteps,
                 gen = self.config.generation_profile_kw,
+                n_timesteps = self.config.n_timesteps,
                 system_capacity_ac = self.config.system_capacity_kwac,
                 system_name = self.config.subsystem_name,
                 t_step = t_step,
