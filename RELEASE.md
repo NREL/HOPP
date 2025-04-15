@@ -3,7 +3,9 @@
 
 ## Unreleased, TBD
 
-* Added GenericPlant model for simulating grid and battery performance without resimulating generation of other systems.
+* Added GenericPlant model which may be used to:
+    - simulate grid and battery performance without resimulating generation of other technologies
+    - represent the physics-based performance of a generation technology that is not included in HOPP
 * Loosened strictness of comparison for wind turbine config checking and added tests
 * Loosened strictness of comparison for wind turbine hub-height and wind resource hub-height
 * Updated workflow for specifying wind turbine parameters without specifying a turbine name with PySAM.
