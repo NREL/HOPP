@@ -62,7 +62,7 @@ class GenericMultiSystem(BaseClass):
                     subsystem_names_original[ni] = f"{sub_name}_{ni}"
                     self.subsystems[ni].value("system_name", f"{sub_name}_{ni}")
             self.subsystem_names = subsystem_names_original
-        
+        self.system_capacity = 0.0 #temporarily set to avoid attribute error when calculating capacity factor
         self.update_generation_profile(None)
         self.update_system_capacity(None)
 
@@ -117,6 +117,7 @@ class GenericMultiSystem(BaseClass):
         self.value("annual_energy_pre_curtailment_ac",np.sum(generation_profile_kW))
         self.value("annual_energy",np.sum(generation_profile_kW))
         self.value("gen",generation_profile_kW.tolist())
+        
         self.update_capacity_factor()
     
     def update_system_capacity(self, placeholder):
