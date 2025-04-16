@@ -16,8 +16,9 @@ class MHKCostModelInputs(BaseClass):
     Configuration class for MHK Cost Model.
         
     Args:
-        reference_model_num: Reference model number from Sandia
-            Project (3, 5, or 6).
+        reference_model_num: Reference model number from the 
+            Department of Energy Reference Model Project
+            (1, 3, 5, or 6).
         water_depth: Water depth in meters
         distance_to_shore: Distance to shore in meters
         number_rows: Number of rows in the device layout
@@ -25,6 +26,19 @@ class MHKCostModelInputs(BaseClass):
             (default 'device_spacing')
         cable_system_overbuild: Cable system overbuild percentage
             (default 10%)
+    Note:
+        More information about the reference models and their 
+        associated costs can be found in the 
+        [Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/)
+        
+        The supported reference models in this cost model are:
+            - Reference Model 1: Tidal Current Turbine
+            - Reference Model 3: Wave Point Absorber
+            - Reference Model 5: Oscillating Surge Flap
+            - Reference Model 6: Oscillating Water Column
+        
+        Additional MHK cost model information can be found 
+        through the [System Advisor Model](https://sam.nrel.gov/)
     """
     reference_model_num: int
     water_depth: float = field(validator=gt_zero)
@@ -41,7 +55,7 @@ class MHKCosts(BaseClass):
     A class for calculating the costs associated with Marine Hydrokinetic (MHK) energy systems.
 
     This class initializes and configures cost calculations for MHK systems based on provided input parameters.
-    It uses the PySAM library for cost modeling which is based on the [Sandia Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
+    It uses the PySAM library for cost modeling which is based on the [Department of Energy Reference Model Project](https://energy.sandia.gov/programs/renewable-energy/water-power/projects/reference-model-project-rmp/).
     
         Args:
             mhk_config: MHK system configuration parameters.
@@ -75,7 +89,11 @@ class MHKCosts(BaseClass):
         self._device_spacing = self.cost_model_inputs.device_spacing
         self._cable_sys_overbuild = self.cost_model_inputs.cable_system_overbuild
         
-        self._ref_model_num = "RM"+str(self.cost_model_inputs.reference_model_num)
+        ref_model_numbers = {1,3,5,6}
+        if self.cost_model_inputs.reference_model_num in ref_model_numbers:
+            self._ref_model_num = f"RM{self.cost_model_inputs.reference_model_num}"
+        else:
+            raise ValueError("reference_model_num can be 1, 3, 5 or 6")
 
         if self.cost_model_inputs.row_spacing is None:
             self._row_spacing = self.cost_model_inputs.device_spacing
@@ -126,7 +144,12 @@ class MHKCosts(BaseClass):
             else:
                 raise Exception("Layout must be square or rectangular. Modify 'number_rows' or 'num_devices'.")
         self._cost_model.value("lib_wave_device", self._ref_model_num)
-        self._cost_model.value("marine_energy_tech", 0)
+        if self._ref_model_num == "RM3" or self._ref_model_num == "RM5" or self._ref_model_num == "RM6":
+            self._cost_model.value("marine_energy_tech", 0) # Wave
+        elif self._ref_model_num == "RM1":
+            self._cost_model.value('marine_energy_tech',1) # Tidal
+        else:
+            self._cost_model.value("marine_energy_tech", 0) # Generic
         self._cost_model.value("library_or_input_wec", 0)
         # Inter-array cable length, m
         # The total length of cable used within the array of devices
@@ -199,11 +222,12 @@ class MHKCosts(BaseClass):
 
     @ref_model_num.setter
     def ref_model_num(self, ref_model_number: int):
-        if ref_model_number == 3 or ref_model_number == 5 or ref_model_number == 6:
-            self._ref_model_num = "RM"+ str(ref_model_number)
+        model_numbers = {1,3,5,6}
+        if ref_model_number in model_numbers:
+            self._ref_model_num = f"RM{ref_model_number}"
             self.initialize()
         else:
-            raise NotImplementedError
+            raise ValueError(f"Reference model number {ref_model_number} is not supported. Choose from {model_numbers}.")
     
     @property
     def library_or_input_wec(self):
@@ -211,7 +235,8 @@ class MHKCosts(BaseClass):
 
     @library_or_input_wec.setter
     def library_or_input_wec(self):
-        if self.ref_model_num == 3 or self.ref_model_num == 5 or self.ref_model_num == 6:
+        model_numbers = {1,3,5,6}
+        if self.ref_model_num in model_numbers:
             self._cost_model.value("library_or_input_wec", 0)
         else:
             raise NotImplementedError

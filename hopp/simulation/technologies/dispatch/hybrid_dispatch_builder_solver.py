@@ -696,7 +696,7 @@ class HybridDispatchBuilderSolver:
             required_keys = ["desired_load"]
             if self.site.follow_desired_schedule:
                 # Get difference between baseload demand and power generation and control scenario variables
-                load_value = self.site.desired_schedule
+                load_value = grid_limit
                 load_difference = [
                     (load_value[x] - tot_gen[x]) for x in range(len(tot_gen))
                 ]

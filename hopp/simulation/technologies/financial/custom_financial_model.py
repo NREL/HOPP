@@ -184,7 +184,7 @@ class CustomFinancialModel():
     """
     This custom financial model slots into the PowerSource's financial model that is originally a
     PySAM.Singleowner model. PowerSource and the overlaying classes that call on PowerSource expect
-    properties and functions from the financial model. The mininum expectations are listed here as
+    properties and functions from the financial model. The minimum expectations are listed here as
     the class interface.
     
     The financial model is constructed with financial configuration inputs. During simulation, the

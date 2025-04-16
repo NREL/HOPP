@@ -96,7 +96,7 @@ class PVLayout:
                 self._system_model.SystemDesign.inverter_count = n_inverters
 
             logger.info(f"Solar Layout set for {self.module_power * self.num_modules} kw")
-        self._system_model.AdjustmentFactors.constant = self.flicker_loss * 100  # percent
+        self._system_model.AdjustmentFactors.adjust_constant = self.flicker_loss * 100  # percent
 
     def compute_pv_layout(self,
                         solar_kw: float,

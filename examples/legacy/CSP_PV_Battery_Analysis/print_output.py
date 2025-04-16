@@ -82,6 +82,6 @@ def print_hybrid_output(hybrid: HybridSimulation):
 
     if hybrid.site.follow_desired_schedule:
         print("\tMissed load [MWh]: {:.2f}".format(sum(hybrid.grid.missed_load[0:8760])/1.e3))
-        print("\tMissed load percentage [%]: {:.2f}".format(hybrid.grid.missed_load_percentage*100.0))
+        print("\tMissed load percentage [%]: {:.2f}".format(hybrid.grid.missed_load_percentage))
         print("\tSchedule curtailed [MWh]: {:.2f}".format(sum(hybrid.grid.schedule_curtailed[0:8760])/1.e3))
-        print("\tSchedule curtailed percentage [%]: {:.2f}".format(hybrid.grid.schedule_curtailed_percentage*100.0))
+        print("\tSchedule curtailed percentage [%]: {:.2f}".format(hybrid.grid.schedule_curtailed_percentage))

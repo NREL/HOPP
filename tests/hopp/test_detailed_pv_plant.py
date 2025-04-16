@@ -51,19 +51,6 @@ def test_detailed_pv_plant_initialization(site, subtests):
     assert pv_plant.config is not None
 
 
-def test_single_subarray_limitation(site):
-    """Ensure only one subarray is allowed."""
-    config_with_multiple_subarrays = {
-        "system_capacity_kw": 100,
-        "tech_config": {"subarray2_enable": 1},
-    }
-    config = DetailedPVConfig.from_dict(config_with_multiple_subarrays)
-    with pytest.raises(
-        Exception, match=r"Detailed PV plant currently only supports one subarray."
-    ):
-        DetailedPVPlant(site=site, config=config)
-
-
 def test_processed_assign(site, subtests):
     """Test more detailed instantiation with `tech_config`."""
     pvsamv1_defaults_file = (

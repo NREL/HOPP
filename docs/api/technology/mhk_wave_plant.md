@@ -21,16 +21,5 @@ MHK Wave Generator class
 
 ## Wave Plant Cost Model
 
-```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.financial.mhk_cost_model.MHKCosts
-    :members:
-    :undoc-members:
-```
+For details on the cost model used in MHK Wave Plants, refer to the [MHK Cost Model](tools:mhk_costs).
 
-## Wave Plant Cost Model Inputs
-
-```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.financial.mhk_cost_model.MHKCostModelInputs
-    :members:
-    :undoc-members:
-```
