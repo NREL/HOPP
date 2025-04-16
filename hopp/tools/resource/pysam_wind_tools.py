@@ -10,6 +10,7 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
+<<<<<<< HEAD
         resource_year (int | str, Optional): year corresponding to the wind resource data. Defaults to None.
 
     Returns:
@@ -72,9 +73,11 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
         df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
         data_fieldnames += ['pressure']
         data_fieldnumbers += [1]
-    # if 'surface air pressure (Pa)' in new_colnames:
-    #     df['pressure'] = df['surface air pressure (Pa)'] / 101325
-    
+    if 'surface air pressure (Pa)' in new_colnames:
+        df['pressure'] = df['surface air pressure (Pa)'] / 101325
+        data_fieldnames += ['pressure']
+        data_fieldnumbers += [1]
+
     # --- rename ---
     rename_dict = {'wind speed at {}m (m/s)'.format(resource_height): 'speed',
                     'wind direction at {}m (deg)'.format(resource_height): 'direction'}
@@ -97,8 +100,12 @@ def csv_to_srw(wind_csv_filepath, resource_height, resource_year = None, data_so
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
+<<<<<<< HEAD
         resource_year (int | str, Optional): year corresponding to the wind resource data. 
             Defaults to None.
+=======
+        resource_year (int): year corresponding to the wind resource data
+>>>>>>> feature/add_bchrrr
 
     Returns:
         str: filename of .srw output filepath
@@ -142,8 +149,12 @@ def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year = None):
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
+<<<<<<< HEAD
         resource_year (int | str, Optional): year corresponding to the wind resource data. 
             Defaults to None.
+=======
+        resource_year (int): year corresponding to the wind resource data
+>>>>>>> feature/add_bchrrr
 
     Returns:
         dict: wind resource data dictionary in PySAM format
@@ -239,8 +250,11 @@ def combine_CSV_to_wind_data(file_resource_heights, resource_year = None):
     Args:
         file_resource_heights (dict): Keys are height in meters, values are corresponding filepaths.
             example {40: path_to_file, 60: path_to_file2}
+<<<<<<< HEAD
         resource_year (str | int, Optional): resource year for wind resource data. Only needed for formatting purposes
             in ``csv_to_dataframe()``. Defaults to None.
+=======
+>>>>>>> feature/add_bchrrr
 
     Returns:
         dict: wind resource data dictionary of combined resource data
