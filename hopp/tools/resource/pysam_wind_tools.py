@@ -35,7 +35,7 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     h2 = np.array(["WTK .csv converted to .srw for SAM", None, None,
                     None, None, None, None, None, None, None])  # descriptive text
     h3 = np.array(['temperature', 'pressure', 'direction',
-                    'speed', None, None, None, None, None, None])  # variables
+                    'speed', 'precipitation', None, None, None, None, None])  # variables
     h4 = np.array(['C', 'atm', 'degrees', 'm/s', None,
                     None, None, None, None, None])  # units
     h5 = np.array([resource_height, 100, resource_height, resource_height, None, None,
@@ -73,6 +73,8 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
         df['pressure'] = df['surface air pressure (Pa)'] / 101325
         data_fieldnames += ['pressure']
         data_fieldnumbers += [1]
+
+    print(old_colnames,new_colnames)
 
     # --- rename ---
     rename_dict = {'wind speed at {}m (m/s)'.format(resource_height): 'speed',
@@ -142,7 +144,7 @@ def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year):
     Returns:
         dict: wind resource data dictionary in PySAM format
     """
-    data_to_field_number = {'temperature': 1, 'pressure': 2, 'speed': 3, 'direction': 4}
+    data_to_field_number = {'temperature': 1, 'pressure': 2, 'speed': 3, 'direction': 4, 'precipitation': 5}
     out = csv_to_dataframe(wind_csv_filepath, resource_height, resource_year)
     heights = [h for h in out.iloc[4].to_list() if h is not None]
     field_names = [h for h in out.iloc[2].to_list() if h is not None]
@@ -281,5 +283,6 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
         return combined_data
     if is_csv:
         combined_data = combine_CSV_to_wind_data(file_resource_heights)
+        print(combined_data['fields'])
         return combined_data
     
