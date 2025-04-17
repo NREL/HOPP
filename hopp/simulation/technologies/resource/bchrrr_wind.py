@@ -14,7 +14,20 @@ from hopp.tools.resource.pysam_wind_tools import combine_wind_files
 BCHRRR_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-bchrrr-v1-0-0-download.csv?"
 
 @define
-class BCHRRRWindData(Resource):
+class BCHRRRWindData(Resource):    
+    """ Class to manage Wind Resource data from BC-HRRR dataset using API calls or preloaded data.
+
+        Args:
+            lat (float): latitude corresponding to location for wind resource data
+            lon (float): longitude corresponding to location for wind resource data
+            year (int): year for resource data. must be between 2007 and 2014
+            hub_height_meters (float): turbine hub height (m)
+            path_resource (Union[str, Path], optional): filepath to resource_files directory. Defaults to ROOT_DIR/"simulation"/"resource_files".
+            filepath (Union[str, Path], optional): file path of resource file to load
+            use_api (bool, optional): Make an API call even if there's an existing file. Defaults to False.
+            resource_data (Optional[dict], optional): dictionary of preloaded and formatted wind resource data. Defaults to None.
+            kwargs: extra kwargs
+        """
     
     lat: float = field()
     lon: float = field()
@@ -63,7 +76,7 @@ class BCHRRRWindData(Resource):
         
     def calculate_heights_to_download(self):
         """
-        Given the system hub height, and the available hubheights from WindToolkit,
+        Given the system hub height, and the available hubheights from BC-HRRR Data,
         determine which heights to download to bracket the hub height
         """
         hub_height_meters = self.hub_height_meters
@@ -100,6 +113,9 @@ class BCHRRRWindData(Resource):
         self.calculate_heights_to_download()
 
     def download_resource(self):
+        '''
+        Downloads the wind data from the BC-HRRR dataset using an API call
+        '''
         success = False
 
         base_attributes = ["temperature","windspeed","winddirection"]
