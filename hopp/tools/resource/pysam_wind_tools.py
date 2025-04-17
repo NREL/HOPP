@@ -69,12 +69,13 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     
     # --- convert PA to atm ---
     if 'surface air pressure (Pa)' in new_colnames:
-        df['pressure'] = df['surface air pressure (Pa)'] / 101325
+        # approximately convert from surface pressure to pressure at 100m
+        df['pressure'] = df['surface air pressure (Pa)'] / 101325 - 1.2e3
         data_fieldnames += ['pressure']
         data_fieldnumbers += [1]
         header.loc[2,1] = "pressure"
         header.loc[3,1] = "atm"
-        header.loc[4,1] = 0        
+        header.loc[4,1] = 100        
     if 'air pressure at 100m (Pa)' in new_colnames:
         df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
         data_fieldnames += ['pressure']
