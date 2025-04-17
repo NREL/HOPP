@@ -1,7 +1,6 @@
-import csv, os
+import os
 from pathlib import Path
 from typing import Union, Optional, List
-import pandas as pd
 import urllib.parse
 
 from attrs import define, field
@@ -103,10 +102,10 @@ class BCHRRRWindData(Resource):
     def download_resource(self):
         success = False
 
-        base_attributs = ["temperature","windspeed","winddirection"]
+        base_attributes = ["temperature","windspeed","winddirection"]
         attributes = ["pressure_0m", "precipitationrate_0m"]
         for height, f in self.file_resource_heights.items():
-            attributes += [f"{a}_{height}m" for a in base_attributs]
+            attributes += [f"{a}_{height}m" for a in base_attributes]
         
         attributes_str = ",".join(k for k in attributes)
         input_data = {
@@ -144,13 +143,3 @@ class BCHRRRWindData(Resource):
         if isinstance(data_info,(str, Path)):
             resource_heights = [k for k in self.file_resource_heights.keys()]
             self._data = combine_wind_files(str(data_info),resource_heights)
-
-if __name__=="__main__":
-    from hopp.utilities.keys import set_nrel_key_dot_env
-    set_nrel_key_dot_env()
-    latitude = 42.37
-    longitude = -104.34
-    year = 2015
-    hub_height = 65.0
-    bchrrr_wind = BCHRRRWindData(lat=latitude,lon=longitude,year=year,hub_height_meters=hub_height)
-    []

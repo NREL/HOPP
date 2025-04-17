@@ -113,10 +113,10 @@ class AlaskaWindData(Resource):
     def download_resource(self):
         success = False
 
-        base_attributs = ["temperature","windspeed","winddirection"]
+        base_attributes = ["temperature","windspeed","winddirection"]
         attributes = ["pressure_100m"]
         for height, f in self.file_resource_heights.items():
-            attributes += [f"{a}_{height}m" for a in base_attributs]
+            attributes += [f"{a}_{height}m" for a in base_attributes]
         
         attributes_str = ",".join(k for k in attributes)
         input_data = {

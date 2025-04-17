@@ -10,12 +10,15 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
-        resource_year (int): year corresponding to the wind resource data
+        resource_year (int | str, Optional): year corresponding to the wind resource data. Defaults to None.
 
     Returns:
         dataframe: wind resource data reformatted into dataframe.
     """
-    site_year = str(int(resource_year))
+    if resource_year is not None:
+        site_year = str(int(resource_year))
+    else:
+        site_year = 'None'
 
     # --- grab df ---
     for_df = copy.deepcopy(wind_csv_filepath)
@@ -101,7 +104,7 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     out.reset_index(drop=True, inplace=True)
     return out
 
-def csv_to_srw(wind_csv_filepath, resource_height, resource_year, data_source = "WTK_LED"):
+def csv_to_srw(wind_csv_filepath, resource_height, resource_year = None, data_source = "WTK_LED"):
     """Write wind resource data to .srw file from input .csv file.  
     More information can be found here: 
     https://sam.nrel.gov/images/web_page_files/sam-help-2020-2-29-r2_weather_file_formats.pdf
@@ -109,13 +112,17 @@ def csv_to_srw(wind_csv_filepath, resource_height, resource_year, data_source = 
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
-        resource_year (int): year corresponding to the wind resource data
+        resource_year (int | str, Optional): year corresponding to the wind resource data. 
+            Defaults to None.
 
     Returns:
         str: filename of .srw output filepath
     """
     interval = 60
-    site_year = str(int(resource_year))
+    if resource_year is not None:
+        site_year = str(int(resource_year))
+    else:
+        site_year = 'None'
     # --- grab header data ---
     for_header = copy.deepcopy(wind_csv_filepath)
     header = pd.read_csv(for_header, nrows=1, header=None).values
@@ -143,14 +150,15 @@ def csv_to_srw(wind_csv_filepath, resource_height, resource_year, data_source = 
     localfile.close()
     return output_filepath
 
-def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year):
+def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year = None):
     """Converts wind resource data from a .csv file to wind resource dictionary. 
     This function is the .csv file equivalent of ``PySAM.ResourceTools.SRW_to_wind_data``
 
     Args:
         wind_csv_filepath (str): filepath for wind resource .csv file
         resource_height (int): wind resource height in meters.
-        resource_year (int): year corresponding to the wind resource data
+        resource_year (int | str, Optional): year corresponding to the wind resource data. 
+            Defaults to None.
 
     Returns:
         dict: wind resource data dictionary in PySAM format
@@ -170,6 +178,17 @@ def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year):
 
 
 def combine_and_write_srw_files(file_resource_heights, output_filepath):
+    """Combine wind resource data for multiple hub-heights stored in multiple .srw files 
+    and write a combined .srw file that contains resource data for multiple hub-heights.
+
+    Args:
+        file_resource_heights (dict): Keys are height in meters, values are corresponding filepaths.
+            example {40: path_to_file, 60: path_to_file2}
+        output_filepath (str | Path): filepath to write combined .srw file to.
+    
+    Returns:
+        bool: whether the file was successfully written to the output filepath. 
+    """
 
     data = [None] * 2
     for height, f in file_resource_heights.items():
@@ -190,9 +209,10 @@ def combine_and_write_srw_files(file_resource_heights, output_filepath):
     with open(output_filepath, 'w', newline='') as fo:
         writer = csv.writer(fo)
         writer.writerows(data)
+    return os.path.isfile(output_filepath)
 
 def combine_wind_resource_data(wind_resource_data):
-    """Combines dictionaries of wind resoure data.
+    """Combines dictionaries of wind resource data.
 
     Args:
         wind_resource_data (list[dict]): list of wind resource data dictionaries for different resource heights
@@ -228,19 +248,21 @@ def combine_wind_resource_data(wind_resource_data):
         }
     return combined_resource_data
 
-def combine_CSV_to_wind_data(file_resource_heights, fake_resource_year = '1900'):
+def combine_CSV_to_wind_data(file_resource_heights, resource_year = None):
     """Combine wind resource data stored in .csv files for multiple resource heights.
 
     Args:
         file_resource_heights (dict): Keys are height in meters, values are corresponding filepaths.
             example {40: path_to_file, 60: path_to_file2}
+        resource_year (str | int, Optional): resource year for wind resource data. Only needed for formatting purposes
+            in ``csv_to_dataframe()``. Defaults to None.
 
     Returns:
         dict: wind resource data dictionary of combined resource data
     """
     wind_resource_data = []
     for resource_height,wind_csv_filepath in file_resource_heights.items():
-        d = CSV_to_wind_data(wind_csv_filepath, resource_height, fake_resource_year)
+        d = CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year = resource_year)
         wind_resource_data.append(d)
     combined_data = combine_wind_resource_data(wind_resource_data)
     return combined_data
@@ -279,10 +301,14 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
     
     if isinstance(wind_resource_filepath,list):
         if len(wind_resource_filepath) != len(resource_heights):
-            raise ValueError("wind resource filepath must be a list of filenames that same length as resource heights")
-        filepaths = [wind_resource_filepath]*len(resource_heights)
-        file_resource_heights = dict(zip(resource_heights,filepaths))
-    elif isinstance(wind_resource_filepath,str):
+            msg = (
+                "Wind resource filepath must be a list of filenames that is the length as "
+                f"resource_heights. ``wind_resource_filepath`` has {len(wind_resource_filepath)} "
+                f"entries but ``resource_heights`` has {len(resource_heights)} entries."
+                )
+            raise ValueError(msg)
+        file_resource_heights = dict(zip(resource_heights,wind_resource_filepath))
+    elif isinstance(wind_resource_filepath, str):
         filepaths = [wind_resource_filepath]*len(resource_heights)
         file_resource_heights = dict(zip(resource_heights,filepaths))
     
