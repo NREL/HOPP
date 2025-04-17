@@ -183,12 +183,6 @@ class WindPlant(PowerSource):
                     financial_model, system_model, self.config_name
                 )
         else:
-            if isinstance( self.site.wind_resource, BCHRRRWindData): 
-                msg = (
-                    "The BC-HRRR dataset is not compatible with the PySAM wind model. "
-                    "Please use WindToolkit instead."
-                )
-                raise ValueError(msg)
             if self.config.model_input_file is None:
                 system_model = Windpower.default(self.config_name)
             else:

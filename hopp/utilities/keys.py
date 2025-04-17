@@ -1,8 +1,8 @@
 from dotenv import load_dotenv, find_dotenv
 import os
 
-developer_nrel_gov_key = ""
-developer_nrel_gov_email = ""
+developer_nrel_gov_key = "EIJvR91RkJEA2dSelHTnoCux22tPncYScLs8kqde"
+developer_nrel_gov_email = "john.jasa@nrel.gov"
 
 
 def set_developer_nrel_gov_key(key: str):
