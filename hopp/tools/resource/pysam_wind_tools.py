@@ -34,11 +34,11 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
                     site_lat, site_lon, 'elevation??', site_tz, 8760])  # meta info
     h2 = np.array(["WTK .csv converted to .srw for SAM", None, None,
                     None, None, None, None, None, None, None])  # descriptive text
-    h3 = np.array(['temperature', 'pressure', 'direction',
-                    'speed', 'precipitation', None, None, None, None, None])  # variables
-    h4 = np.array(['C', 'atm', 'degrees', 'm/s', None,
+    h3 = np.array(['temperature', None, 'direction',
+                    'speed', None, None, None, None, None, None])  # variables
+    h4 = np.array(['C', None, 'degrees', 'm/s', None,
                     None, None, None, None, None])  # units
-    h5 = np.array([resource_height, 100, resource_height, resource_height, None, None,
+    h5 = np.array([resource_height, None, resource_height, resource_height, None, None,
                     None, None, None, None])  # hubheight
     header = pd.DataFrame(np.vstack([h1, h2, h3, h4, h5]))
     assert header.shape == (5, 10)
@@ -65,17 +65,28 @@ def csv_to_dataframe(wind_csv_filepath, resource_height, resource_year):
     df['temperature'] = df['air temperature at {}m (C)'.format(resource_height)]
     
     # --- convert PA to atm ---
-    if 'air pressure at 100m (Pa)' in new_colnames:
-        df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
-        data_fieldnames += ['pressure']
-        data_fieldnumbers += [1]
     if 'surface air pressure (Pa)' in new_colnames:
         df['pressure'] = df['surface air pressure (Pa)'] / 101325
         data_fieldnames += ['pressure']
         data_fieldnumbers += [1]
-
-    print(old_colnames,new_colnames)
-
+        header.loc[2,1] = "pressure"
+        header.loc[3,1] = "atm"
+        header.loc[4,1] = 0        
+    if 'air pressure at 100m (Pa)' in new_colnames:
+        df['pressure'] = df['air pressure at 100m (Pa)'] / 101325
+        data_fieldnames += ['pressure']
+        data_fieldnumbers += [1]
+        header.loc[2,1] = "pressure"
+        header.loc[3,1] = "atm"
+        header.loc[4,1] = 100    
+    if 'Precipitation Rate 0m' in df.columns.to_list():
+        data_fieldnames += ["precipitation_rate"]
+        data_fieldnumbers += [4]
+        df = df.rename(columns = {'Precipitation Rate 0m':"precipitation_rate"})  
+        header.loc[2,4] = "precipitation_rate"
+        header.loc[3,4] = "mm/hour"
+        header.loc[4,4] = 0
+   
     # --- rename ---
     rename_dict = {'wind speed at {}m (m/s)'.format(resource_height): 'speed',
                     'wind direction at {}m (deg)'.format(resource_height): 'direction'}
@@ -144,7 +155,7 @@ def CSV_to_wind_data(wind_csv_filepath, resource_height, resource_year):
     Returns:
         dict: wind resource data dictionary in PySAM format
     """
-    data_to_field_number = {'temperature': 1, 'pressure': 2, 'speed': 3, 'direction': 4, 'precipitation': 5}
+    data_to_field_number = {'temperature': 1, 'pressure': 2, 'speed': 3, 'direction': 4, 'precipitation_rate': 5}
     out = csv_to_dataframe(wind_csv_filepath, resource_height, resource_year)
     heights = [h for h in out.iloc[4].to_list() if h is not None]
     field_names = [h for h in out.iloc[2].to_list() if h is not None]
@@ -283,6 +294,5 @@ def combine_wind_files(wind_resource_filepath,resource_heights):
         return combined_data
     if is_csv:
         combined_data = combine_CSV_to_wind_data(file_resource_heights)
-        print(combined_data['fields'])
         return combined_data
     

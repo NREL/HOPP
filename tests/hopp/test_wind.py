@@ -307,10 +307,16 @@ def test_bchrrr_wind_pysam():
     }
     site = SiteInfo.from_dict(site_info)
     config = WindConfig.from_dict({'num_turbines': 5, "turbine_rating_kw": 2000})
-    model = WindPlant(site, config=config)
-    model._system_model.execute(1)
-    assert model._system_model.Outputs.capacity_factor == approx(36.24,abs = 0.1)
-
+    
+    
+    with pytest.raises(ValueError) as err:
+        model = WindPlant(site, config=config)
+    
+    err_str = (
+                    "The BC-HRRR dataset is not compatiable with the PySAM wind model. "
+                    "Please use WTK instead."
+                )
+    assert err_str in str(err.value)
 
 def test_bchrrr_wind_floris():
     site_data = {

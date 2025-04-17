@@ -104,8 +104,7 @@ class BCHRRRWindData(Resource):
         success = False
 
         base_attributs = ["temperature","windspeed","winddirection"]
-        attributes = ["pressure_0m", "precipitationrate_0m", "relativehumidity_2m"]
-        # attributes = ["pressure_0m"]
+        attributes = ["pressure_0m", "precipitationrate_0m"]
         for height, f in self.file_resource_heights.items():
             attributes += [f"{a}_{height}m" for a in base_attributs]
         
