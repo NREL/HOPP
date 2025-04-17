@@ -313,8 +313,8 @@ def test_bchrrr_wind_pysam():
         model = WindPlant(site, config=config)
     
     err_str = (
-                    "The BC-HRRR dataset is not compatiable with the PySAM wind model. "
-                    "Please use WTK instead."
+                    "The BC-HRRR dataset is not compatible with the PySAM wind model. "
+                    "Please use WindToolkit instead."
                 )
     assert err_str in str(err.value)
 

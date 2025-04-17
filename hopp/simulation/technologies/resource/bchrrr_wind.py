@@ -113,9 +113,9 @@ class BCHRRRWindData(Resource):
         self.calculate_heights_to_download()
 
     def download_resource(self):
-        '''
+        """
         Downloads the wind data from the BC-HRRR dataset using an API call
-        '''
+        """
         success = False
 
         base_attributes = ["temperature","windspeed","winddirection"]

@@ -185,8 +185,8 @@ class WindPlant(PowerSource):
         else:
             if isinstance( self.site.wind_resource, BCHRRRWindData): 
                 msg = (
-                    "The BC-HRRR dataset is not compatiable with the PySAM wind model. "
-                    "Please use WTK instead."
+                    "The BC-HRRR dataset is not compatible with the PySAM wind model. "
+                    "Please use WindToolkit instead."
                 )
                 raise ValueError(msg)
             if self.config.model_input_file is None:
