@@ -279,3 +279,77 @@ def test_alaska_wind_floris():
     model = WindPlant(site, config=config)
     model._system_model.execute(1)
     assert model._system_model.annual_energy == approx(78514174,rel=1e-6)
+
+def test_bchrrr_wind_pysam():
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2015,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": 1.0,
+            "site_shape":"square",
+            }
+    }
+    bchrrr_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "35.2018863_-101.945027_BC_HRRR_2015_60min_80m_100m.csv"
+    )
+    site_info = {
+        "data": site_data,
+        "wind_resource_file": bchrrr_wind_resource_file,
+        "wind_resource_origin": "BC-HRRR",
+        "wind": True,
+        "solar": False,
+        "hub_height": 90.0,
+    }
+    site = SiteInfo.from_dict(site_info)
+    config = WindConfig.from_dict({'num_turbines': 5, "turbine_rating_kw": 2000})
+
+    model = WindPlant(site, config=config)
+    model._system_model.execute(1)
+    assert model._system_model.Outputs.capacity_factor == approx(35.97,abs = 0.1) 
+    
+def test_bchrrr_wind_floris():
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2015,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": 1.0,
+            "site_shape":"square",
+            }
+    }
+    bchrrr_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "35.2018863_-101.945027_BC_HRRR_2015_60min_80m_100m.csv"
+    )
+    site_info = {
+        "data": site_data,
+        "wind_resource_file": bchrrr_wind_resource_file,
+        "wind_resource_origin": "BC-HRRR",
+        "wind": True,
+        "solar":False,
+        "hub_height": 90.0,
+    }
+    site = SiteInfo.from_dict(site_info)
+    floris_config_path = (
+        ROOT_DIR.parent / "tests" / "hopp" / "inputs" / "floris_config.yaml"
+    )
+    wind_config_input = {
+        'num_turbines': 4,
+        "turbine_rating_kw": 5000,
+        "model_name": "floris",
+        "timestep": [1, 8760],
+        "resource_parse_method":"weighted_average",
+        "floris_config": floris_config_path
+    }
+    config = WindConfig.from_dict(wind_config_input)
+    model = WindPlant(site, config=config)
+    model._system_model.execute(1)
+    assert model._system_model.annual_energy == approx(69526231,rel=1e-6)    

@@ -27,6 +27,7 @@ grid_resource_file = os.path.join(
 )
 kml_filepath = Path(__file__).absolute().parent / "layout_example.kml"
 from hopp.simulation.technologies.resource import AlaskaWindData
+from hopp.simulation.technologies.resource import BCHRRRWindData
 
 @fixture
 def site():
@@ -555,3 +556,31 @@ def test_alaska_wind_resource():
     }
     site = SiteInfo.from_dict(site_info)
     assert isinstance(site.wind_resource,AlaskaWindData)
+
+def test_bchrrr_wind_resource():
+    site_data = {
+        "lat": 35.2018863,
+        "lon": -101.945027,
+        "elev": 1099,
+        "year": 2015,
+        "tz": -6,
+        "site_details":
+            {
+            "site_area_km2": 1.0,
+            "site_shape":"square",
+            }
+    }
+    bchrrr_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "35.2018863_-101.945027_BC_HRRR_2015_60min_80m_100m.csv"
+    )
+    site_info = {
+        "data": site_data,
+        "wind_resource_file": bchrrr_wind_resource_file,
+        "wind_resource_origin": "BC-HRRR",
+        "wind": True,
+        "solar":False,
+        "hub_height": 90.0,
+    }
+    site = SiteInfo.from_dict(site_info)
+    assert isinstance(site.wind_resource,BCHRRRWindData)
