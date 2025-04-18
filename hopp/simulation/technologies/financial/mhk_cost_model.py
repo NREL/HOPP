@@ -148,6 +148,7 @@ class MHKCosts(BaseClass):
             self._cost_model.value("marine_energy_tech", 0) # Wave
         elif self._ref_model_num == "RM1":
             self._cost_model.value('marine_energy_tech',1) # Tidal
+            self._cost_model.value('lib_tidal_device', self._ref_model_num)
         else:
             self._cost_model.value("marine_energy_tech", 0) # Generic
         self._cost_model.value("library_or_input_wec", 0)
@@ -165,7 +166,7 @@ class MHKCosts(BaseClass):
         self._cost_model.value("export_cable_length", self._export_cable_length)
 
         #Riser cable length, m
-        # The length of cable from the seabed to the water surfacethat 
+        # The length of cable from the seabed to the water surface that 
         # connects the floating device to the seabed cabling.
         # Applies only to floating array
         self.riser_cable_length = 1.5 * self._water_depth * self._number_devices * \

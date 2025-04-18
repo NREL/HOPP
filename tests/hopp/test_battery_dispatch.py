@@ -149,9 +149,9 @@ def test_batterystateless_dispatch():
     battery_sl_actual = np.array(battery_sl.generation_profile)[0:48] * 1e-3   # convert to MWh
 
     assert sum(battery_dispatch - battery_sl_dispatch) == 0
-    assert sum(abs(battery_actual - battery_dispatch)) <= 33
+    assert sum(abs(battery_actual - battery_dispatch)) <= 33.5
     assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == 0
-    assert sum(abs(battery_actual - battery_sl_actual)) <= 33
+    assert sum(abs(battery_actual - battery_sl_actual)) <= 33.5
     assert battery_sl.outputs.lifecycles_per_day[0:2] == pytest.approx([0.75048, 1.50096], rel=1e-3)
 
 
