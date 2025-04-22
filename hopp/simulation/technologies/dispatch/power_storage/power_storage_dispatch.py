@@ -111,7 +111,7 @@ class PowerStorageDispatch(Dispatch):
             for t in self.blocks.index_set()
         )
         if self.options.include_lifecycle_count:
-            objective += self.model.lifecycle_cost * self.model.lifecycles
+            objective += self.model.lifecycle_cost * sum(self.model.lifecycles)
 
         self.obj = objective
 
