@@ -307,11 +307,11 @@ def test_bchrrr_wind_pysam():
     }
     site = SiteInfo.from_dict(site_info)
     config = WindConfig.from_dict({'num_turbines': 5, "turbine_rating_kw": 2000})
+
     model = WindPlant(site, config=config)
     model._system_model.execute(1)
-    assert model._system_model.Outputs.capacity_factor == approx(36.24,abs = 0.1)
-
-
+    assert model._system_model.Outputs.capacity_factor == approx(35.97,abs = 0.1) 
+    
 def test_bchrrr_wind_floris():
     site_data = {
         "lat": 35.2018863,

@@ -238,7 +238,7 @@ class WindPlant(PowerSource):
                 f"Turbine name {turbine_name} was not found the turbine-models library. "
                 "Please try an available name."
             )
-            ValueError(msg)
+            raise ValueError(msg)
         
         turbine_dict = turb_lib_interface.get_pysam_turbine_specs(turbine_name,self)
         self._system_model.Turbine.assign(turbine_dict)

@@ -437,7 +437,7 @@ class SiteInfo(BaseClass):
         
         return self.solar_resource
 
-    def initialize_wind_resource(self,data:dict):
+    def initialize_wind_resource(self, data: dict):
         """Download/load wind resource data
 
         Args:
@@ -446,37 +446,53 @@ class SiteInfo(BaseClass):
         Returns:
             :obj:`hopp.simulation.technologies.resource.WindResource` or :obj:`hopp.simulation.technologies.resource.HPCWindData`: wind resource data class
         """
+        # Extract parameters with defaults from data dictionary
         wind_lat = data.setdefault("wind_lat", data["lat"])
         wind_lon = data.setdefault("wind_lon", data["lon"])
         wind_year = data.setdefault("wind_year", data["year"])
-
-        if self.wind_resource is None:
-            if self.wind_resource_region == "conus":
-                if self.renewable_resource_origin == "API":
-                    if self.wind_resource_origin == "WTK" or self.wind_resource_origin == "TAP":
-                        wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
-                                                    path_resource=self.path_resource, filepath=self.wind_resource_file, source=self.wind_resource_origin)
-                    elif self.wind_resource_origin == "BC-HRRR":  
-                        wind_resource = BCHRRRWindData(wind_lat, wind_lon, wind_year, hub_height_meters=self.hub_height,
-                                                        path_resource=self.path_resource, filename=self.wind_resource_file)
-                    else:
-                        raise ValueError("Invalid entry for `wind_resource_origin`, wind_resource_origin must be either 'WTK', 'TAP' or 'BC-HRRR'")
-                if self.renewable_resource_origin == "HPC":
-                        wind_resource = HPCWindData(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,
-                                                        wtk_source_path=self.wtk_source_path, filepath=self.wind_resource_file)
-                return wind_resource
-            if self.wind_resource_region == "ak":
-                wind_resource = AlaskaWindData(lat=wind_lat, lon=wind_lon, year=wind_year, hub_height_meters=self.hub_height,
-                                                    path_resource=self.path_resource, filename=self.wind_resource_file)
-                return wind_resource
-        if isinstance(self.wind_resource,dict):
-            if self.wind_resource_region == "conus":
-                wind_resource = WindResource(wind_lat, wind_lon, wind_year, wind_turbine_hub_ht=self.hub_height,resource_data = self.wind_resource)
-            if self.wind_resource_region == "ak":
-                wind_resource = AlaskaWindData(lat=wind_lat, lon=wind_lon, year=wind_year, hub_height_meters=self.hub_height,resource_data = self.wind_resource)
-            return wind_resource
         
-        return self.wind_resource
+        # If wind resource is already provided as an object, return it directly
+        if self.wind_resource is not None and not isinstance(self.wind_resource, dict):
+            return self.wind_resource
+        
+        # If wind resource is provided as a dictionary, convert to appropriate object
+        if isinstance(self.wind_resource, dict):
+            if self.wind_resource_region == "conus":
+                return WindResource(wind_lat, wind_lon, wind_year, 
+                                   wind_turbine_hub_ht=self.hub_height, 
+                                   resource_data=self.wind_resource)
+            elif self.wind_resource_region == "ak":
+                return AlaskaWindData(lat=wind_lat, lon=wind_lon, year=wind_year, 
+                                     hub_height_meters=self.hub_height, 
+                                     resource_data=self.wind_resource)
+        
+        # Create new wind resource based on region and resource origin
+        if self.wind_resource_region == "ak":
+            return AlaskaWindData(lat=wind_lat, lon=wind_lon, year=wind_year, 
+                                 hub_height_meters=self.hub_height,
+                                 path_resource=self.path_resource, 
+                                 filename=self.wind_resource_file)
+        
+        # Handle Continental US (conus) region
+        if self.renewable_resource_origin == "API":
+            if self.wind_resource_origin in ["WTK", "TAP"]:
+                return WindResource(wind_lat, wind_lon, wind_year, 
+                                   wind_turbine_hub_ht=self.hub_height,
+                                   path_resource=self.path_resource, 
+                                   filepath=self.wind_resource_file, 
+                                   source=self.wind_resource_origin)
+            elif self.wind_resource_origin == "BC-HRRR":
+                return BCHRRRWindData(wind_lat, wind_lon, wind_year, 
+                                     hub_height_meters=self.hub_height,
+                                     path_resource=self.path_resource, 
+                                     filename=self.wind_resource_file)
+            else:
+                raise ValueError("Invalid entry for `wind_resource_origin`, must be either 'WTK', 'TAP' or 'BC-HRRR'")
+        elif self.renewable_resource_origin == "HPC":
+            return HPCWindData(wind_lat, wind_lon, wind_year, 
+                              wind_turbine_hub_ht=self.hub_height,
+                              wtk_source_path=self.wtk_source_path, 
+                              filepath=self.wind_resource_file)
 
     # TODO: determine if the below functions are obsolete
     @property

@@ -252,7 +252,9 @@ def plot_generation_profile(hybrid: HybridSimulation,
                             charge_color='r',
                             gen_color='g',
                             price_color='r',
-                            show_price=True
+                            show_price=True,
+                            show_load=False,
+                            super_title=None,
                             ):
 
     if not hasattr(hybrid, 'dispatch_builder'):
@@ -267,6 +269,7 @@ def plot_generation_profile(hybrid: HybridSimulation,
 
     # First sub-plot (resources)
     gen = [p * power_scale for p in list(hybrid.grid.generation_profile[time_slice])]
+    des_sched = [p for p in list(hybrid.site.desired_schedule[time_slice])]
     original_gen = [0]*len(gen)
     plt.subplot(3, 1, 1)
     if hybrid.pv:
@@ -294,32 +297,40 @@ def plot_generation_profile(hybrid: HybridSimulation,
     plt.legend(fontsize=font_size-2, loc='upper left')
 
     # Battery action
-    plt.subplot(3, 1, 2)
-    plt.tick_params(which='both', labelsize=font_size)
-    discharge = [(p > 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
-    charge = [(p < 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
-    plt.bar(time, discharge, width=0.9, color=discharge_color, edgecolor='white', label='Battery Discharge')
-    plt.bar(time, charge, width=0.9, color=charge_color, edgecolor='white', label='Battery Charge')
-    plt.xlim([start, end])
-    ax = plt.gca()
-    ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
-    plt.grid()
-    ax1 = plt.gca()
-    ax1.legend(fontsize=font_size-2, loc='upper left')
-    ax1.set_ylabel('Power (MW)', fontsize=font_size)
+    ax = plt.subplot(3, 1, 2)
+    if "battery" in hybrid.technologies:
+        plt.tick_params(which='both', labelsize=font_size)
+        discharge = [(p > 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
+        charge = [(p < 0) * p * power_scale for p in hybrid.battery.outputs.P[time_slice]]
+        plt.bar(time, discharge, width=0.9, color=discharge_color, edgecolor='white', label='Battery Discharge')
+        plt.bar(time, charge, width=0.9, color=charge_color, edgecolor='white', label='Battery Charge')
+        plt.xlim([start, end])
+        ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
+        plt.grid()
+        ax1 = plt.gca()
+        ax1.legend(fontsize=font_size-2, loc='upper left')
+        ax1.set_ylabel('Power (MW)', fontsize=font_size)
 
-    ax2 = ax1.twinx()
-    ax2.plot(time, hybrid.battery.outputs.SOC[time_slice], 'k', label='State-of-Charge')
-    ax2.plot(time, hybrid.battery.outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
-    ax2.set_ylabel('State-of-Charge (-)', fontsize=font_size)
-    ax2.legend(fontsize=font_size-2, loc='upper right')
-    plt.title('Battery Power Flow', fontsize=font_size)
+        ax2 = ax1.twinx()
+        ax2.plot(time, hybrid.battery.outputs.SOC[time_slice], 'k', label='State-of-Charge')
+        ax2.plot(time, hybrid.battery.outputs.dispatch_SOC[time_slice], '.', label='Dispatch')
+        ax2.set_ylabel('State-of-Charge (-)', fontsize=font_size)
+        ax2.legend(fontsize=font_size-2, loc='upper right')
+        plt.title('Battery Power Flow', fontsize=font_size)
+    else:
+        # Turn off the axes
+        ax.set_axis_off()
+
+        # Add text to the axes
+        ax.text(0.5, 0.5, "No battery in simulation", ha='center', va='center', fontsize=12)
 
     # Net action
     plt.subplot(3, 1, 3)
     plt.tick_params(which='both', labelsize=font_size)
     plt.plot(time, original_gen, 'k--', label='Original Generation')
     plt.plot(time, gen, color=gen_color, label='Optimized Dispatch')
+    if show_load:
+        plt.plot(time, des_sched, 'k:', label="Desired Schedule (kW)")
     plt.xlim([start, end])
     ax = plt.gca()
     ax.xaxis.set_ticks(list(range(start, end, hybrid.site.n_periods_per_day)))
@@ -337,6 +348,9 @@ def plot_generation_profile(hybrid: HybridSimulation,
 
     plt.xlabel('Time (hours)', fontsize=font_size)
     plt.title('Net Generation', fontsize=font_size)
+
+    if super_title is not None:
+        plt.suptitle(super_title)
 
     plt.tight_layout()
 
