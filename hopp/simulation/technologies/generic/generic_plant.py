@@ -33,7 +33,7 @@ class GenericConfig(BaseClass):
     """
 
     system_capacity_kw: float = field(default = 0.0)
-    system_capacity_kwac: Optional[float] = field(default = 0.0)
+    system_capacity_kwac: Optional[float] = field(default = None)
     generation_profile_kw: Optional[list[float]] = field(default = None)
     subsystem_name: Optional[str] = field(default="generic_system")
 
