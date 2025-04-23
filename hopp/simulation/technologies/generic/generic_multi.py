@@ -19,7 +19,7 @@ class GenericMultiSystem(BaseClass):
         this functionality is not tested for financial calculations.
 
     Args:
-        subsystems (list[GenericSystem]): list of each
+        subsystems (list[GenericSystem]): list of subsystem objects.
         subsystem_names (list[str], Optional): list of unique names to identify each subsystem.
             If not provided or if duplicate names are used, it will append a number to the end of the names.
         system_name (str, Optional): name of the MultiSystem, defaults to "generic_multi". 
@@ -63,7 +63,7 @@ class GenericMultiSystem(BaseClass):
                     self.subsystems[ni].value("system_name", f"{sub_name}_{ni}")
             self.subsystem_names = subsystem_names_original
         self.system_capacity = 0.0 #temporarily set to avoid attribute error when calculating capacity factor
-        self.update_generation_profile(None)
+        self.update_generation_profile()
         self.update_system_capacity(None)
 
     def value(self, name:str, set_value=None):
@@ -101,13 +101,9 @@ class GenericMultiSystem(BaseClass):
         }
         return config
 
-    def update_generation_profile(self, placeholder):
+    def update_generation_profile(self):
         """Recalculate ``gen`` attribute after subsystem generation profiles may have been updated. Also updates ``annual_energy``, 
         ``annual_energy_pre_curtailment_ac``, and ``capacity_factor``.
-
-        Args:
-            placeholder (None): unused placeholder value so this function parallels 
-            the function in ``hopp.simulation.technologies.generic.generic_plant.GenericSystem``
         """
 
         generation_profile_kW = np.zeros(self.n_timesteps)
@@ -176,7 +172,7 @@ class GenericMultiSystem(BaseClass):
 
         subsystem = self.get_subsystem_from_name(subsystem_name)
         subsystem.update_generation_profile(generation_profile_kW)
-        self.update_generation_profile(None)
+        self.update_generation_profile()
     
     def update_system_capacity_for_subsystem(self, system_capacity_kw:Union[float,int], subsystem_name:str):
         """Update the system capacity for a single subsystem.

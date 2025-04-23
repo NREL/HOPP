@@ -68,7 +68,7 @@ class GenericSystem(BaseClass):
     system_capacity: float = field(validator=gt_zero)
     gen: list[float]
     
-    system_capacity_ac: Optional[float] = field(default = 0.0)
+    system_capacity_ac: Optional[float] = field(default = None)
     system_name: Optional[str] = field(default = "generic_system")
     n_timesteps: Optional[Union[float,int]] = field(default = 8760)
     t_step: Optional[Union[float,int]] = field(default = 1)
@@ -98,7 +98,7 @@ class GenericSystem(BaseClass):
         self.annual_energy = np.sum(self.gen)
         self.annual_energy_pre_curtailment_ac = np.sum(self.gen)
         
-        if self.system_capacity_ac==0.0:
+        if self.system_capacity_ac is None:
             self.system_capacity_ac = self.system_capacity
         
         if len(self.gen)!=self.n_timesteps:
