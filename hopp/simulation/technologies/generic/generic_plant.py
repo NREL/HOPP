@@ -82,11 +82,8 @@ class GenericSystem(BaseClass):
         """Initialize some attributes and set defaults if needed. This method does the following:
 
         1) calculate attributes:
-
             - `annual_energy`
-
             - `annual_energy_pre_curtailment_ac`
-
             - `capacity_factor`
 
         2) set `system_capacity_ac` to `system_capacity` if `system_capacity_ac` was not input.
