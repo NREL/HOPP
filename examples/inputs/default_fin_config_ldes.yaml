@@ -1,0 +1,49 @@
+battery_system:
+  batt_replacement_schedule_percent:
+    - 0
+  batt_bank_replacement:
+    - 0
+  batt_replacement_option: 0
+  batt_computed_bank_capacity: 0
+  batt_meter_position: 0
+system_costs:
+  om_fixed:
+    - 0
+  om_production:
+    - 0
+  om_capacity:
+    - 0
+  om_batt_fixed_cost: 42.888
+  om_batt_variable_cost:
+    - 0
+  om_batt_capacity_cost: 86.559
+  om_batt_replacement_cost: 0
+  om_replacement_cost_escal: 0
+system_use_lifetime_output: 0
+financial_parameters:
+  inflation_rate: 2.5
+  real_discount_rate: 6.4
+  federal_tax_rate: 21.0
+  state_tax_rate: 4.4
+  property_tax_rate: 1.0
+  insurance_rate: 0.5
+  debt_percent: 68.5
+  term_int_rate: 6.0
+  months_working_reserve: 1
+  analysis_start_year: 2025
+  installation_months: 12 # None
+  sales_tax_rate_state: 4.5 # none
+  admin_expense_percent_of_sales: 1.0 #none
+  capital_gains_tax_rate: 15.0 # none
+  debt_type: "Revolving debt" # none
+  depreciation_method: "MACRS" # none handled differently
+  depreciation_period: 5 # none - handled differently
+
+cp_capacity_credit_percent:
+  - 0
+degradation:
+  - 0
+revenue:
+  ppa_price_input:
+    - 0.01
+  ppa_escalation: 1

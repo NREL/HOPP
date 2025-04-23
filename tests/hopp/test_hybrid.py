@@ -363,10 +363,10 @@ def test_hybrid_wave_only(hybrid_config, mhk_config, wavesite, subtests):
     with subtests.test("hybrid wave only cf"):
         assert cf.hybrid == approx(cf.wave)
     with subtests.test("wave cost"):
-        assert hybrid_plant.wave.total_installed_cost == approx(66465112.398478985, 1e-2)
+        assert hybrid_plant.wave.total_installed_cost == approx(61556097.658332035, 1e-2)
     with subtests.test("wave npv"):
         # TODO check/verify this test value somehow, not sure how to do it right now
-        assert npvs.wave == approx(-66610851.533444166, 5.e-2)
+        assert npvs.wave == approx(-61701836.79329722, 5.e-2)
     with subtests.test("hybrid wave only npv"):
         assert npvs.hybrid == approx(npvs.wave)
 
@@ -584,10 +584,10 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
         assert cf.hybrid == approx(cf.tidal)
     with subtests.test("tidal cost"):
         # It seems that there is a difference between PySAM cost curves and SAM gui
-        assert hybrid_plant.tidal.total_installed_cost == approx(29015651.4, 1e-2)
+        assert hybrid_plant.tidal.total_installed_cost == approx(23212571.95064662, 1e-2)
     with subtests.test("tidal npv"):
         # TODO check/verify this test value somehow, not sure how to do it right now
-        assert npvs.tidal == approx(-29088482.4, 5.e-2)
+        assert npvs.tidal == approx(-23285402.94450588, 5.e-2)
     with subtests.test("hybrid tidal only npv"):
         assert npvs.hybrid == approx(npvs.tidal)
 

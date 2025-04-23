@@ -20,6 +20,7 @@ parts:
       - file: api/resource/solar_api
       - file: api/resource/wind_api
       - file: api/resource/alaska_wind
+      - file: api/resource/bc-hrrr_wind
       - file: api/resource/solar_hpc
       - file: api/resource/wind_hpc
       - file: api/resource/wave_data

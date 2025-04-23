@@ -76,7 +76,7 @@ def test_system_outputs(tidalplant,subtests):
 def test_cost_outputs(tidalplant,subtests):
     tidalplant.simulate(25)
     with subtests.test("structural assembly cost"):
-        assert tidalplant.mhk_costs.cost_outputs['structural_assembly_cost_modeled'] == pytest.approx(10371672, 1e-3)
+        assert tidalplant.mhk_costs.cost_outputs['structural_assembly_cost_modeled'] == pytest.approx(8495602, 1e-3)
     with subtests.test("power_takeoff_system_cost"):
         assert tidalplant.mhk_costs.cost_outputs['power_takeoff_system_cost_modeled']== pytest.approx(41212670, 1e-3)
 

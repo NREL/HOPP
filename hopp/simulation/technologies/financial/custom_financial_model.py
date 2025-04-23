@@ -45,11 +45,11 @@ class BatterySystem(FinancialData):
     To add any additional system cost, first see if the variable exists in Singleowner, and re-use name.
     This will simplify interoperability
     """
-    batt_bank_replacement: tuple = field(default=[0])
+    batt_bank_replacement: tuple = field(default=[0]) # Battery bank replacements per year [number/year]
     batt_computed_bank_capacity: tuple = field(default=0)
-    batt_meter_position: tuple = field(default=0)
-    batt_replacement_option: float = field(default=0)
-    batt_replacement_schedule_percent: tuple = field(default=[0])
+    batt_meter_position: tuple = field(default=0) # Options: 0=BehindTheMeter,1=FrontOfMeter - not used in custom fin model
+    batt_replacement_option: float = field(default=0) # [0=none,1=capacity based,2=user schedule]
+    batt_replacement_schedule_percent: tuple = field(default=[0]) # required if batt_replacement_option is 2, Percentage of battery capacity to replace in each year [%]. For H2I, it is the percent of initial capex replacement cost in each year
 
 
 @define
@@ -60,8 +60,8 @@ class SystemCosts(FinancialData):
     om_batt_fixed_cost: float = field(default=0)
     om_batt_variable_cost: float = field(default=[0])
     om_batt_capacity_cost: float = field(default=0)
-    om_batt_replacement_cost: float = field(default=0)
-    om_replacement_cost_escal: float = field(default=0)
+    om_batt_replacement_cost: float = field(default=0) # Replacement cost 1 [$/kWh] - not used in custom fin model
+    om_replacement_cost_escal: float = field(default=0) # Production-based O&M escalation [%/year] - not used in custom fin model
     total_installed_cost: float = field(default=None)
 
 
@@ -330,7 +330,7 @@ class CustomFinancialModel():
             }, 
         )
         
-        if "Battery" in self.name:
+        if "Battery" in self.name or "LDES" in self.name:
             pf.set_params(
                 "capacity",
                 max([1E-6, self.value("batt_annual_discharge_energy")[0]/365.0]),
@@ -413,14 +413,18 @@ class CustomFinancialModel():
         )
 
         # ----------------------------------- Add capital and fixed items to ProFAST ----------------
+        
+        refurb = [0]
+        if self.BatterySystem.batt_replacement_option == 2:
+            refurb = list(self.BatterySystem.batt_replacement_schedule_percent)
         pf.add_capital_item(
                 name="Total installed cost",
                 cost=self.value('total_installed_cost'),
                 depr_type=self.value('depreciation_method'),
                 depr_period=self.value('depreciation_period'),
-                refurb=[0],
+                refurb=refurb,
             )
-
+        
         return pf
 
     @staticmethod

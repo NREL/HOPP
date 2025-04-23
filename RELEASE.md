@@ -10,6 +10,11 @@
 * Loosened strictness of comparison for wind turbine hub-height and wind resource hub-height
 * Updated workflow for specifying wind turbine parameters without specifying a turbine name with PySAM.
 * Added ability to download wind resource data from WTK-LED for Alaska
+* Added ability to download wind resource data from BC-HRRR CONUS 60-minute (NOAA + NREL) for 2015-2023
+* Updated HOPP for pySAM 7.0.0 release
+* Add long-duration energy storage (LDES)
+* Bugfix for cycle counting in the minimum operating cost objective function - no longer throws an error
+
 
 
 ## Version 3.2.0, March 21, 2025

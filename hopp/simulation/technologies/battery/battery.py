@@ -2,20 +2,22 @@ from dataclasses import dataclass, asdict
 from typing import Optional, Sequence, List, Union
 import numpy as np
 import pandas as pd
+import math
+
 
 from attrs import define, field
-import PySAM.BatteryStateful as BatteryModel
+import PySAM.BatteryStateful as PySAMBatteryModel
 import PySAM.BatteryTools as BatteryTools
 import PySAM.Singleowner as Singleowner
 from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.financial import FinancialModelType, CustomFinancialModel
+from hopp.simulation.technologies.ldes.ldes_system_model import LDES
 
 from hopp.simulation.technologies.power_source import PowerSource
 from hopp.simulation.technologies.sites.site_info import SiteInfo
 
 from hopp.utilities.log import hybrid_logger as logger
 from hopp.utilities.validators import contains, gt_zero, range_val
-
 
 @dataclass
 class BatteryOutputs:
@@ -74,16 +76,16 @@ class BatteryConfig(BaseClass):
         tracking: default True -> `Battery`
         system_capacity_kwh: Battery energy capacity [kWh]
         system_capacity_kw: Battery rated power capacity [kW]
+        system_model_source: software source for the system model, can by 'pysam' or 'hopp'
         chemistry: Battery chemistry option
 
-            - "LFPGraphite" (default)
-
-            - "LMOLTO"
-
-            - "LeadAcid" 
-
-            - "NMCGraphite"
-
+            PySAM options:
+                - "LFPGraphite" (default)
+                - "LMOLTO"
+                - "LeadAcid" 
+                - "NMCGraphite"
+            HOPP options:
+                - "LDES" generic long-duration energy storage
         minimum_SOC: Minimum state of charge [%]
         maximum_SOC: Maximum state of charge [%]
         initial_SOC: Initial state of charge [%]
@@ -93,7 +95,8 @@ class BatteryConfig(BaseClass):
     """
     system_capacity_kwh: float = field(validator=gt_zero)
     system_capacity_kw: float = field(validator=gt_zero)
-    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite"]))
+    system_model_source: str = field(default="pysam", validator=contains(["pysam", "hopp"]))
+    chemistry: str = field(default="LFPGraphite", validator=contains(["LFPGraphite", "LMOLTO", "LeadAcid", "NMCGraphite", "LDES"]))
     tracking: bool = field(default=True)
     minimum_SOC: float = field(default=10, validator=range_val(0, 100))
     maximum_SOC: float = field(default=90, validator=range_val(0, 100))
@@ -122,7 +125,13 @@ class Battery(PowerSource):
     def __attrs_post_init__(self):
         """
         """
-        system_model = BatteryModel.default(self.config.chemistry)
+        if self.config.system_model_source == "pysam":
+            system_model = PySAMBatteryModel.default(self.config.chemistry)
+        elif self.config.system_model_source == "hopp":
+            system_model = LDES(self.config, self.site)
+            self.cycle_count = 0.0
+        else:
+            raise(ValueError("Invalid value for battery system_model_source, must be one of ['pysam', 'hopp']"))
 
         if isinstance(self.config.fin_model, dict):
             financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
@@ -130,29 +139,37 @@ class Battery(PowerSource):
             financial_model = self.config.fin_model
 
         if financial_model is None:
+            if self.config.system_model_source == "hopp":
+                raise(ValueError("Must specify an input dict for the custom financial model when using 'hopp' as the `system_model_source`"))
             # default
-            financial_model = Singleowner.from_existing(system_model, self.config_name)
+            else:
+                financial_model = Singleowner.from_existing(system_model, self.config_name)
         else:
             financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
 
         super().__init__("Battery", self.site, system_model, financial_model)
 
         self.outputs = BatteryOutputs(n_timesteps=self.site.n_timesteps, n_periods_per_day=self.site.n_periods_per_day)
+        
         self.system_capacity_kw = self.config.system_capacity_kw
+
         self.chemistry = self.config.chemistry
-        BatteryTools.battery_model_sizing(self._system_model,
+        if self.config.system_model_source == "pysam":
+            BatteryTools.battery_model_sizing(self._system_model,
                                           self.config.system_capacity_kw,
                                           self.config.system_capacity_kwh,
                                           self.system_voltage_volts,
                                           module_specs=Battery.module_specs)
-        self._system_model.ParamsPack.h = 20
-        self._system_model.ParamsPack.Cp = 900
-        self._system_model.ParamsCell.resistance = 0.001
-        self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
+            self._system_model.ParamsPack.h = 20
+            self._system_model.ParamsPack.Cp = 900
+            self._system_model.ParamsCell.resistance = 0.001
+            self._system_model.ParamsCell.C_rate = self.config.system_capacity_kw / self.config.system_capacity_kwh
+
 
         # Minimum set of parameters to set to get statefulBattery to work
         self._system_model.value("control_mode", 0.0)
         self._system_model.value("input_current", 0.0)
+
         self._system_model.value("dt_hr", 1.0)
         self._system_model.value("minimum_SOC", self.config.minimum_SOC)
         self._system_model.value("maximum_SOC", self.config.maximum_SOC)
@@ -162,6 +179,8 @@ class Battery(PowerSource):
 
         logger.info("Initialized battery with parameters and state {}".format(self._system_model.export()))
 
+
+
     def setup_system_model(self):
         """Executes Stateful Battery setup"""
         self._system_model.setup()
@@ -169,7 +188,11 @@ class Battery(PowerSource):
     @property
     def system_capacity_voltage(self) -> tuple:
         """Battery energy capacity [kWh] and voltage [VDC]"""
-        return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
+
+        if self.config.system_model_source == "pysam":
+            return self._system_model.ParamsPack.nominal_energy, self._system_model.ParamsPack.nominal_voltage
+        elif self.config.system_model_source == "hopp":
+            return self._system_model.params.nominal_energy, self._system_model.params.nominal_voltage
 
     @system_capacity_voltage.setter
     def system_capacity_voltage(self, capacity_voltage: tuple):
@@ -180,18 +203,27 @@ class Battery(PowerSource):
         if size_kwh == 0:
             size_kwh = 1e-7
 
-        BatteryTools.battery_model_sizing(self._system_model,
-                                          0.,
-                                          size_kwh,
-                                          voltage_volts,
-                                          module_specs=Battery.module_specs)
+        if self.config.system_model_source == "pysam":
+            BatteryTools.battery_model_sizing(self._system_model,
+                                            0.,
+                                            size_kwh,
+                                            voltage_volts,
+                                            module_specs=Battery.module_specs)
+        else:
+            self._system_model.params.nominal_voltage = voltage_volts
+            self._system_model.params.nominal_energy = size_kwh
+            
         logger.info("Battery set system_capacity to {} kWh".format(size_kwh))
         logger.info("Battery set system_voltage to {} volts".format(voltage_volts))
 
     @property
     def system_capacity_kwh(self) -> float:
         """Battery energy capacity [kWh]"""
-        return self._system_model.ParamsPack.nominal_energy
+
+        if self.config.system_model_source == "pysam":
+            return self._system_model.ParamsPack.nominal_energy
+        else:
+            return self._system_model.params.nominal_energy
 
     @system_capacity_kwh.setter
     def system_capacity_kwh(self, size_kwh: float):
@@ -210,7 +242,10 @@ class Battery(PowerSource):
     @property
     def system_voltage_volts(self) -> float:
         """Battery bank voltage [VDC]"""
-        return self._system_model.ParamsPack.nominal_voltage
+
+        if self.config.system_model_source == "pysam":
+            return self._system_model.ParamsPack.nominal_voltage
+        # not in LDES/HOPP yet, but could add? May need more specifics about the physics/chemistry
 
     @system_voltage_volts.setter
     def system_voltage_volts(self, voltage_volts: float):
@@ -219,7 +254,12 @@ class Battery(PowerSource):
     @property
     def chemistry(self) -> str:
         """Battery chemistry type"""
-        model_type = self._system_model.ParamsCell.chem
+
+        if self.config.system_model_source == "pysam":
+            model_type = self._system_model.ParamsCell.chem
+        elif self.config.system_model_source == "hopp":
+            model_type = self._system_model.model_type() #TODO revisit this
+        
         if model_type == 0 or model_type == 1:
             return self._chemistry
         else:
@@ -228,15 +268,20 @@ class Battery(PowerSource):
     @property    
     def system_mass(self) -> float:
         """Battery bank mass [kg]"""
-        return self._system_model.ParamsPack.mass
+
+        if self.config.system_model_source == "pysam":
+            return self._system_model.ParamsPack.mass
 
     @property
     def footprint_area(self) -> float:
         """Battery bank footprint area [m^2]"""
-        #Battery thermal model assumes a cube for heat exchange
-        cube_surface_area = self._system_model.ParamsPack.surface_area 
-        footprint = cube_surface_area / 6 # Single side of cube
-        return footprint
+
+        if self.config.system_model_source == "pysam":
+            #Battery thermal model assumes a cube for heat exchange
+            cube_surface_area = self._system_model.ParamsPack.surface_area 
+            footprint = cube_surface_area / 6 # Single side of cube
+            return footprint
+        # TODO should be added for individual LDES storage types
 
     @property
     def energy_capital_cost(self) -> Union[float, int]:
@@ -259,13 +304,18 @@ class Battery(PowerSource):
             - `LeadAcid`: Lead Acid
             - `NMCGraphite`: Nickel Manganese Cobalt Oxide (Lithium Ion)
         """
-        BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
+
+        if self.config.system_model_source == "pysam":
+            BatteryTools.battery_model_change_chemistry(self._system_model, battery_chemistry)
+        # TODO update LDES in this setter   
         self._chemistry = battery_chemistry
         logger.info("Battery chemistry set to {}".format(battery_chemistry))
 
     def setup_performance_model(self):
         """Executes Stateful Battery setup"""
-        self._system_model.setup()
+
+        if self.config.system_model_source == "pysam":
+            self._system_model.setup()
 
     def simulate_with_dispatch(self, n_periods: int, sim_start_time: Optional[int] = None):
         """
@@ -300,12 +350,17 @@ class Battery(PowerSource):
 
             self.simulate_power(time_step=index_time_step)
 
+        if self.config.system_model_source == "hopp" and self.dispatch.options.include_lifecycle_count:
+            self.cycle_count += self.dispatch.lifecycles[0]
+
         # Store Dispatch model values
         if sim_start_time is not None:
             time_slice = slice(sim_start_time, sim_start_time + n_periods)
             self.outputs.dispatch_SOC[time_slice] = self.dispatch.soc[0:n_periods]
             self.outputs.dispatch_P[time_slice] = self.dispatch.power[0:n_periods]
             self.outputs.dispatch_I[time_slice] = self.dispatch.current[0:n_periods]
+            if self.config.system_model_source == "hopp" and self.dispatch.options.include_lifecycle_count:
+                self.outputs.n_cycles[time_slice] = [math.floor(self.cycle_count)]*int(n_periods)
             if self.dispatch.options.include_lifecycle_count:
                 days_in_period = n_periods // (self.site.n_periods_per_day)
                 start_day = sim_start_time // self.site.n_periods_per_day
@@ -323,6 +378,7 @@ class Battery(PowerSource):
         """
         if not self._system_model:
             return
+        
         self._system_model.execute(0)
 
         if time_step is not None:
@@ -335,11 +391,18 @@ class Battery(PowerSource):
         Args:
             time_step: time step where outputs will be stored.
         """
-        for attr in self.outputs.stateful_attributes:
-            if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
-                getattr(self.outputs, attr)[time_step] = self.value(attr)
+        for attr in self.outputs.stateful_attributes: # TODO include State in LDES model
+            if self.config.system_model_source == "pysam":
+                if hasattr(self._system_model.StatePack, attr) or hasattr(self._system_model.StateCell, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
+                elif attr == 'gen':
+                    getattr(self.outputs, attr)[time_step] = self.value('P')
             else:
-                if attr == 'gen':
+                if hasattr(self._system_model.state, attr):
+                    getattr(self.outputs, attr)[time_step] = self.value(attr)
+                    if attr == 'n_cycles' and self.dispatch.options.include_lifecycle_count:
+                        getattr(self.outputs, attr)[time_step] = math.floor(self.dispatch.lifecycles[0])
+                elif attr == 'gen':
                     getattr(self.outputs, attr)[time_step] = self.value('P')
 
     def validate_replacement_inputs(self, project_life):
@@ -356,14 +419,17 @@ class Battery(PowerSource):
             self._financial_model.value('batt_bank_replacement', [0] * (project_life + 1))
 
         if self._financial_model.value('batt_replacement_option') == 2:
-            if len(self._financial_model.value('batt_replacement_schedule_percent')) != project_life:
+            if (len(self._financial_model.value('batt_replacement_schedule_percent')) != project_life):
                 raise ValueError(f"Error in Battery model: `batt_replacement_schedule_percent` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_replacement_schedule_percent'))}")
             if len(self._financial_model.value('batt_bank_replacement')) != project_life + 1:
-                if len(self._financial_model.value('batt_bank_replacement')) == project_life:
-                    # likely an input mistake: add a zero for financial year 0 
-                    self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
-                else:
-                    raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
+
+                # batt_replacement_option has different behavior in hopp vs in pysam models. The following only applies when using pysam financials version
+                if (type(self._financial_model) is not CustomFinancialModel):
+                    if len(self._financial_model.value('batt_bank_replacement')) == project_life:
+                        # likely an input mistake: add a zero for financial year 0 
+                        self._financial_model.value('batt_bank_replacement', [0] + list(self._financial_model.value('batt_bank_replacement')))
+                    else:
+                        raise ValueError(f"Error in Battery model: `batt_bank_replacement` should be length of project_life {project_life} but is instead {len(self._financial_model.value('batt_bank_replacement'))}")
     
     def set_overnight_capital_cost(self, energy_capital_cost, power_capital_cost):
         """Set overnight capital costs [$/kW].

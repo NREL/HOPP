@@ -1,0 +1,34 @@
+technologies:
+  pv:
+    system_capacity_kw: 5000
+    fin_model: !include default_fin_config_ldes.yaml
+  wind:
+    num_turbines: 5
+    turbine_rating_kw: 5000
+    fin_model: !include default_fin_config_ldes.yaml
+  battery: # VRDB
+    system_capacity_kwh: 100000
+    system_capacity_kw: 10000
+    minimum_SOC: 20.0
+    maximum_SOC: 100.0
+    initial_SOC: 90.0
+    system_model_source: "hopp"
+    chemistry: "LDES"
+    fin_model: !include default_fin_config_ldes.yaml
+  grid:
+    interconnect_kw: 100000
+    fin_model: !include default_fin_config_ldes.yaml
+
+config:
+  dispatch_options:
+    battery_dispatch: simple
+    solver: cbc
+    n_look_ahead_periods: 48
+    grid_charging: true
+    pv_charging_only: false
+    include_lifecycle_count: false # assuming that flow batteries have no degradation based on cycles
+  cost_info: # based on table 6 of "A comprehensive review of stationary energy storage devices for large scale renewable energy sources grid integration"
+    storage_installed_cost_mwh: 500000
+    storage_installed_cost_mw: 1000000
+    battery_om_per_kw: 40.0
+    battery_om_per_kwh: 0.0 # this value is here as a place holder for the sake of the example

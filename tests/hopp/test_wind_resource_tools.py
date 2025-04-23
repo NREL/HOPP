@@ -148,3 +148,13 @@ def test_pysam_combine_wind_files_srw():
     resource_heights = [80.0,100.0]
     wind_data = combine_wind_files(wind_resource_file_multi_heights,resource_heights)
     assert len(wind_data["heights"]) == 8
+
+def test_pysam_combine_wind_files_surface_pressure():
+    bchrrr_wind_resource_file = os.path.join(
+    ROOT_DIR, "simulation", "resource_files", "wind", 
+    "35.2018863_-101.945027_BC_HRRR_2015_60min_80m_100m.csv"
+    )
+    resource_heights = [80.0,100.0]
+    wind_data = combine_wind_files(bchrrr_wind_resource_file,resource_heights)
+    assert len(wind_data["heights"]) == 8
+    assert 2 in wind_data["fields"]
