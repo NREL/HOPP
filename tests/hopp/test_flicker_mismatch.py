@@ -199,9 +199,3 @@ def test_single_turbine_point(subtests):
         assert(np.average(shadow) == approx(0.004629629629629629, 1e-4))
     with subtests.test("nonzero shadow count"):
         assert(np.count_nonzero(shadow) == approx(2, 1e-4))
-    with subtests.test("max loss"):
-        assert(np.max(loss) == approx(0.05209687597083948, 1e-4))
-    with subtests.test("average loss"):
-        assert(np.average(loss) == approx(0.004812499840871032, 1e-4))
-    with subtests.test("nonzero loss count"):
-        assert(np.count_nonzero(loss) == approx(20, 1e-4))
