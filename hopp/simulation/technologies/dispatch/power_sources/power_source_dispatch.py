@@ -33,6 +33,7 @@ class PowerSourceDispatch(Dispatch):
             financial_model,
             block_set_name=block_set_name,
         )
+        self.round_digits = int(8)
 
     @staticmethod
     def dispatch_block_rule(gen):

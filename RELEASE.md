@@ -3,6 +3,9 @@
 
 ## Unreleased, TBD
 
+* Added GenericPlant model which may be used to:
+    - simulate grid and battery performance without resimulating generation of other technologies
+    - represent the physics-based performance of a generation technology that is not included in HOPP
 * Loosened strictness of comparison for wind turbine config checking and added tests
 * Loosened strictness of comparison for wind turbine hub-height and wind resource hub-height
 * Updated workflow for specifying wind turbine parameters without specifying a turbine name with PySAM.
@@ -12,6 +15,7 @@
 * Add long-duration energy storage (LDES)
 * Bugfix for cycle counting in the minimum operating cost objective function - no longer throws an error
 * Bugfix for flicker mismatch; cases with a single `Point` now correctly work
+
 
 
 ## Version 3.2.0, March 21, 2025
