@@ -14,6 +14,7 @@
 * Updated HOPP for pySAM 7.0.0 release
 * Add long-duration energy storage (LDES)
 * Bugfix for cycle counting in the minimum operating cost objective function - no longer throws an error
+* Bugfix for flicker mismatch; cases with a single `Point` now correctly work
 
 
 

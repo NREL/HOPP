@@ -1,5 +1,4 @@
 from typing import List, Union, Optional, Sequence
-from pathlib import Path
 import copy
 from itertools import product
 import sys
@@ -335,9 +334,7 @@ class FlickerMismatch:
                 intersecting_points = site_points.intersection(shadow)
             if intersecting_points:
                 if isinstance(intersecting_points, Point):
-                    intersecting_points = (intersecting_points, )
-                # else:
-                #     intersecting_points = intersecting_points.geoms
+                    intersecting_points = MultiPoint([intersecting_points])
                 # break up into separate instructions for minor speed up by vectorization
                 xs = np.array([pt.x for pt in intersecting_points.geoms])
                 ys = np.array([pt.y for pt in intersecting_points.geoms])
@@ -357,12 +354,6 @@ class FlickerMismatch:
                         heat_map[y, x] += weight * area_weight
                     else:
                         heat_map[y, x] += weight
-            # if isinstance(shadow, Polygon):
-            #     shadow = (shadow, )
-            # for poly in shadow:
-            #     x, y = poly.exterior.xy
-            #     plt.plot(x, y)
-        # plt.show()
 
     @staticmethod
     def _calculate_power_loss(poa: float,
