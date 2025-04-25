@@ -239,6 +239,10 @@ class HybridDispatch(Dispatch):
     @property
     def tidal_generation(self) -> list:
         return [self.blocks[t].tidal_generation.value for t in self.blocks.index_set()]
+    
+    @property
+    def generic_generation(self) -> list:
+        return [self.blocks[t].generic_generation.value for t in self.blocks.index_set()]
 
     @property
     def tower_generation(self) -> list:

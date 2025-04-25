@@ -47,6 +47,9 @@ class HoppInterface:
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
         self.hopp.simulate(project_life, lifetime_sim)
+    
+    def simulate_power(self, project_life: int = 25, lifetime_sim: bool = False):
+        self.hopp.simulate_power(project_life, lifetime_sim)
 
     @property
     def system(self) -> "HybridSimulation":

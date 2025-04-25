@@ -11,3 +11,7 @@ from hopp.simulation.technologies.dispatch.power_sources.wave_dispatch import (
 from hopp.simulation.technologies.dispatch.power_sources.tidal_dispatch import (
     TidalDispatch,
 )
+
+from hopp.simulation.technologies.dispatch.power_sources.generic_dispatch import (
+    GenericDispatch,
+)

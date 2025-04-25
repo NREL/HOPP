@@ -16,6 +16,10 @@ from hopp.simulation.technologies.dispatch.power_sources.tidal_dispatch import (
     TidalDispatch,
 )
 
+from hopp.simulation.technologies.dispatch.power_sources.generic_dispatch import (
+    GenericDispatch,
+)
+
 from hopp.simulation.technologies.dispatch.grid_dispatch import GridDispatch
 from hopp.simulation.technologies.dispatch.hybrid_dispatch_options import (
     HybridDispatchOptions,
