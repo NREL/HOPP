@@ -183,7 +183,7 @@ class SiteInfo(BaseClass):
             interval (int): Number of minutes per time interval.
             urdb_label (str): Link to `Utility Rate DataBase <https://openei.org/wiki/Utility_Rate_Database>`_ label for REopt runs.
             follow_desired_schedule (bool): Indicates if a desired schedule was provided. Defaults to False.
-            kml_data (KML, Optional): KML data to be used when definining site boundaries.
+            kml_data (KML, Optional): KML data to be used when defining site boundaries.
         """
         if self.renewable_resource_origin=="API":
             set_nrel_key_dot_env()
