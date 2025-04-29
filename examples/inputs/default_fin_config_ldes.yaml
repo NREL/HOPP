@@ -13,10 +13,10 @@ system_costs:
     - 0
   om_capacity:
     - 0
-  om_batt_fixed_cost: 42.888 # VRDB fixed cost
+  om_batt_fixed_cost: 0
   om_batt_variable_cost:
     - 0
-  om_batt_capacity_cost: 86.559 #VRDB capacity cost
+  om_batt_capacity_cost: 0 
   om_batt_replacement_cost: 0
   om_replacement_cost_escal: 0
 system_use_lifetime_output: 0
