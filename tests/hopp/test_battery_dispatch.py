@@ -71,12 +71,13 @@ def test_batterystateless_dispatch(subtests):
     
     config = BatteryConfig.from_dict(technologies['battery'])
     battery = Battery(site, config=config)
+    solver = "notsolver"
     battery._dispatch = SimpleBatteryDispatch(model,
                                               model.forecast_horizon,
                                               battery._system_model,
                                               battery._financial_model,
                                               'battery',
-                                              HybridDispatchOptions())
+                                              HybridDispatchOptions({"solver": solver}))
     
     model.test_objective = pyomo.Objective(
         rule=create_test_objective_rule,
@@ -86,7 +87,25 @@ def test_batterystateless_dispatch(subtests):
     battery.dispatch.update_time_series_parameters(0)
     battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
     assert_units_consistent(model)
+    solvers = {'glpk': HybridDispatchBuilderSolver.glpk_solve_call, 
+               'highs': HybridDispatchBuilderSolver.highs_solve_call, 
+               'cbc': HybridDispatchBuilderSolver.cbc_solve_call, 
+               'scip': HybridDispatchBuilderSolver.scip_solve_call
+               }
+    import time
+    for solver_name, results in solvers.items():
+        t1 = time.time()
+        n = 50
+        for i in range(n):
+            results = solvers[solver_name](model)
+        t2 = time.time()
+        print(f"Solver: {solver_name}, N runs: {n}, Total time taken: {t2 - t1:.4f} seconds, Time per solve: {(t2 - t1) / n:.4f} seconds")
+    assert False
     results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    # results = HybridDispatchBuilderSolver.highs_solve_call(model)
+    # results = HybridDispatchBuilderSolver.scip_solve_call(model)
+
+    # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
 
     with subtests.test("TerminationCondition"):
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -164,10 +183,10 @@ def test_batterystateless_dispatch(subtests):
             dispatch_power = battery_sl.dispatch.power[i] * 1e3
             assert battery_sl.outputs.P[i] == pytest.approx(dispatch_power, 1e-3 * abs(dispatch_power))
 
-    battery_dispatch = np.array(battery.dispatch.power)[0:48]
+    battery_dispatch = np.array(battery.dispatch.power)[0:dispatch_n_look_ahead]
     battery_actual = np.array(battery.generation_profile[0:dispatch_n_look_ahead]) * 1e-3   # convert to MWh
-    battery_sl_dispatch = np.array(battery_sl.dispatch.power)[0:48]
-    battery_sl_actual = np.array(battery_sl.generation_profile)[0:48] * 1e-3   # convert to MWh
+    battery_sl_dispatch = np.array(battery_sl.dispatch.power)[0:dispatch_n_look_ahead]
+    battery_sl_actual = np.array(battery_sl.generation_profile)[0:dispatch_n_look_ahead] * 1e-3   # convert to MWh
 
     with subtests.test("battery_dispatch vs battery_sl_dispatch"):
         assert sum(battery_dispatch - battery_sl_dispatch) == 0
