@@ -105,7 +105,8 @@ def test_solar_dispatch(site):
 
     solar._dispatch.update_time_series_parameters(0)
 
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    # results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchBuilderSolver.highs_solve_call(model)
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
     # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal

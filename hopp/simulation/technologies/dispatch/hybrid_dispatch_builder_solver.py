@@ -139,6 +139,8 @@ class HybridDispatchBuilderSolver:
             solver_results = self.glpk_solve()
         elif self.options.solver == "cbc":
             solver_results = self.cbc_solve()
+        elif self.options.solver == "highs":
+            solver_results = self.highs_solve()
         elif self.options.solver == "xpress":
             solver_results = self.xpress_solve()
         elif self.options.solver == "xpress_persistent":
@@ -183,6 +185,11 @@ class HybridDispatchBuilderSolver:
         )
         return results
 
+    def glpk_solve(self):
+        return HybridDispatchBuilderSolver.glpk_solve_call(
+            self.pyomo_model, self.options.log_name, self.options.solver_options
+        )
+    
     @staticmethod
     def highs_solve_call(
         pyomo_model: pyomo.ConcreteModel,
@@ -202,7 +209,6 @@ class HybridDispatchBuilderSolver:
         highs_solver_options = dict(
                 time_limit=60.0,
                 mip_rel_gap=0.05,  # TODO ???
-                simplex_iteration_limit=1000000,
                 presolve = 'on',
                 # simplex_strategy = "dual",
                 solver="ipm"
@@ -220,6 +226,11 @@ class HybridDispatchBuilderSolver:
             pyomo_model,
         )
         return results
+    
+    def highs_solve(self):
+        return HybridDispatchBuilderSolver.highs_solve_call(
+            self.pyomo_model, self.options.log_name, self.options.solver_options
+        )
     
     @staticmethod
     def scip_solve_call(
@@ -264,8 +275,8 @@ class HybridDispatchBuilderSolver:
         )
         return results
     
-    def glpk_solve(self):
-        return HybridDispatchBuilderSolver.glpk_solve_call(
+    def scip_solve(self):
+        return HybridDispatchBuilderSolver.scip_solve_call(
             self.pyomo_model, self.options.log_name, self.options.solver_options
         )
 

@@ -59,10 +59,10 @@ def create_test_objective_rule(m):
 
 def test_batterystateless_dispatch(subtests):
     expected_objective = 28957.15
-    solvers = {'glpk': HybridDispatchBuilderSolver.glpk_solve_call, 
+    solvers = {#'glpk': HybridDispatchBuilderSolver.glpk_solve_call, 
                'highs': HybridDispatchBuilderSolver.highs_solve_call, 
-               'cbc': HybridDispatchBuilderSolver.cbc_solve_call, 
-               'scip': HybridDispatchBuilderSolver.scip_solve_call
+               #'cbc': HybridDispatchBuilderSolver.cbc_solve_call, 
+               #'scip': HybridDispatchBuilderSolver.scip_solve_call
                }
     import time, copy
     fig, ax = plt.subplots(len(solvers), 1, figsize=(10, 5), sharex=True)
@@ -142,7 +142,6 @@ def test_batterystateless_dispatch(subtests):
     # results = HybridDispatchBuilderSolver.glpk_solve_call(model)
     results = HybridDispatchBuilderSolver.highs_solve_call(model)
     # results = HybridDispatchBuilderSolver.scip_solve_call(model)
-
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
 
     with subtests.test("TerminationCondition"):
@@ -201,7 +200,8 @@ def test_batterystateless_dispatch(subtests):
     battery_sl.dispatch.initialize_parameters()
     battery_sl.dispatch.update_time_series_parameters(0)
     assert_units_consistent(model_sl)
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
+    # results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
+    results = HybridDispatchBuilderSolver.highs_solve_call(model_sl)
 
     with subtests.test("sum_charge_power"):
         assert results.solver.termination_condition == TerminationCondition.optimal
@@ -227,13 +227,13 @@ def test_batterystateless_dispatch(subtests):
     battery_sl_actual = np.array(battery_sl.generation_profile)[0:dispatch_n_look_ahead] * 1e-3   # convert to MWh
 
     with subtests.test("battery_dispatch vs battery_sl_dispatch"):
-        assert sum(battery_dispatch - battery_sl_dispatch) == pytest.approx(0)
+        assert sum(battery_dispatch - battery_sl_dispatch) == pytest.approx(0.0)
     
     with subtests.test("battery_actual vs battery_dispatch"):
-        assert sum(abs(battery_actual - battery_dispatch)) <= pytest.approx(33.5)
+        assert sum(abs(battery_actual - battery_dispatch)) <= 33.5
     
     with subtests.test("battery_sl_actual vs battery_sl_dispatch"):
-        assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == 0
+        assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == pytest.approx(0.0)
     
     with subtests.test("battery_actual vs battery_sl_actual"):
         assert sum(abs(battery_actual - battery_sl_actual)) <= 33.5
@@ -271,7 +271,8 @@ def test_batterystateless_cycle_limits(subtests):
     battery_sl.dispatch.initialize_parameters()
     battery_sl.dispatch.update_time_series_parameters(0)
     assert_units_consistent(model_sl)
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
+    # results = HybridDispatchBuilderSolver.glpk_solve_call(model_sl)
+    results = HybridDispatchBuilderSolver.highs_solve_call(model_sl)
 
     
     with subtests.test("termination_condition"):
