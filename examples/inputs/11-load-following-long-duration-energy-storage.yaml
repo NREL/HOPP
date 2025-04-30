@@ -30,11 +30,11 @@ site:
 technologies:
   pv:
     system_capacity_kw: 5000
-    fin_model: !include default_fin_config_ldes.yaml
+    fin_model: !include default_fin_config.yaml
   wind:
     num_turbines: 5
     turbine_rating_kw: 5000
-    fin_model: !include default_fin_config_ldes.yaml
+    fin_model: !include default_fin_config.yaml
   battery: # VRDB
     system_capacity_kwh: 100000
     system_capacity_kw: 10000
@@ -43,10 +43,10 @@ technologies:
     initial_SOC: 90.0
     system_model_source: "hopp"
     chemistry: "LDES"
-    fin_model: !include default_fin_config_ldes.yaml
+    fin_model: !include default_fin_config.yaml
   grid:
     interconnect_kw: 100000
-    fin_model: !include default_fin_config_ldes.yaml
+    fin_model: !include default_fin_config.yaml
 
 config:
   dispatch_options:
