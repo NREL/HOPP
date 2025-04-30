@@ -201,7 +201,11 @@ class HybridDispatchBuilderSolver:
         # }
         highs_solver_options = dict(
                 time_limit=60.0,
-                mip_rel_gap=0.5,  # TODO ???
+                mip_rel_gap=0.05,  # TODO ???
+                simplex_iteration_limit=1000000,
+                presolve = 'on',
+                # simplex_strategy = "dual",
+                solver="ipm"
             )
         
         solver_options = SolverOptions(
@@ -234,9 +238,15 @@ class HybridDispatchBuilderSolver:
         #     "tmlim": 30,
         # }
         scip_solver_options = {
-                "limits/gap": 0.005,
+                "limits/gap": 0.5,
                 "limits/time": 60.0,
                 "display/freq": 0.5,
+                "presolving/maxrounds": -1,
+                "limits/nodes": 1000000,
+                "heuristics/emphasis": "aggressive",
+                "separating/maxrounds": 10,
+                "separating/maxcuts": 100,
+                "branching/priority": "fullstrong"
                 # this is currently useless, as pyomo is not calling the concurrent solver
                 # 'parallel/maxnthreads': 16,
             }

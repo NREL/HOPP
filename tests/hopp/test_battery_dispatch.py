@@ -15,6 +15,8 @@ from hopp.simulation.technologies.financial.custom_financial_model import Custom
 from hopp import ROOT_DIR
 from tests.hopp.utils import DEFAULT_FIN_CONFIG
 
+import matplotlib.pyplot as plt
+
 solar_resource_file = ROOT_DIR / "simulation" / "resource_files" / "solar" / "35.2018863_-101.945027_psmv3_60_2012.csv"
 wind_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wind" / "35.2018863_-101.945027_windtoolkit_2012_60min_80m_100m.srw"
 site = SiteInfo(flatirons_site, solar_resource_file=solar_resource_file, wind_resource_file=wind_resource_file)
@@ -57,52 +59,88 @@ def create_test_objective_rule(m):
 
 def test_batterystateless_dispatch(subtests):
     expected_objective = 28957.15
-
-    # Run battery stateful as system model first
-    technologies = technologies_input.copy()
-    technologies['battery']['tracking'] = True
-    model = pyomo.ConcreteModel(name='battery_only')
-    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
-    model.price = pyomo.Param(model.forecast_horizon,
-                              within=pyomo.Reals,
-                              initialize=prices,
-                              mutable=True,
-                              units=u.USD / u.MWh)
-    
-    config = BatteryConfig.from_dict(technologies['battery'])
-    battery = Battery(site, config=config)
-    solver = "notsolver"
-    battery._dispatch = SimpleBatteryDispatch(model,
-                                              model.forecast_horizon,
-                                              battery._system_model,
-                                              battery._financial_model,
-                                              'battery',
-                                              HybridDispatchOptions({"solver": solver}))
-    
-    model.test_objective = pyomo.Objective(
-        rule=create_test_objective_rule,
-        sense=pyomo.maximize)
-
-    battery.dispatch.initialize_parameters()
-    battery.dispatch.update_time_series_parameters(0)
-    battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
-    assert_units_consistent(model)
     solvers = {'glpk': HybridDispatchBuilderSolver.glpk_solve_call, 
                'highs': HybridDispatchBuilderSolver.highs_solve_call, 
                'cbc': HybridDispatchBuilderSolver.cbc_solve_call, 
                'scip': HybridDispatchBuilderSolver.scip_solve_call
                }
-    import time
-    for solver_name, results in solvers.items():
-        t1 = time.time()
-        n = 50
-        for i in range(n):
-            results = solvers[solver_name](model)
-        t2 = time.time()
-        print(f"Solver: {solver_name}, N runs: {n}, Total time taken: {t2 - t1:.4f} seconds, Time per solve: {(t2 - t1) / n:.4f} seconds")
-    assert False
-    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
-    # results = HybridDispatchBuilderSolver.highs_solve_call(model)
+    import time, copy
+    fig, ax = plt.subplots(len(solvers), 1, figsize=(10, 5), sharex=True)
+    fig_single, ax_single = plt.subplots(1, 1, figsize=(10, 5))
+    line_types = ['-', '--', '-.', ':']
+    print(f"Expected objective: {expected_objective:.2f}", flush=True)
+    for i, (solver_name, results) in enumerate(solvers.items()):
+        # Run battery stateful as system model first
+        technologies = technologies_input.copy()
+        technologies['battery']['tracking'] = True
+        model = pyomo.ConcreteModel(name='battery_only')
+        model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+        model.price = pyomo.Param(model.forecast_horizon,
+                                within=pyomo.Reals,
+                                initialize=prices,
+                                mutable=True,
+                                units=u.USD / u.MWh)
+        
+        config = BatteryConfig.from_dict(technologies['battery'])
+        battery = Battery(site, config=config)
+        solver = "notsolver"
+        battery._dispatch = SimpleBatteryDispatch(model,
+                                                model.forecast_horizon,
+                                                battery._system_model,
+                                                battery._financial_model,
+                                                'battery',
+                                                HybridDispatchOptions({"solver": solver}))
+        
+        model.test_objective = pyomo.Objective(
+            rule=create_test_objective_rule,
+            sense=pyomo.maximize)
+
+        battery.dispatch.initialize_parameters()
+        battery.dispatch.update_time_series_parameters(0)
+        battery.dispatch.update_dispatch_initial_soc(battery.dispatch.minimum_soc)   # Set initial SOC to minimum
+        assert_units_consistent(model)
+    
+        if False: # for solver debugging
+            t1 = time.time()
+            n = 50
+            battery_dispatch_sum = 0
+            # print(f"Running Solver {i}: {solver_name}", flush=True)
+            for j in range(n):
+                model_internal = model
+
+                results = solvers[solver_name](model_internal)
+
+                battery_dispatch = np.array(battery.dispatch.power)[0:dispatch_n_look_ahead]
+                battery_dispatch_sum += np.sum(battery_dispatch)
+                if j == 0:
+                    if i == 0:
+                        label_dispatch = "dispatch"
+                        label_actual = "actual"
+                    else:
+                        label_dispatch = None
+                        label_actual = None
+                    ax[i].plot(battery.dispatch.power[0:dispatch_n_look_ahead], label=label_dispatch)
+                    ax[i].plot(battery.generation_profile[0:dispatch_n_look_ahead], label=label_actual)
+                    ax[i].set(ylabel='Power (MW)', title=f"Solver: {solver_name}")
+                    ax_single.plot(battery.dispatch.power[0:dispatch_n_look_ahead], linestyle=line_types[i], label=f"{solver_name}")
+                    if i == 0:
+                        ax[i].legend()
+                    if i == len(solvers) - 1:
+                        ax[i].set(xlabel='Time (hours)')
+            t2 = time.time()
+            battery_dispatch_sum /= n
+            print(f"Solver {i}: {solver_name}, N: {n}, TTime: {t2 - t1:.4f} (s), Time/run: {(t2 - t1) / n:.4f} (s), Obj: {pyomo.value(model_internal.test_objective)}, Ave dis. power: {battery_dispatch_sum / n:.4f} (MWh), Exit: {results.solver.termination_condition }", flush=True)
+    if True: # for solver debugging
+        ax_single.set(ylabel='Power (MW)', xlabel='Time (hours)', title="Dispatch Power")
+        ax_single.legend()
+        fig.tight_layout()
+        fig_single.tight_layout()
+        fig.subplots_adjust(hspace=0.5)
+        fig.savefig("solver_comparison.png")
+    fig_single.savefig("solver_comparison_single_plot.png")
+    # assert False
+    # results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+    results = HybridDispatchBuilderSolver.highs_solve_call(model)
     # results = HybridDispatchBuilderSolver.scip_solve_call(model)
 
     # results = HybridDispatchBuilderSolver.cbc_solve_call(model)
@@ -189,10 +227,10 @@ def test_batterystateless_dispatch(subtests):
     battery_sl_actual = np.array(battery_sl.generation_profile)[0:dispatch_n_look_ahead] * 1e-3   # convert to MWh
 
     with subtests.test("battery_dispatch vs battery_sl_dispatch"):
-        assert sum(battery_dispatch - battery_sl_dispatch) == 0
+        assert sum(battery_dispatch - battery_sl_dispatch) == pytest.approx(0)
     
     with subtests.test("battery_actual vs battery_dispatch"):
-        assert sum(abs(battery_actual - battery_dispatch)) <= 33.5
+        assert sum(abs(battery_actual - battery_dispatch)) <= pytest.approx(33.5)
     
     with subtests.test("battery_sl_actual vs battery_sl_dispatch"):
         assert sum(abs(battery_sl_actual - battery_sl_dispatch)) == 0

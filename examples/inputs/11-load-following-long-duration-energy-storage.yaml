@@ -7,7 +7,7 @@ technologies:
     turbine_rating_kw: 5000
     fin_model: !include default_fin_config_ldes.yaml
   battery: # VRDB
-    system_capacity_kwh: 100000
+    system_capacity_kwh: 200000
     system_capacity_kw: 10000
     minimum_SOC: 20.0
     maximum_SOC: 100.0
