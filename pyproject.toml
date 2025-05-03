@@ -8,7 +8,7 @@ dynamic = ["version"]
 authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 description = "Hybrid Systems Optimization and Performance Platform."
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 dependencies = [
     "Cython",
