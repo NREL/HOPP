@@ -149,7 +149,7 @@ class TroughPlant(CspPlant):
     @solar_multiple.setter
     def solar_multiple(self, solar_multiple: float):
         """
-        Set the solar multiple and updates the system model. Solar multiple is defined as the the ratio of receiver
+        Set the solar multiple and updates the system model. Solar multiple is defined as the ratio of receiver
         design thermal power over power cycle design thermal power.
         
         Args:

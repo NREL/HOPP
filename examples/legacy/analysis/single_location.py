@@ -505,7 +505,7 @@ if __name__ == '__main__':
     desired_lons = -40.94
 
     # Load wind and solar resource files for location nearest desired lats and lons
-    # NB this resource information will be overriden by API retrieved data if load_resource_from_file is set to False
+    # NB this resource information will be overridden by API retrieved data if load_resource_from_file is set to False
     if load_resource_from_file:
         site_details = resource_loader_file(resource_dir, desired_lats, desired_lons, year)  # Return contains
         site_details.to_csv(os.path.join(resource_dir, 'site_details.csv'))

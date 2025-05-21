@@ -568,7 +568,7 @@ if __name__ == '__main__':
     desired_lons = np.linspace(-129.22923, -65.7146, N_lon)
 
     # Load wind and solar resource files for location nearest desired lats and lons
-    # NB this resource information will be overriden by API retrieved data if load_resource_from_file is set to False
+    # NB this resource information will be overridden by API retrieved data if load_resource_from_file is set to False
     sitelist_name = 'filtered_site_details_{}_lats_{}_lons_{}_year'.format(N_lat, N_lon, year)
     if load_resource_from_file:
         # Loads resource files in 'resource_files', finds nearest files to 'desired_lats' and 'desired_lons'
