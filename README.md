@@ -1,7 +1,7 @@
 # HOPP: Hybrid Optimization and Performance Platform
 
 [![PyPI version](https://badge.fury.io/py/hopp.svg)](https://badge.fury.io/py/hopp)
-![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)
+[![CI Tests](https://github.com/NREL/HOPP/actions/workflows/ci.yml/badge.svg)](https://github.com/NREL/HOPP/actions/workflows/ci.yml)
 [![image](https://img.shields.io/pypi/pyversions/hopp.svg)](https://pypi.python.org/pypi/hopp)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
