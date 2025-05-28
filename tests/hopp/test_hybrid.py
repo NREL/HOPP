@@ -777,7 +777,7 @@ def test_hybrid_pv_only_custom_fin(hybrid_config, subtests):
 
     with subtests.test("aep"):
         assert aeps.pv == approx(10789795.03, 1e-3)
-        assert aeps.hybrid == aeps.pv
+        assert aeps.hybrid == approx(aeps.pv)
 
 
 def test_hybrid_pv_battery_custom_fin(hybrid_config, subtests):
