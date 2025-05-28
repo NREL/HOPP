@@ -49,7 +49,7 @@ the problem. All code and full tracebacks should be properly markdown formatted.
 <!-- Add your information here. -->
 - OS: <macOS 12.4>
   <!-- e.g. Ubuntu 20.04 or macOS 10.12 -->
-- Python version: <3.10.4>
+- Python version: <3.11.1>
   <!-- All OS: `python --version`-->
 - HOPP version: <0.1.1>
   <!--
@@ -66,7 +66,7 @@ the problem. All code and full tracebacks should be properly markdown formatted.
 ### Relevant library versions
 <!--
 Use `pip freeze` to gather the relevant versions, and use the markdown table formatting as
-demonstrated below to replacing all relavant packages and their versions.
+demonstrated below to replacing all relevant packages and their versions.
 -->
   
   | Package | Version |

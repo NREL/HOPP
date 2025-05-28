@@ -21,7 +21,7 @@ HOPP is primarily developed with the support of the U.S. Department of Energy an
 
 ## Software requirements
 
-- Python version 3.10, and 3.11 only
+- Python version 3.11 or higher
 
 ## Installing from Package Repositories
 
