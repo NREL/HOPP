@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Union, TYPE_CHECKING
 
-from hopp.simulation.hopp import Hopp, SiteInfo
+from hopp.simulation.hopp import Hopp, overwrite_fin_values
 
 # avoid potential circular dep
 if TYPE_CHECKING:
@@ -43,6 +43,7 @@ class HoppInterface:
             self.hopp = Hopp.from_file(self.configuration)
 
         elif isinstance(self.configuration, dict):
+            self.configuration = overwrite_fin_values(self.configuration)
             self.hopp = Hopp.from_dict(self.configuration)
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
