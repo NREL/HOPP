@@ -90,6 +90,39 @@ class Hopp(BaseClass):
 
 
 def overwrite_fin_values(hopp_config):
+    """
+    Overrides specific financial model values in the HOPP configuration with values from the `cost_info` section.
+
+    This function ensures that the financial model values for technologies (e.g., wind, PV, battery) are updated 
+    with the corresponding values provided in the `cost_info` section of the HOPP configuration. If discrepancies 
+    are found between the values in the financial model and the `cost_info`, the financial model values are 
+    overwritten, and a warning is issued to notify the user.
+
+    Args:
+        hopp_config (dict): The HOPP configuration dictionary containing information about technologies, 
+            financial models, and cost information.
+
+            Expected structure:
+            - `technologies`: Contains technology-specific financial models (e.g., wind, PV, battery).
+            - `config`: Contains the `cost_info` section with updated cost values.
+
+    Returns:
+        dict: The updated HOPP configuration dictionary with overwritten financial model values.
+
+    Raises:
+        UserWarning: If a financial model value is overwritten due to a mismatch with the `cost_info` value.
+
+    Notes:
+        - This function supports the following technologies: wind, PV (solar), and battery.
+        - The following financial model values can be overwritten in individual technology financial models:
+            - `om_capacity`: Fixed O&M costs per unit capacity [$/kW].
+            - `om_production`: Variable O&M costs per unit production [$/MWh].
+
+    Example:
+        If the `cost_info` section specifies a new value for `wind_om_per_kw`, and this value differs from the 
+        existing `om_capacity` value in the wind financial model, the `om_capacity` value will be updated, and 
+        a warning will be issued.
+    """
     # override individual fin_model values with cost_info values
     if ("config" in hopp_config.keys()) and ("cost_info" in hopp_config["config"]) and (hopp_config["config"]["cost_info"] is not None):
         if "wind" in hopp_config["technologies"]:
