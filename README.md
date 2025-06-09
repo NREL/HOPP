@@ -6,12 +6,22 @@
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hybrid-energy-systems-research.html), this
-software assesses optimal designs for the deployment of utility-scale hybrid energy plants, particularly considering wind,
+software assesses optimal designs for the deployment of distributed, commercial, and utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
+
+
+## Part of the WETO Stack
+
+HOPP is primarily developed with the support of the U.S. Department of Energy and is part of the [WETO Software Stack](https://nrel.github.io/WETOStack). For more information and other integrated modeling software, see:
+- [Portfolio Overview](https://nrel.github.io/WETOStack/portfolio_analysis/overview.html)
+- [Entry Guide](https://nrel.github.io/WETOStack/_static/entry_guide/index.html)
+- [Techno-Economic Modeling Workshop](https://nrel.github.io/WETOStack/workshops/user_workshops_2024.html#tea-and-cost-modeling)
+- [Systems Engineering Workshop](https://nrel.github.io/WETOStack/workshops/user_workshops_2024.html#systems-engineering)
+
 
 ## Software requirements
 
-- Python version 3.10, and 3.11 only (PySAM 4.2 is incompatible with 3.12)
+- Python version 3.11 or higher
 
 ## Installing from Package Repositories
 
@@ -45,7 +55,7 @@ solar and storage.
 4. Install HOPP and its dependencies:
 
     ```bash
-    conda install -y -c conda-forge coin-or-cbc=2.10.8 glpk
+    conda install -y -c conda-forge coin-or-cbc glpk
     ```
 
     Note if you are on Windows, you will have to manually install Cbc: https://github.com/coin-or/Cbc.
@@ -96,4 +106,5 @@ The [Examples](./examples/) contain Jupyter notebooks and sample YAML files for 
 
 ## Contributing
 
-Interested in improving HOPP? Please see the [Contributing](./CONTRIBUTING.md) section for more information.
+Interested in improving HOPP? Please see the [Contributor's Guide](docs/CONTRIBUTING.md)
+for more information.

@@ -36,6 +36,7 @@ class GridConfig(BaseClass):
     interconnect_kw: float = field(validator=gt_zero)
     fin_model: Optional[Union[str, dict, FinancialModelType]] = None
     ppa_price: Optional[Union[Iterable, float]] = None
+    name: str = field(default="Grid")
 
 
 @define
@@ -49,6 +50,7 @@ class Grid(PowerSource):
     schedule_curtailed: NDArrayFloat = field(init=False)
     schedule_curtailed_percentage: float = field(init=False, default=0.)
     total_gen_max_feasible_year1: NDArrayFloat = field(init=False)
+    config_name: Optional[str] = field(default="CustomGenerationProfileSingleOwner")
 
     def __attrs_post_init__(self):
         """
@@ -59,21 +61,24 @@ class Grid(PowerSource):
             site: Power source site information
             config: dict, used to instantiate a `GridConfig` instance
         """
-        system_model = GridModel.default("GenericSystemSingleOwner")
-
+        
+        system_model = GridModel.default(self.config_name)
+        
         # parse user input for financial model
         if isinstance(self.config.fin_model, str):
             financial_model = Singleowner.default(self.config.fin_model)
         elif isinstance(self.config.fin_model, dict):
-            financial_model = CustomFinancialModel(self.config.fin_model)
+            financial_model = CustomFinancialModel(self.config.fin_model, name=self.config.name)
         else:
             financial_model = self.config.fin_model
 
-        # default
         if financial_model is None:
-            financial_model = Singleowner.from_existing(system_model, "GenericSystemSingleOwner")
+            # default
+            financial_model = Singleowner.from_existing(system_model, self.config_name)
             financial_model.value("add_om_num_types", 1)
-
+        else:
+            financial_model = self.import_financial_model(financial_model, system_model, self.config_name)
+            
         super().__init__("Grid", self.site, system_model, financial_model)
 
         if self.config.ppa_price is not None:
@@ -140,12 +145,12 @@ class Grid(PowerSource):
                 max(schedule - gen, 0) 
                 for schedule, gen in zip(desired_schedule, self.generation_profile)
             ])
-            self.missed_load_percentage = sum(self.missed_load)/sum(desired_schedule) * 100
+            self.missed_load_percentage = (sum(self.missed_load)/sum(desired_schedule)) * 100
 
             # Calculate curtailed schedule and curtailed schedule percentage
             self.schedule_curtailed = np.array([gen - schedule if gen > schedule else 0. for (gen, schedule) in
                                             zip(total_gen, lifetime_schedule)])
-            self.schedule_curtailed_percentage = sum(self.schedule_curtailed)/sum(lifetime_schedule) * 100
+            self.schedule_curtailed_percentage = (sum(self.schedule_curtailed)/sum(lifetime_schedule)) * 100
 
             # NOTE: This is currently only happening for load following, would be good to make it more general
             #           i.e. so that this analysis can be used when load following isn't being used (without storage)
@@ -164,9 +169,9 @@ class Grid(PowerSource):
             final_power_array = np.array(final_power_production)
             power_met = np.where(final_power_array > schedule, schedule, final_power_array)
             self.capacity_factor_load = np.sum(power_met) / np.sum(schedule) * 100
-
-            logger.info('Percent of time firm power requirement is met: ', np.round(self.time_load_met,2))
-            logger.info('Percent total firm power requirement is satisfied: ', np.round(self.capacity_factor_load,2))
+            
+            logger.info('Percent of time firm power requirement is met: %s', np.round(self.time_load_met,2))
+            logger.info('Percent total firm power requirement is satisfied: %s', np.round(self.capacity_factor_load,2))
 
             ERS_keys = ['min_regulation_hours', 'min_regulation_power']
             if dispatch_options is not None and dispatch_options.use_higher_hours:
@@ -275,6 +280,8 @@ class Grid(PowerSource):
 
     @generation_profile_wo_battery.setter
     def generation_profile_wo_battery(self, system_generation_wo_battery_kw: Sequence):
+        if isinstance(self._financial_model,Singleowner.Singleowner):
+            self._financial_model.value('gen_without_battery',system_generation_wo_battery_kw)
         self._system_model.SystemOutput.gen = system_generation_wo_battery_kw
 
     @property

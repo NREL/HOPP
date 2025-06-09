@@ -49,10 +49,6 @@ class PowerSource(BaseClass):
         if isinstance(self._financial_model, Singleowner.Singleowner):
             self.initialize_financial_values()
         else:
-            if inspect.ismethod(getattr(self._system_model, 'export', None)):
-                self._financial_model.assign(self._system_model.export(), ignore_missing_vals=True)       # copy system parameter values having same name
-            else:
-                pass
             self._financial_model.set_financial_inputs(system_model=self._system_model)               # for custom financial models
 
         self.capacity_factor_mode = "cap_hours"                                    # to calculate via "cap_hours" method or None to use external value
@@ -73,6 +69,7 @@ class PowerSource(BaseClass):
             check_if_callable(financial_model, "unassign")
             check_if_callable(financial_model, "execute")
             financial_model_new = financial_model
+            financial_model_new.name = config_name
         return financial_model_new
 
     def initialize_financial_values(self):

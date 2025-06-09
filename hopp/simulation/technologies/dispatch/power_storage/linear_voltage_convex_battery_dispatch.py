@@ -1,7 +1,7 @@
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
 
-import PySAM.BatteryStateful as BatteryModel
+import PySAM.BatteryStateful as PySAMBatteryModel
 import PySAM.Singleowner as Singleowner
 
 from hopp.simulation.technologies.dispatch.power_storage.linear_voltage_nonconvex_battery_dispatch import (
@@ -22,7 +22,7 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
         self,
         pyomo_model: pyomo.ConcreteModel,
         index_set: pyomo.Set,
-        system_model: BatteryModel.BatteryStateful,
+        system_model: PySAMBatteryModel.BatteryStateful,
         financial_model: Singleowner.Singleowner,
         block_set_name: str = "convex_LV_battery",
         dispatch_options: dict = None,
@@ -33,7 +33,7 @@ class ConvexLinearVoltageBatteryDispatch(NonConvexLinearVoltageBatteryDispatch):
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.
             index_set (pyomo.Set): Indexed set.
-            system_model (BatteryModel.BatteryStateful): Battery system model.
+            system_model (PySAMBatteryModel.BatteryStateful): Battery system model.
             financial_model (Singleowner.Singleowner): Financial model.
             block_set_name (str, optional): Name of the block set. Defaults to 'convex_LV_battery'.
             dispatch_options (dict, optional): Dispatch options. Defaults to None.

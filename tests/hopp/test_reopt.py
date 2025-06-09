@@ -38,7 +38,7 @@ def test_ReOPT():
     wind_model = WindPlant(site, config=wind_config)
     wind_model._system_model.Resource.wind_resource_filename = os.path.join(
         "data", "39.7555_-105.2211_windtoolkit_2012_60min_60m.srw")
-    fin_model = so.default("GenericSystemSingleOwner")
+    fin_model = so.default("CustomGenerationProfileSingleOwner")
 
     fileout = os.path.join(filepath, "REoptResultsNoExportAboveLoad.json")
 
@@ -57,7 +57,7 @@ def test_ReOPT():
     pv = reopt_site['PV']
     assert(pv['dc_ac_ratio'] == pytest.approx(1.3, 0.01))
     wind = reopt_site['Wind']
-    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.026))
+    assert(wind['pbi_us_dollars_per_kwh'] == pytest.approx(0.03))
 
     results = reopt.get_reopt_results(poll_interval=0)
     assert(isinstance(results, dict))

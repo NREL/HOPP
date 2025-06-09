@@ -8,15 +8,15 @@ dynamic = ["version"]
 authors = [{name = "NREL", email = "dguittet@nrel.gov"}]
 readme = {file = "README.md", content-type = "text/markdown"}
 description = "Hybrid Systems Optimization and Performance Platform."
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 dependencies = [
     "Cython",
-    "NREL-PySAM==4.2.0",
+    "NREL-PySAM>=7.0.0",
     "Pillow",
     "Pyomo>=6.1.2",
-    "fastkml",
-    "floris>=4.0",
+    "fastkml<1",
+    "floris==4.3",
     "future",
     "global_land_mask",
     "hybridbosse",
@@ -40,13 +40,17 @@ dependencies = [
     "scikit-learn",
     "scikit-optimize",
     "scipy",
-    "shapely",
+    "shapely>=2",
     "setuptools",
     "timezonefinder",
     "urllib3",
     "openpyxl",
     "attrs",
     "utm",
+    "pyyaml-include",
+    "profast",
+    "NREL-rex",
+    "turbine-models>=0.1.0",
 ]
 keywords = [
     "python3",
@@ -65,8 +69,9 @@ classifiers = [  # https://pypi.org/classifiers/
     "Operating System :: OS Independent",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -83,9 +88,8 @@ develop = [
     "pytest-subtests",
     "pytest-dependency",
     "responses",
-    "sphinx",
-    "sphinx-rtd-theme",
-    "sphinx-copybutton",
+    "jupyter-book",
+    "sphinxcontrib-napoleon",
 ]
 examples = ["jupyterlab"]
 all = ["hopp[develop,examples]"]

@@ -682,6 +682,8 @@ class HybridDispatchBuilderSolver:
             
             tot_gen += self.power_sources[power_source].dispatch.available_generation
 
+        tot_gen = tot_gen.tolist()
+        
         grid_limit = self.power_sources["grid"].dispatch.generation_transmission_limit
 
         if "one_cycle" in self.options.battery_dispatch:
@@ -694,7 +696,7 @@ class HybridDispatchBuilderSolver:
             required_keys = ["desired_load"]
             if self.site.follow_desired_schedule:
                 # Get difference between baseload demand and power generation and control scenario variables
-                load_value = self.site.desired_schedule
+                load_value = grid_limit
                 load_difference = [
                     (load_value[x] - tot_gen[x]) for x in range(len(tot_gen))
                 ]

@@ -149,11 +149,11 @@ class GREETData:
         geothermal_flash_capex_EI = (greet1['ElecInfra']['J112'].value / mmbtu_to_kWh)              # Geothermal Flash CAPEX emissions (g CO2e/kWh)
         geothermal_binary_capex_EI = (greet1['ElecInfra']['K112'].value / mmbtu_to_kWh)             # Geothermal Binary CAPEX emissions (g CO2e/kWh)
         # Lime
-        lime_supply_EI = ((greet1['Chemicals']['BA247'].value +                                     # GHG Emissions Intensity of supplying Lime to processes accounting for limestone mining, lime production, lime processing, and lime transportation assuming 20 miles transport via Diesel engines (kg CO2e/kg lime)
-                         (greet1['Chemicals']['BA237'].value * VOC_to_CO2e) +             
-                         (greet1['Chemicals']['BA238'].value * CO_to_CO2e) +
-                         (greet1['Chemicals']['BA245'].value * CH4_gwp_to_CO2e) +
-                         (greet1['Chemicals']['BA246'].value * N2O_gwp_to_CO2e)
+        lime_supply_EI = ((greet1['Ag_Inputs']['BN121'].value +                                     # GHG Emissions Intensity of supplying Lime to processes accounting for limestone mining, lime production, lime processing, and lime transportation assuming 20 miles transport via Diesel engines (kg CO2e/kg lime)
+                         (greet1['Ag_Inputs']['BN111'].value * VOC_to_CO2e) +
+                         (greet1['Ag_Inputs']['BN112'].value * CO_to_CO2e) +
+                         (greet1['Ag_Inputs']['BN119'].value * CH4_gwp_to_CO2e) +
+                         (greet1['Ag_Inputs']['BN120'].value * N2O_gwp_to_CO2e)
                          ) * g_to_kg * (1/ton_to_kg))
         # Natural Gas (NG)
         NG_combust_EI = ((greet1['EF']['B16'].value +                                               # GHG Emissions Intensity of Natural Gas combustion in a utility / industrial large boiler (g CO2e/MJ Natural Gas combusted)
@@ -188,19 +188,15 @@ class GREETData:
         alk_ely_stack_and_BoP_capex_EI = (greet2['Electrolyzers']['R257'].value * g_to_kg)          # Alkaline electrolyzer stack + Balance of Plant CAPEX  emissions (kg CO2e/kg H2)
         soec_ely_stack_capex_EI = (greet2['Electrolyzers']['C257'].value * g_to_kg)                 # SOEC electrolyzer stack CAPEX emissions (kg CO2e/kg H2)
         soec_ely_stack_and_BoP_capex_EI = (greet2['Electrolyzers']['F257'].value * g_to_kg)         # SOEC electrolyzer stack + Balance of Plant CAPEX emissions (kg CO2e/kg H2)
+        # Carbon Coke
+        coke_supply_EI = ((greet2['Steel']['B125'].value +
+                          (greet2['Steel']['B115'].value * VOC_to_CO2e) +
+                          (greet2['Steel']['B116'].value * CO_to_CO2e) +
+                          (greet2['Steel']['B123'].value * CH4_gwp_to_CO2e) +
+                          (greet2['Steel']['B124'].value * N2O_gwp_to_CO2e)
+                          ) * (g_to_kg/ton_to_kg))                                                  # GHG Emissions Intensity of supplying Coke to processes accounting for combustion and non-combustion emissions of coke production (kg CO2e/kg Coke)
+                                                                                                    # Does not account for mining of coal or transportation
         # Steel
-        DRI_iron_ore_mining_EI = ((greet2['Steel']['AE92'].value +                                  # GHG Emissions Intensity of Iron ore mining for use in DRI-EAF Steel production (kg CO2e/kg iron ore)
-                                  (greet2['Steel']['AE82'].value * VOC_to_CO2e) +                     
-                                  (greet2['Steel']['AE83'].value * CO_to_CO2e) +
-                                  (greet2['Steel']['AE90'].value * CH4_gwp_to_CO2e) + 
-                                  (greet2['Steel']['AE91'].value * N2O_gwp_to_CO2e)
-                                  ) * (g_to_kg / ton_to_kg))
-        DRI_iron_ore_pelletizing_EI = ((greet2['Steel']['AG92'].value +                             # GHG Emissions Intensity of Iron ore pelletizing for use in DRI-EAF Steel production (kg CO2e/kg iron ore)
-                                       (greet2['Steel']['AG82'].value * VOC_to_CO2e) +                     
-                                       (greet2['Steel']['AG83'].value * CO_to_CO2e) +
-                                       (greet2['Steel']['AG90'].value * CH4_gwp_to_CO2e) + 
-                                       (greet2['Steel']['AG91'].value * N2O_gwp_to_CO2e)
-                                       ) * (g_to_kg / ton_to_kg))
         steel_H2O_consume = ((greet2['Steel']['AE80'].value +                                       # Total H2O consumption for DRI-EAF Steel production w/ 83% H2 and 0% scrap, accounts for water used in iron ore mining, pelletizing, DRI, and EAF (metric tonne H2O/metric tonne steel production)
                               greet2['Steel']['AG80'].value +                                       # NOTE: Does not include water consumption for H2 production via electrolysis
                               greet2['Steel']['AK80'].value +
@@ -214,10 +210,25 @@ class GREETData:
                              greet2['Steel']['AM63'].value                                    
                             ) * (mmbtu_to_GJ / ton_to_MT))
         steel_lime_consume = (greet2['Steel']['AM68'].value)                                        # Lime consumption for DRI-EAF Steel production (metric tonne lime/metric tonne steel production)
-        steel_iron_ore_consume = (greet2['Steel']['AM69'].value)                                    # Iron ore consumption for DRI-EAF Steel production (metric tonne iron ore/metric tonne steel production)
+        steel_iron_ore_consume = (greet2['Steel']['AM69'].value)                                    # Iron ore consumption for DRI-EAF Steel production (metric tonne iron ore or pellet/metric tonne steel production)
         steel_electricity_consume = ((greet2['Steel']['AK65'].value +                               # Total Electrical Energy consumption for DRI-EAF Steel production accounting for DRI with 83% H2 and EAF + LRF (MWh/metric tonne steel production)
                                       greet2['Steel']['AM65'].value
                                      ) * (mmbtu_to_MWh/ton_to_MT))
+        # Iron
+        DRI_iron_ore_mining_EI_per_MT_steel = ((greet2['Steel']['AE92'].value +                     # GHG Emissions Intensity of Iron ore mining for use in DRI-EAF Steel production (kg CO2e/metric tonne steel production)
+                                               (greet2['Steel']['AE82'].value * VOC_to_CO2e) +                     
+                                               (greet2['Steel']['AE83'].value * CO_to_CO2e) +
+                                               (greet2['Steel']['AE90'].value * CH4_gwp_to_CO2e) + 
+                                               (greet2['Steel']['AE91'].value * N2O_gwp_to_CO2e)
+                                               ) * (g_to_kg / ton_to_MT))
+        DRI_iron_ore_pelletizing_EI_per_MT_steel = ((greet2['Steel']['AG92'].value +                # GHG Emissions Intensity of Iron ore pelletizing for use in DRI-EAF Steel production (kg CO2e/metric tonne steel production)
+                                                    (greet2['Steel']['AG82'].value * VOC_to_CO2e) +                     
+                                                    (greet2['Steel']['AG83'].value * CO_to_CO2e) +
+                                                    (greet2['Steel']['AG90'].value * CH4_gwp_to_CO2e) + 
+                                                    (greet2['Steel']['AG91'].value * N2O_gwp_to_CO2e)
+                                                    ) * (g_to_kg / ton_to_MT))
+        DRI_iron_ore_mining_EI_per_MT_ore = (DRI_iron_ore_mining_EI_per_MT_steel / steel_iron_ore_consume)              # GHG Emissions Intensity of Iron ore mining for use in DRI-EAF Steel production (kg CO2e/metric tonne iron ore)
+        DRI_iron_ore_pelletizing_EI_per_MT_ore = (DRI_iron_ore_pelletizing_EI_per_MT_steel / steel_iron_ore_consume)    # GHG Emissions Intensity of Iron ore pelletizing for use in DRI-EAF Steel production (kg CO2e/metric tonne iron ore)
         greet2.close()
 
         #------------------------------------------------------------------------------
@@ -270,9 +281,13 @@ class GREETData:
                      'NG_supply_EI':NG_supply_EI,
                      # Lime
                      'lime_supply_EI':lime_supply_EI,
+                     # Coke
+                     'coke_supply_EI':coke_supply_EI,
                      # Iron ore
-                     'DRI_iron_ore_mining_EI':DRI_iron_ore_mining_EI,
-                     'DRI_iron_ore_pelletizing_EI':DRI_iron_ore_pelletizing_EI,
+                     'DRI_iron_ore_mining_EI_per_MT_steel':DRI_iron_ore_mining_EI_per_MT_steel,
+                     'DRI_iron_ore_pelletizing_EI_per_MT_steel':DRI_iron_ore_pelletizing_EI_per_MT_steel,
+                     'DRI_iron_ore_mining_EI_per_MT_ore':DRI_iron_ore_mining_EI_per_MT_ore,
+                     'DRI_iron_ore_pelletizing_EI_per_MT_ore':DRI_iron_ore_pelletizing_EI_per_MT_ore,
                      # Renewable infrastructure embedded EI and h2 production via water electrolysis
                      'wind_capex_EI':wind_capex_EI,
                      'solar_pv_capex_EI':solar_pv_capex_EI,
@@ -336,10 +351,7 @@ class GREETData:
         self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
         yaml_file.close()
 
-#Adhoc testing
+# Code to manually run this file independently to preprocess the GREET data and produce a processed yaml
 # if __name__ == '__main__':
-#     test = GREETData()
+#     test = GREETData(preprocess_greet=True)
 #     print(test.data)
-
-#NOTE: Runtime ~ 1m to fully parse greet
-#NOTE: Runtime <2s with greet preprocessed (load yaml to dict)

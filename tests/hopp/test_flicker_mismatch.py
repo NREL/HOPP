@@ -186,3 +186,16 @@ def test_plot():
     flicker = FlickerMismatch(lat, lon, angles_per_step=12)
     axs = flicker.plot_on_site(False, False)
     plot_tiled(flicker_heatmap, flicker, axs)
+
+def test_single_turbine_point(subtests):
+    FlickerMismatch.diam_mult_nwe = 3
+    FlickerMismatch.diam_mult_s = 1
+    flicker = FlickerMismatch(lat, lon, angles_per_step=1, gridcell_width=1, gridcell_height=1, blade_length=1.5)
+    shadow, loss = flicker.create_heat_maps(range(3185, 3187), ("poa", "power"))
+
+    with subtests.test("max shadow"):
+        assert(np.max(shadow) == approx(0.8471120495784218, 1e-4))
+    with subtests.test("average shadow"):
+        assert(np.average(shadow) == approx(0.004629629629629629, 1e-4))
+    with subtests.test("nonzero shadow count"):
+        assert(np.count_nonzero(shadow) == approx(2, 1e-4))

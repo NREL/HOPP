@@ -1,0 +1,63 @@
+name: "Example 08 - Distributed Midsize"
+
+# SiteInfo
+site:
+  data:
+    lat: 38.087 #center of town
+    lon: -106.1423  #center of town
+    solar_year: 2018
+    solar_lat: 38.087 #for rooftop - center of town
+    solar_lon: -106.1423 #for rooftop - center of town
+    wind_year: 2013
+    wind_lat: 37.7768 #outside of town
+    wind_lon: -106.033 #outside of town
+    site_details:
+      site_shape: "rectangle"
+      site_area_km2: 0.80
+      aspect_ratio: 3.65
+  hub_height: 65
+  solar: true
+  wind: true
+  wave: false
+  desired_schedule: !include "distributed_load_profile_MW.yaml" #Absolute desired load profile in MWe.
+  curtailment_value_type: "desired_schedule"
+
+# Technologies
+technologies:
+  pv:
+    panel_system_design: !include "residential_pv.yaml"
+    dc_degradation: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    panel_tilt_angle: 20.0 #corresponds to roof-top tilt angle
+    system_capacity_kw: 5850.0 #system capacity in kWdc
+  wind:
+    num_turbines: 25 #number of turbines
+    turbine_name: "VestasV47_660kW_47" #turbine model to use
+    model_name: floris
+    floris_config: !include floris_v4_template.yaml
+    resource_parse_method: "weighted_average" #weight wind resource data based on hub-height
+    store_turbine_performance_results: False
+    adjust_air_density_for_elevation: True #adjust air density based on site elevation
+    layout_mode: "basicgrid"
+    layout_params:
+      row_D_spacing: 5.0
+      turbine_D_spacing: 5.0
+    verbose: False
+    
+  battery:
+    system_capacity_kwh: 4000
+    system_capacity_kw: 1000
+    minimum_SOC: 20.0
+    maximum_SOC: 100.0
+    initial_SOC: 20.0
+  grid:
+    interconnect_kw: 16674.0
+    ppa_price: 0.01
+
+config:
+  dispatch_options:
+    battery_dispatch: load_following_heuristic
+    solver: cbc
+    n_look_ahead_periods: 48
+    grid_charging: false
+    pv_charging_only: false
+    include_lifecycle_count: false

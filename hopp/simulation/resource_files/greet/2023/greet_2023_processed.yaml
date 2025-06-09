@@ -1,5 +1,7 @@
-DRI_iron_ore_mining_EI: 0.22901198723003552
-DRI_iron_ore_pelletizing_EI: 0.23105675045934587
+DRI_iron_ore_mining_EI_per_MT_ore: 125.60298098051585
+DRI_iron_ore_mining_EI_per_MT_steel: 229.01198723003554
+DRI_iron_ore_pelletizing_EI_per_MT_ore: 126.7244434860691
+DRI_iron_ore_pelletizing_EI_per_MT_steel: 231.0567504593459
 NG_combust_EI: 56.531234265084805
 NG_supply_EI: 12.683622297844511
 NH3_H2_consume: 0.197284
@@ -16,6 +18,7 @@ atr_electricity_consume: 3.561733081975984
 battery_LFP_EI: 20
 bio_capex_EI: 0.8023917580032691
 coal_capex_EI: 0.7870905519183622
+coke_supply_EI: 0.39783475314651884
 desal_H2O_supply_EI: 0.010889
 gas_capex_EI: 0.41713301095483096
 geothermal_binary_capex_EI: 20.43919040434449

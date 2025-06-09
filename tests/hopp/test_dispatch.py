@@ -26,7 +26,7 @@ from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import
 from hopp.simulation.technologies.dispatch.power_sources.pv_dispatch import PvDispatch
 from hopp.simulation.technologies.dispatch.power_sources.wind_dispatch import WindDispatch
 
-from tests.hopp.utils import create_default_site_info
+from tests.hopp.utils import create_default_site_info, DEFAULT_FIN_CONFIG
 from hopp.utilities import load_yaml
 from hopp import ROOT_DIR
 
@@ -66,29 +66,8 @@ technologies = {
     }
 }
 
-default_fin_config = {
-    'batt_computed_bank_capacity': 0,
-    'batt_replacement_schedule_percent': [0],
-    'batt_bank_replacement': [0],
-    'batt_replacement_option': 0,
-    'batt_meter_position': 0,
-    'om_fixed': [1],
-    'om_production': [2],
-    'om_capacity': (0,),
-    'om_batt_fixed_cost': 0,
-    'om_batt_variable_cost': [0.75],
-    'om_batt_capacity_cost': 0,
-    'om_batt_replacement_cost': [0],
-    'om_replacement_cost_escal': 0,
-    'system_use_lifetime_output': 0,
-    'inflation_rate': 2.5,
-    'real_discount_rate': 6.4,
-    'cp_capacity_credit_percent': [0],
-    'degradation': [0],
-}
-
 def test_solar_dispatch(site):
-    expected_objective = 23890.6768
+    expected_objective = 34021.43
 
     dispatch_n_look_ahead = 48
 
@@ -131,9 +110,9 @@ def test_solar_dispatch(site):
     # results = HybridDispatchBuilderSolver.xpress_solve_call(model)
     assert results.solver.termination_condition == TerminationCondition.optimal
 
-    assert model.pv[0].cost_per_generation.value == pytest.approx(round(15/8760*1000,6), 1e-3)
+    assert model.pv[0].cost_per_generation.value == pytest.approx(round(19/8760*1000,6), 1e-3)
     gen = sum([model.pv[t].generation.value for t in model.forecast_horizon])
-    assert gen == pytest.approx(409.8751, 1e-3)
+    assert gen == pytest.approx(588.46, 1e-3)
     assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-3)
     available_resource = solar.generation_profile[0:dispatch_n_look_ahead]
     dispatch_generation = solar.dispatch.generation
@@ -366,11 +345,11 @@ def test_wave_dispatch():
     dispatch_n_look_ahead = 48
 
     data = {
-		"lat": 44.6899,
-		"lon": 124.1346,
-		"year": 2010,
-		"tz": -7,
-	}
+        "lat": 44.6899,
+        "lon": 124.1346,
+        "year": 2010,
+        "tz": -7,
+    }
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
     site = SiteInfo(data, solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file)
@@ -378,42 +357,19 @@ def test_wave_dispatch():
     mhk_yaml_path = Path(__file__).absolute().parent.parent.parent / "tests" / "hopp" / "inputs" / "wave" / "wave_device.yaml"
     mhk_config = load_yaml(mhk_yaml_path)
 
-    default_fin_config = {
-	'batt_replacement_schedule_percent': [0],
-	'batt_bank_replacement': [0],
-	'batt_replacement_option': 0,
-	'batt_computed_bank_capacity': 0,
-	'batt_meter_position': 0,
-	'om_fixed': [1],
-	'om_production': [2],
-	'om_capacity': (0,),
-	'om_batt_fixed_cost': 0,
-	'om_batt_variable_cost': [0],
-	'om_batt_capacity_cost': 0,
-	'om_batt_replacement_cost': 0,
-	'om_replacement_cost_escal': 0,
-	'system_use_lifetime_output': 0,
-	'inflation_rate': 2.5,
-	'real_discount_rate': 6.4,
-	'cp_capacity_credit_percent': [0],
-	'degradation': [0],
-	'ppa_price_input': [25],
-	'ppa_escalation': 2.5
-    }
-
-    financial_model = {'fin_model': CustomFinancialModel(default_fin_config)}
+    financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
     mhk_config.update(financial_model)
     config = MHKConfig.from_dict(mhk_config)
 
     cost_model_input = MHKCostModelInputs.from_dict({
-		'reference_model_num':3,
-		'water_depth': 100,
-		'distance_to_shore': 80,
-		'number_rows': 10,
-		'device_spacing':600,
-		'row_spacing': 600,
-		'cable_system_overbuild': 20
-	})
+        'reference_model_num':3,
+        'water_depth': 100,
+        'distance_to_shore': 80,
+        'number_rows': 10,
+        'device_spacing':600,
+        'row_spacing': 600,
+        'cable_system_overbuild': 20
+    })
 
     wave = MHKWavePlant(site, config, cost_model_input)
 
@@ -457,7 +413,7 @@ def test_wave_dispatch():
         assert dispatch_generation[t] * 1e3 == pytest.approx(available_resource[t], 1e-3)
 
 def test_wind_dispatch(site):
-    expected_objective = 19947.1769
+    expected_objective = 20071.18
 
     dispatch_n_look_ahead = 48
 
@@ -704,7 +660,7 @@ def test_detailed_battery_dispatch(site):
 
 
 def test_pv_wind_battery_hybrid_dispatch(site):
-    expected_objective = 39005
+    expected_objective = 48837.60
 
     wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery', 'grid')}
     hopp_config = {
@@ -805,7 +761,7 @@ def test_hybrid_dispatch_one_cycle_heuristic(site):
     
 
 def test_hybrid_solar_battery_dispatch(site):
-    expected_objective = 24029
+    expected_objective = 28134.87
 
     solar_battery_technologies = {k: technologies[k] for k in ('pv', 'battery', 'grid')}
     hopp_config = {
@@ -1017,7 +973,9 @@ def test_simple_battery_dispatch_lifecycle_limit(site):
 
 def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
-    desired_schedule = 8760*[20]
+    desired_schedule = 8760 * [20]
+    # Using a non-uniform schedule to test the baseload heuristic bugfix
+    desired_schedule[:2000] = [10.] * 2000
 
     desired_schedule_site = SiteInfo(flatirons_site,
                                      desired_schedule=desired_schedule)
@@ -1042,16 +1000,106 @@ def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
 
     hybrid_plant = hi.system
 
-    assert hybrid_plant.grid.time_load_met == pytest.approx(91.9, 1e-2)
-    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(94.45, 1e-2)
-    assert hybrid_plant.grid.total_number_hours == pytest.approx(3732, 1e-2)
+    assert hybrid_plant.grid.time_load_met == pytest.approx(94.429, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.659, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4270, 1e-2)
 
 def test_dispatch_load_following_heuristic_with_wave(site, subtests):
     dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}
     wave_battery = {key: technologies[key] for key in ['wave', 'battery', 'grid']}
 
     for tech in wave_battery.keys():
-        wave_battery[tech]["fin_model"] = default_fin_config
+        wave_battery[tech]["fin_model"] = DEFAULT_FIN_CONFIG
+
+    wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
+
+    desired_schedule = 8760*[20]
+    site_internal = create_default_site_info(solar=False, wind=False, wave=True, wave_resource_file=wave_resource_file, desired_schedule=desired_schedule)
+
+    hopp_config = {
+        "site": site_internal,
+        "technologies": wave_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+
+    cost_model_inputs = MHKCostModelInputs.from_dict(
+            {
+                "reference_model_num": 3,
+                "water_depth": 100,
+                "distance_to_shore": 80,
+                "number_rows": 10,
+                "device_spacing": 600,
+                "row_spacing": 600,
+                "cable_system_overbuild": 20,
+            }
+        )
+    
+    hi.system.wave.create_mhk_cost_calculator(cost_model_inputs)
+
+    hi.simulate(1)
+
+    power_scale = 1.0
+    discharge = [(p > 0) * p * power_scale for p in hi.system.battery.outputs.P]
+    charge = [(p < 0) * p * power_scale for p in hi.system.battery.outputs.P]
+
+    with subtests.test("load met"):
+        assert hi.system.grid.time_load_met == pytest.approx(40.468, 1e-2)
+    with subtests.test("charge power"):
+        assert sum(discharge) > 0.0
+    with subtests.test("discharge power"):
+        assert sum(charge) < 0.0
+
+
+def test_hybrid_dispatch_baseload_heuristic_and_analysis(site):
+
+    desired_schedule = 8760 * [20]
+    # Using a non-uniform schedule to test the baseload heuristic bugfix
+    desired_schedule[:2000] = [10.] * 2000
+
+    desired_schedule_site = SiteInfo(flatirons_site,
+                                     desired_schedule=desired_schedule)
+    wind_solar_battery = {key: technologies[key] for key in ('pv', 'wind', 'battery')}
+
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic',
+                        'use_higher_hours': True, 
+                        'higher_hours': {'min_regulation_hours': 4, 'min_regulation_power': 5000}}
+
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": wind_solar_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hopp_config["technologies"]["grid"] = {
+        "interconnect_kw": interconnect_mw * 1000
+    }
+    hi = HoppInterface(hopp_config)
+    hi.simulate(1)
+
+    hybrid_plant = hi.system
+
+    assert hybrid_plant.grid.time_load_met == pytest.approx(94.429, 1e-2)
+    assert hybrid_plant.grid.capacity_factor_load == pytest.approx(95.659, 1e-2)
+    assert hybrid_plant.grid.total_number_hours == pytest.approx(4270, 1e-2)
+
+def test_dispatch_ldes_load_following_heuristic_with_wave(site, subtests):
+    dispatch_options = {'battery_dispatch': 'load_following_heuristic', 'grid_charging': False}
+    wave_battery = {key: technologies[key] for key in ['wave', 'battery', 'grid']}
+
+    print(wave_battery)
+    wave_battery["battery"] = {
+        'system_capacity_kwh': 200 * 1000,
+        'system_capacity_kw': 50 * 1000,
+        'system_model_source': "hopp",
+        'chemistry': "LDES",
+    }
+    for tech in wave_battery.keys():
+        wave_battery[tech]["fin_model"] = DEFAULT_FIN_CONFIG
+
 
     wave_resource_file = ROOT_DIR / "simulation" / "resource_files" / "wave" / "Wave_resource_timeseries.csv"
 

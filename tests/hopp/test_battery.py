@@ -21,16 +21,25 @@ def site():
 
 
 def test_battery_config(subtests):
-    with subtests.test("with minimal params"):
-        config = BatteryConfig.from_dict(config_data)
 
+    config = BatteryConfig.from_dict(config_data)
+
+    with subtests.test("with minimal params batt_kw"):
         assert config.system_capacity_kw == batt_kw
+    with subtests.test("with minimal params system_capacity_kwh"):
         assert config.system_capacity_kwh == batt_kw * 4
+    with subtests.test("with minimal params tracking"):
         assert config.tracking is True
+    with subtests.test("with minimal params minimum_SOC"):
         assert config.minimum_SOC == 10.
+    with subtests.test("with minimal params maximum_SOC"):
         assert config.maximum_SOC == 90.
+    with subtests.test("with minimal params initial_SOC"):
         assert config.initial_SOC == 10.
+    with subtests.test("with minimal params fin_model"):
         assert config.fin_model is None
+    with subtests.test("with minimal params system_model_source"):
+        assert config.system_model_source is "pysam"
 
     with subtests.test("with invalid capacity"):
         with pytest.raises(ValueError):
@@ -65,12 +74,18 @@ def test_battery_initialization(site, subtests):
     config = BatteryConfig.from_dict(config_data)
     battery = Battery(site, config=config)
 
-    assert battery._financial_model is not None
-    assert battery._system_model is not None
-    assert battery.outputs is not None
-    assert battery.chemistry == "LFPGraphite"
-    assert battery.system_capacity_kw == config.system_capacity_kw
-    assert battery.system_capacity_kwh == config.system_capacity_kwh
+    with subtests.test("battery attribute not None _financial_model"):
+        assert battery._financial_model is not None
+    with subtests.test("battery attribute not None _system_model"):
+        assert battery._system_model is not None
+    with subtests.test("battery attribute not None outputs"):
+        assert battery.outputs is not None
+    with subtests.test("battery attribute chemistry"):
+        assert battery.chemistry == "LFPGraphite"
+    with subtests.test("battery attribute system_capacity_kw"):
+        assert battery.system_capacity_kw == config.system_capacity_kw
+    with subtests.test("battery attribute system_capacity_kwh"):
+        assert battery.system_capacity_kwh == config.system_capacity_kwh
 
     with subtests.test("with custom financial model"):
         data = deepcopy(config_data)

@@ -63,7 +63,7 @@ class PysscWrap(SscWrap):
             self.params = {}
         self.params['tech_model'] = self.tech_name
         self.params['financial_model'] = self.financial_name
-	
+    
     def set(self, param_dict):
         if 'is_elec_heat_dur_off' in param_dict and type(param_dict['is_elec_heat_dur_off']) == list:
             param_dict['is_elec_heat_dur_off'] = param_dict['is_elec_heat_dur_off'][0]

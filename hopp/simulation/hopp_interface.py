@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Union, TYPE_CHECKING
 
-from hopp.simulation.hopp import Hopp, SiteInfo
+from hopp.simulation.hopp import Hopp, overwrite_fin_values
 
 # avoid potential circular dep
 if TYPE_CHECKING:
@@ -43,10 +43,14 @@ class HoppInterface:
             self.hopp = Hopp.from_file(self.configuration)
 
         elif isinstance(self.configuration, dict):
+            self.configuration = overwrite_fin_values(self.configuration)
             self.hopp = Hopp.from_dict(self.configuration)
 
     def simulate(self, project_life: int = 25, lifetime_sim: bool = False):
         self.hopp.simulate(project_life, lifetime_sim)
+    
+    def simulate_power(self, project_life: int = 25, lifetime_sim: bool = False):
+        self.hopp.simulate_power(project_life, lifetime_sim)
 
     @property
     def system(self) -> "HybridSimulation":
@@ -65,10 +69,19 @@ class HoppInterface:
         self.hybrid_installed_cost = self.hopp.system.grid.total_installed_cost
 
     def print_output(self):
-        print("Wind Installed Cost: {}".format(self.wind_installed_cost))
-        print("Solar Installed Cost: {}".format(self.solar_installed_cost))
-        print("Hybrid Installed Cost: {}".format(self.hybrid_installed_cost))
+        print("Wind Installed Cost: {}".format(self.system.wind.total_installed_cost))
+        print("Solar Installed Cost: {}".format(self.system.pv.total_installed_cost))
+        print("Wave Installed Cost: {}".format(self.system.wave.total_installed_cost))
+        print("Battery Installed Cost: {}".format(self.system.battery.total_installed_cost))
+        print("Hybrid Installed Cost: {}".format(self.system.grid.total_installed_cost))
         print("Wind NPV: {}".format(self.hopp.system.net_present_values.wind))
         print("Solar NPV: {}".format(self.hopp.system.net_present_values.pv))
-        print("Hybrid NPV: {}".format(self.hopp.system.net_present_values.hybrid))
-        print("Wind + Solar Expected NPV: {}".format(self.wind_plus_solar_npv))
+        print("Wave NPV: {}".format(self.hopp.system.net_present_values.wave))
+        print("Battery NPV: {}".format(self.hopp.system.net_present_values.battery))
+        print("Wave NPV: {}".format(self.hopp.system.net_present_values.hybrid*1E-2))
+        print("Wind LCOE (USD/kWh): {}".format(self.hopp.system.lcoe_nom.wind*1E-2))
+        print("Solar LCOE (USD/kWh): {}".format(self.hopp.system.lcoe_nom.pv*1E-2))
+        print("Wave LCOE (USD/kWh): {}".format(self.hopp.system.lcoe_nom.wave*1E-2))
+        print("Battery LCOE (USD/kWh): {}".format(self.hopp.system.lcoe_nom.battery*1E-2))
+        print("Hybrid LCOE (USD/kWh): {}".format(self.hopp.system.lcoe_nom.hybrid*1E-2))
+        # print("Wind + Solar Expected NPV: {}".format(self.wind_plus_solar_npv))

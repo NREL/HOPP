@@ -1,0 +1,94 @@
+# Book settings
+# Learn more at https://jupyterbook.org/customize/config.html
+
+title: HOPP
+author: National Renewable Energy Laboratory
+copyright: "2024, National Renewable Energy Laboratory"
+only_build_toc_files: false
+
+# Force re-execution of notebooks on each build.
+# See https://jupyterbook.org/content/execute.html
+execute:
+  execute_notebooks: auto
+  timeout: -1  # better for longer running notebooks
+  merge_streams: true  # keeps unsychronized cell outputs in a single output cell
+  exclude_patterns:
+    - _build
+    - Thumbs.db
+    - DS_Store
+    - "**.ipynb_checkpoints"
+
+# Define the name of the latex output file for PDF builds
+latex:
+  latex_documents:
+    targetname: book.tex
+
+# Add a bibtex file so that we can create citations
+bibtex_bibfiles:
+  - references.bib
+
+# Information about where the book exists on the web
+repository:
+  url: https://github.com/NREL/HOPP
+  path_to_book: docs2 
+  branch: main
+
+launch_buttons:
+  notebook_interface: "jupyterlab"
+  binderhub_url: "https://mybinder.org/v2/gh/NREL/HOPP/main?labpath=examples"
+
+
+# Add GitHub buttons to your book
+# See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
+html:
+  use_issues_button: true
+  use_repository_button: true
+
+parse:
+  myst_heading_anchors: 3
+  myst_enable_extensions:
+    # - amsmath
+    - colon_fence
+    # - deflist
+    - dollarmath
+    # - html_admonition
+    # - html_image
+    - linkify
+    # - replacements
+    # - smartquotes
+    - substitution
+    - tasklist
+  myst_url_schemes: [mailto, http, https] # URI schemes that will be recognised as external URLs in Markdown links
+  myst_dmath_double_inline: true  # Allow display math ($$) within an inline context
+
+sphinx:
+  extra_extensions:
+  - "sphinx.ext.autodoc"
+  - "sphinx.ext.autosummary"
+  - "sphinx.ext.napoleon"
+  config:
+    language: 'python'
+    html_theme_options:
+      show_toc_level: 2
+      show_nav_level: 2
+      navigation_depth: 2
+    autosummary_generate: true
+    autodoc_default_options:
+      members: true
+      member-order: bysource
+      undoc-members: true
+      private-members: true
+      special-members: "__init__"
+      inherited-members: true
+      show-inheritance: true
+      exclude-members: "__weakref__"
+      # ignore-module-all
+      # imported-members: true
+      # class-doc-from
+      # no-value
+    autodoc_class_signature: "mixed"
+    autodoc_member_order: "groupwise"
+    autodoc_typehints: description
+    napoleon_use_admonition_for_notes: true
+    napoleon_use_rtype: false
+    nb_merge_streams: true
