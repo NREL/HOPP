@@ -1091,16 +1091,16 @@ class CspDispatch(Dispatch):
         """
         # --- Cycle ambient-temperature efficiency corrections
         tables = self._system_model.cycle_efficiency_tables
-        if "cycle_eff_Tdb_table" in tables:
-            nT = len(tables["cycle_eff_Tdb_table"])
-            Tpts = [tables["cycle_eff_Tdb_table"][i][0] for i in range(nT)]
+        if "cycle_Tdb_table" in tables:
+            nT = len(tables["cycle_Tdb_table"])
+            Tpts = [tables["cycle_Tdb_table"][i][0] for i in range(nT)]
             efficiency_pts = [
-                tables["cycle_eff_Tdb_table"][i][1]
+                tables["cycle_Tdb_table"][i][1]
                 * self._system_model.cycle_nominal_efficiency
                 for i in range(nT)
             ]  # Efficiency
             wcondfpts = [
-                tables["cycle_wcond_Tdb_table"][i][1] for i in range(nT)
+                tables["cycle_Tdb_table"][i][2] for i in range(nT)
             ]  # Fraction of cycle design gross output consumed by cooling
             self.set_cycle_ambient_corrections(
                 dry_bulb_temperature, Tpts, efficiency_pts, wcondfpts

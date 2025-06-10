@@ -433,7 +433,7 @@ class PySSC:
         elif sys.platform == 'darwin':
             self.pdll = CDLL(os.path.join(this_directory, "libs", "ssc.dylib"))
         elif sys.platform == 'linux':
-            self.pdll = CDLL(os.path.join(this_directory, "libs", 'libssc.so'))
+            self.pdll = CDLL(os.path.join(this_directory, "libs", 'ssc.so'))
         else:
             print('Platform not supported ', sys.platform)
         print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call

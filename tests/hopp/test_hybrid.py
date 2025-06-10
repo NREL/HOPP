@@ -1338,9 +1338,9 @@ def test_tower_pv_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701.28, 1e-3)
+    assert aeps.pv == approx(112339520.44, 1e-3)
     assert aeps.tower == approx(4019032.58, 5e-2)
-    assert aeps.hybrid == approx(108305733.86, 1e-2)
+    assert aeps.hybrid == approx(116285140.98, 1e-2)
 
     # TODO: check npv for csp would require a full simulation
     assert npvs.pv == approx(45233832.23, 1e3)
@@ -1372,9 +1372,9 @@ def test_trough_pv_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701.17, 1e-3)
-    assert aeps.trough == approx(1811020.86, 2e-2)
-    assert aeps.hybrid == approx(106097722.03, 1e-3)
+    assert aeps.pv == approx(112339520.44, 1e-3)
+    assert aeps.trough == approx(1753257.87, 2e-2)
+    assert aeps.hybrid == approx(114088949.52, 1e-3)
 
     # assert npvs.pv == approx(80738107, 1e3)
     # assert npvs.tower == approx(-13909363, 1e3)
@@ -1410,10 +1410,10 @@ def test_tower_pv_battery_hybrid(hybrid_config):
     aeps = hybrid_plant.annual_energies
     npvs = hybrid_plant.net_present_values
 
-    assert aeps.pv == approx(104286701, 1e-3)
+    assert aeps.pv == approx(112339520.44, 1e-3)
     assert aeps.tower == approx(4050183, 5e-2)
     assert aeps.battery == approx(-9477, 2e-1)
-    assert aeps.hybrid == approx(108327407, 1e-2)
+    assert aeps.hybrid == approx(116285140.98, 1e-2)
 
     assert npvs.pv == approx(80738107, 1e3)
     # assert npvs.tower == approx(-13909363, 1e3)
