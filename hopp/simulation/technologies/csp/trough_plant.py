@@ -41,9 +41,7 @@ class TroughPlant(CspPlant):
 
         # set-up param file paths
         # TODO: Site should have dispatch factors consistent across all models
-        self.param_files = {'tech_model_params_path': 'trough_physical.json',
-                            'cf_params_path': 'construction_financing_defaults.json',
-                            'wlim_series_path': 'wlim_series.csv'}
+        self.param_files = {'tech_model_params_path': 'trough_physical.json'}
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'trough_data')
         self.param_file_paths(rel_path_to_param_files)
 

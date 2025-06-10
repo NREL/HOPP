@@ -67,10 +67,7 @@ class TowerPlant(CspPlant):
             self.config.fin_model = Singleowner.default('MSPTSingleOwner')
 
         # set-up param file paths
-        self.param_files = {'tech_model_params_path': 'tcsmolten_salt.json',
-                            'cf_params_path': 'construction_financing_defaults.json',
-                            'wlim_series_path': 'wlim_series.csv',
-                            'helio_positions_path': 'helio_positions.csv'}
+        self.param_files = {'tech_model_params_path': 'tcsmolten_salt.json'}
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'tower_data')
         self.param_file_paths(rel_path_to_param_files)
 
@@ -85,15 +82,6 @@ class TowerPlant(CspPlant):
             self.scale_params(params_names=['helio_size', 'helio_parasitics', 'tank_heaters', 'tank_height'])
 
         self._dispatch = None
-
-    def set_params_from_files(self):
-        super().set_params_from_files()
-
-        # load heliostat field  # TODO: this is required but is replaced when new field is generated
-        heliostat_layout = np.genfromtxt(self.param_files['helio_positions_path'], delimiter=',')
-        N_hel = heliostat_layout.shape[0]
-        helio_positions = [heliostat_layout[j, 0:2].tolist() for j in range(N_hel)]
-        self.ssc.set({'helio_positions': helio_positions})
 
     def set_solar_thermal_resource(self, ssc_outputs: dict):
         """

@@ -48,10 +48,7 @@ def test_trough_init(site, subtests):
 
         assert trough._financial_model is not None
         param_files_keys = [
-            "tech_model_params_path", 
-            "cf_params_path", 
-            "wlim_series_path", 
-            "helio_positions_path"
+            "tech_model_params_path"
         ]
         assert_array_equal(list(trough.param_files.keys()), param_files_keys)
 

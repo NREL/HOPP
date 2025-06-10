@@ -20,7 +20,7 @@ def test_pySSC_tower_model(site):
                     'solar_multiple': 2.0,
                     'tes_hours': 6.0}
 
-    expected_energy = 4194533.2
+    expected_energy = 4197565.6
 
     config = TowerConfig.from_dict(tower_config)
     csp = TowerPlant(site, config=config)
@@ -169,7 +169,7 @@ def test_value_csp_call(site):
 
 def test_tower_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 4113098.616
+    expected_energy = 3934223.96
 
     interconnection_size_kw = 50000
     technologies = {
@@ -375,8 +375,8 @@ def test_tower_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in tower_config, weather file, field_model_type = 1, ppa_soln_mode = 1)  
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_Nhel = 6457
-    expected_energy = 412880089
-    expected_lcoe_nom = 12.0240
+    expected_energy = 390578116.59
+    expected_lcoe_nom = 12.5320
     expected_ppa_nom = 10.2891
 
     config = TowerConfig.from_dict(tower_config)

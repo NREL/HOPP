@@ -238,9 +238,6 @@ class CspPlant(PowerSource):
             ssc_params = rapidjson.load(f)
         self.ssc.set(ssc_params)
 
-        wlim_series = np.array(pd.read_csv(self.param_files['wlim_series_path']))
-        self.ssc.set({'wlim_series': wlim_series})
-
     def set_weather(
         self,
         weather_df: pd.DataFrame, 
@@ -690,7 +687,8 @@ class CspPlant(PowerSource):
         Returns:
             Construction financing cost [$]
         """
-        # TODO: Create a flexible function to be used by all technologies
+        raise NotImplementedError
+        # TODO: Removed for now
         cf = ssc_wrap('pyssc', 'cb_construction_financing', None)
         with open(self.param_files['cf_params_path'], 'r') as f:
             params = rapidjson.load(f)
@@ -1070,3 +1068,10 @@ class CspPlant(PowerSource):
             return 100. * self.annual_energy_kwh / (self.system_capacity_kw * 8760)
         else:
             return 0
+        
+    @property
+    def construction_financing_cost(self) -> float:
+        if self.system_capacity_kw > 0:
+            return self.outputs.ssc_values['construction_financing_cost']
+        else:
+            return 0.0
