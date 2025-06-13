@@ -975,6 +975,80 @@ def test_desired_schedule_dispatch(site):
     assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
     assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
 
+def test_desired_schedule_with_heater_dispatch(site):
+    # Creating a contrived schedule
+    daily_schedule = [interconnect_mw]*10
+    daily_schedule.extend([20] * 8)
+    daily_schedule.append(interconnect_mw + 5)
+    daily_schedule.extend([0] * 5)
+    desired_schedule = daily_schedule*365
+
+    desired_schedule_site = create_default_site_info(desired_schedule=desired_schedule)
+    tower_pv_battery = {key: technologies[key] for key in ('pv', 'tower', 'battery', 'grid')}
+
+    # Default case doesn't leave enough head room for battery operations
+    tower_pv_battery['tower'] = {'cycle_capacity_kw': 35 * 1000,
+                                 'solar_multiple': 2.0,
+                                 'tes_hours': 10.0,
+                                 'heater_params': {
+                                     'heater_mult': 1.0}
+                                 }
+
+    tower_pv_battery['pv'] = {'system_capacity_kw': 80 * 1000}
+    dispatch_options = {'is_test_start_year': True,
+                        'is_test_end_year': False,
+                        'grid_charging': False,
+                        'pv_charging_only': True,
+                        'include_lifecycle_count': False
+                        }
+    hopp_config = {
+        "site": desired_schedule_site,
+        "technologies": tower_pv_battery,
+        "config": {
+            "dispatch_options": dispatch_options
+        }
+    }
+    hi = HoppInterface(hopp_config)
+    hybrid_plant = hi.system
+
+    # Constant price
+    # hybrid_plant.site.elec_prices = [100] * hybrid_plant.site.n_timesteps
+    hi.simulate(1)
+
+    system_generation = hybrid_plant.dispatch_builder.dispatch.system_generation
+    system_load = hybrid_plant.dispatch_builder.dispatch.system_load
+    electricity_sold = hybrid_plant.grid.dispatch.electricity_sold
+    electricity_purchased = hybrid_plant.grid.dispatch.electricity_purchased
+    gen_limit = hybrid_plant.grid.dispatch.generation_transmission_limit
+    transmission_limit = hybrid_plant.grid.value('grid_interconnection_limit_kwac')
+
+    schedule = daily_schedule*2
+    # System generation does not exceed schedule limits
+    for t in hybrid_plant.dispatch_builder.pyomo_model.forecast_horizon:
+        assert gen_limit[t] * 1e3 <= transmission_limit
+        assert system_generation[t] - system_load[t] <= schedule[t] + 1e-3
+        if system_generation[t] > system_load[t]:
+            assert electricity_sold[t] == pytest.approx(system_generation[t] - system_load[t], 1e-3)
+            assert electricity_purchased[t] == pytest.approx(0.0, 1e-3)
+        else:
+            assert electricity_purchased[t] == pytest.approx(system_load[t] - system_generation[t], 1e-3)
+            assert electricity_sold[t] == pytest.approx(0.0, 1e-3)
+
+    # Battery charges and discharges
+    assert sum(hybrid_plant.battery.dispatch.charge_power) > 0.0
+    assert sum(hybrid_plant.battery.dispatch.discharge_power) > 0.0
+
+    # PV can be curtailed
+    assert sum(hybrid_plant.pv.dispatch.generation) <= sum(hybrid_plant.pv.dispatch.available_generation)
+
+    # CSP can run
+    assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
+    assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
+
+    # Heater dispatches
+    assert sum(hybrid_plant.tower.dispatch.heater_thermal_power) > 0.0
+    expected_heater_rating = hybrid_plant.tower.cycle_capacity_kw * 1.e-3 / hybrid_plant.tower.cycle_nominal_efficiency
+    assert hybrid_plant.tower.outputs.ssc_values['q_dot_heater_des'] == pytest.approx(expected_heater_rating, 0.01)
 
 def test_simple_battery_dispatch_lifecycle_limit(site):
     expected_objective = 7882

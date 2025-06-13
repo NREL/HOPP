@@ -118,32 +118,35 @@ class TowerDispatch(CspDispatch):
                 models by adding modeling components as attributes.
 
         """
-        if self.heater_enabled:
-            raise NotImplementedError(
-                "Minimum operating cost objective for TowerDispatch with heater enabled is not implemented."
-            )
-
-        self.obj = pyomo.Expression(
-            expr=sum(
-                hybrid_blocks[t].time_weighting_factor
-                * (
-                    self.blocks[t].cost_per_field_start * self.blocks[t].incur_field_start
-                    - (
-                        self.blocks[t].cost_per_field_generation
-                        * self.blocks[t].receiver_thermal_power
-                        * self.blocks[t].time_duration
-                    )  # Trying to incentivize TES generation
-                    + (
-                        self.blocks[t].cost_per_cycle_generation
-                        * self.blocks[t].cycle_generation
-                        * self.blocks[t].time_duration
-                    )
-                    + self.blocks[t].cost_per_cycle_start * self.blocks[t].incur_cycle_start
-                    + self.blocks[t].cost_per_change_thermal_input * self.blocks[t].cycle_thermal_ramp
+        def min_operating_cost_expr(m):
+            obj = 0.0
+            for t in hybrid_blocks.index_set():
+                obj += ( hybrid_blocks[t].time_weighting_factor
+                        * (
+                            self.blocks[t].cost_per_field_start
+                            * self.blocks[t].incur_field_start
+                            - (
+                                self.blocks[t].cost_per_field_generation
+                                * self.blocks[t].receiver_thermal_power
+                                * self.blocks[t].time_duration
+                            )  # Trying to incentivize TES generation
+                            + (
+                                self.blocks[t].cost_per_cycle_generation
+                                * self.blocks[t].cycle_generation
+                                * self.blocks[t].time_duration
+                            )
+                            + self.blocks[t].cost_per_cycle_start * self.blocks[t].incur_cycle_start
+                            + self.blocks[t].cost_per_change_thermal_input * self.blocks[t].cycle_thermal_ramp
+                        )
                 )
-                for t in hybrid_blocks.index_set()
-            )
-        )
+                if self.heater_enabled:
+                    obj += ( hybrid_blocks[t].time_weighting_factor
+                            * ( self.blocks[t].cost_per_heater_start
+                               * self.blocks[t].incur_heater_start)
+                    )
+            return obj
+        
+        self.obj = pyomo.Expression(rule=min_operating_cost_expr)
 
     def _create_variables(self, hybrid):
         """Create Tower CSP variables to add to hybrid plant instance.
