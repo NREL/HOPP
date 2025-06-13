@@ -20,16 +20,16 @@ class Dispatch:
         financial_model,
         block_set_name: str = "dispatch",
     ):
-
         self.block_set_name = block_set_name
         self.round_digits = int(4)
+
+        self._system_model = system_model
+        self._financial_model = financial_model
 
         self._model = pyomo_model
         self._blocks = pyomo.Block(index_set, rule=self.dispatch_block_rule)
         setattr(self.model, self.block_set_name, self.blocks)
 
-        self._system_model = system_model
-        self._financial_model = financial_model
 
     @staticmethod
     def dispatch_block_rule(block, t):

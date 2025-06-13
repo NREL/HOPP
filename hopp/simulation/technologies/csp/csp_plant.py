@@ -464,6 +464,9 @@ class CspPlant(PowerSource):
         state = self.plant_state.copy()
         state.pop('sim_time_at_last_update')
         state.pop('heat_into_cycle')
+        if 'is_heater_on_init' in state:
+            state.pop('is_heater_on_init')
+            state.pop('heater_target')
         self.ssc.set(state)
 
     def setup_performance_model(self):
@@ -627,6 +630,13 @@ class CspPlant(PowerSource):
         pc_max = [min(ctp + su, dis.maximum_cycle_thermal_power) for ctp, su in
                   zip(dis.cycle_thermal_power[0:n_periods], dispatch_targets['q_pc_target_su_in'])]
         dispatch_targets['q_pc_max_in'] = pc_max
+
+        # Electric Heater Targets
+        if dis.heater_enabled:
+            dispatch_targets['is_parallel_htr'] = 1 # Turn on parallel heater
+            dispatch_targets['allow_heater_no_dispatch_opt'] = 1  # Needed to allow heater operation without dispatch optimization (within SSC)
+            dispatch_targets['q_dot_elec_to_PAR_HTR_in'] = dis.heater_thermal_power[0:n_periods]
+            dispatch_targets['is_PAR_HTR_allowed_in'] = [1 if dis.is_heater_operating[t] > 0.01 else 0 for t in range(n_periods)]
 
         self.ssc.set(dispatch_targets)
 

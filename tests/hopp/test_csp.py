@@ -392,3 +392,56 @@ def test_tower_annual_financial(site):
     assert csp.annual_energy_kwh == pytest.approx(expected_energy, 2e-3)
     assert csp._financial_model.value('lcoe_nom') == pytest.approx(expected_lcoe_nom, 2e-3)
     assert csp._financial_model.value('lppa_nom') == pytest.approx(expected_ppa_nom, 2e-3)
+
+
+def test_tower_with_electric_heater(site):
+    """Testing tower model with electric heater turned on"""
+    tower_config = {'cycle_capacity_kw': 100 * 1000,
+                    'solar_multiple': 2.0,
+                    'tes_hours': 6.0}
+
+    expected_energy = 378820
+
+    config = TowerConfig.from_dict(tower_config)
+    csp = TowerPlant(site, config=config)
+    csp.generate_field()
+    csp.ssc.set({'time_start': 0.0, 'time_stop': 8760*3600})
+
+    # Add electric heater
+    heater_config = {
+        'is_parallel_htr': 1,               # Enable parallel heater
+        'heater_mult': 1.0,                 # [-] Set heater multiple to 1.0
+        'heater_efficiency': 95.0,          # [%] Set heater efficiency to 99%
+        'f_q_dot_des_allowable_su': 1.0,    # [-] Fraction of design power allowed during startup
+        'hrs_startup_at_max_rate': 0.25,    # [hr] Duration of startup at max startup power
+        'f_q_dot_heater_min': 0.25,         # [-] Minimum allowable heater output as fraction of design
+        'heater_spec_cost': 104.0,          # [$/kWht] Heater specific cost
+        'allow_heater_no_dispatch_opt': 1
+    }
+    csp.ssc.set(heater_config)
+
+    tech_outputs = csp.ssc.execute()
+
+    print('Annual energy = {e:.0f} MWhe'.format(e=tech_outputs['annual_energy'] * 1.e-3))
+
+    assert csp.cycle_capacity_kw == tower_config['cycle_capacity_kw']
+    assert csp.solar_multiple == tower_config['solar_multiple']
+    assert csp.tes_hours == tower_config['tes_hours']
+
+    print('Heater consumption at design: {h:.2f} MW'.format(h=tech_outputs['W_dot_heater_des']))
+    print('Heater design thermal power: {h:.2f} MW'.format(h=tech_outputs['q_dot_heater_des']))
+    print('Heater startup energy: {h:.2f} MWhe'.format(h=tech_outputs['E_heater_su_des']))
+
+    expected_heater_output = csp.cycle_capacity_kw * 1.e-3 / csp.cycle_nominal_efficiency
+    expected_heater_input = expected_heater_output / (heater_config['heater_efficiency'] / 100.0) 
+    expected_heater_startup_energy = expected_heater_output * heater_config['hrs_startup_at_max_rate']
+
+    assert tech_outputs['q_dot_heater_des'] == pytest.approx(expected_heater_output, 0.01)
+    assert tech_outputs['W_dot_heater_des'] == pytest.approx(expected_heater_input, 0.01)
+    assert tech_outputs['E_heater_su_des'] == pytest.approx(expected_heater_startup_energy, 0.01)
+    assert tech_outputs['annual_energy'] * 1.e-3 == pytest.approx(expected_energy, 1e-2)
+
+    print('Total heater electricity consumption {h:.2f} MWhe'.format(h=sum(tech_outputs['W_dot_heater'])))
+    pass
+
+    

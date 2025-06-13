@@ -1,5 +1,6 @@
 from typing import Union
-from pyomo.environ import ConcreteModel, Expression, NonNegativeReals, Set, units, Var
+import pyomo.environ as pyomo
+from pyomo.environ import units as u
 from pyomo.network import Port
 
 from hopp.simulation.technologies.financial import FinancialModelType
@@ -7,15 +8,15 @@ from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import Csp
 
 
 class TowerDispatch(CspDispatch):
-    tower_obj: Union[Expression, float]
+    tower_obj: Union[pyomo.Expression, float]
     _system_model: None
     _financial_model: FinancialModelType
     """Dispatch optimization model for CSP tower systems."""
 
     def __init__(
         self,
-        pyomo_model: ConcreteModel,
-        indexed_set: Set,
+        pyomo_model: pyomo.ConcreteModel,
+        indexed_set: pyomo.Set,
         system_model: None,
         financial_model: FinancialModelType,
         block_set_name: str = "tower",
@@ -75,36 +76,39 @@ class TowerDispatch(CspDispatch):
                 models by adding modeling components as attributes.
 
         """
-        self.obj = Expression(
-            expr=sum(
-                -(1 / hybrid_blocks[t].time_weighting_factor)
-                * (
-                    (
-                        self.blocks[t].cost_per_field_generation
-                        * self.blocks[t].receiver_thermal_power
-                        * self.blocks[t].time_duration
-                    )
-                    + (
-                        self.blocks[t].cost_per_field_start
-                        * self.blocks[t].incur_field_start
-                    )
-                    + (
-                        self.blocks[t].cost_per_cycle_generation
-                        * self.blocks[t].cycle_generation
-                        * self.blocks[t].time_duration
-                    )
-                    + (
-                        self.blocks[t].cost_per_cycle_start
-                        * self.blocks[t].incur_cycle_start
-                    )
-                    + (
-                        self.blocks[t].cost_per_change_thermal_input
-                        * self.blocks[t].cycle_thermal_ramp
-                    )
+        def gross_profit_expr(m):
+            obj = 0.0
+            for t in hybrid_blocks.index_set():
+                obj += ( -(1 / hybrid_blocks[t].time_weighting_factor)
+                        * (
+                            ( self.blocks[t].cost_per_field_generation
+                             * self.blocks[t].receiver_thermal_power
+                             * self.blocks[t].time_duration
+                             ) +
+                            ( self.blocks[t].cost_per_field_start
+                             * self.blocks[t].incur_field_start
+                             ) +
+                            ( self.blocks[t].cost_per_cycle_generation
+                             * self.blocks[t].cycle_generation
+                             * self.blocks[t].time_duration
+                             ) +
+                            ( self.blocks[t].cost_per_cycle_start
+                             * self.blocks[t].incur_cycle_start
+                             ) +
+                            ( self.blocks[t].cost_per_change_thermal_input
+                             * self.blocks[t].cycle_thermal_ramp
+                             )
+                        )
                 )
-                for t in hybrid_blocks.index_set()
-            )
-        )
+                if self.heater_enabled:
+                    obj += ( -(1 / hybrid_blocks[t].time_weighting_factor)
+                            * ( self.blocks[t].cost_per_heater_start
+                               * self.blocks[t].incur_heater_start)
+                    )
+
+            return obj
+        
+        self.obj = pyomo.Expression(rule=gross_profit_expr)
 
     def min_operating_cost_objective(self, hybrid_blocks):
         """Tower CSP instance of minimum operating cost objective.
@@ -114,6 +118,11 @@ class TowerDispatch(CspDispatch):
                 models by adding modeling components as attributes.
 
         """
+        if self.heater_enabled:
+            raise NotImplementedError(
+                "Minimum operating cost objective for TowerDispatch with heater enabled is not implemented."
+            )
+
         self.obj = sum(
             hybrid_blocks[t].time_weighting_factor
             * (
@@ -147,16 +156,16 @@ class TowerDispatch(CspDispatch):
                 - load: Load from given technology.
 
         """
-        hybrid.tower_generation = Var(
+        hybrid.tower_generation = pyomo.Var(
             doc="Power generation of CSP tower [MW]",
-            domain=NonNegativeReals,
-            units=units.MW,
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
             initialize=0.0,
         )
-        hybrid.tower_load = Var(
+        hybrid.tower_load = pyomo.Var(
             doc="Load of CSP tower [MW]",
-            domain=NonNegativeReals,
-            units=units.MW,
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
             initialize=0.0,
         )
         return hybrid.tower_generation, hybrid.tower_load

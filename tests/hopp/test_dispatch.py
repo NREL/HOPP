@@ -276,6 +276,77 @@ def test_tower_dispatch(site):
 
     # TODO: Add checks for dispatch solution vs. simulation results
 
+def test_tower_with_heater_dispatch(site):
+    """Tests setting up tower with electric heater dispatch using system model and running simulation with dispatch"""
+    expected_objective = 115787.485
+    dispatch_n_look_ahead = 48
+
+    technologies['tower']['heater_params'] = {'heater_mult': 1.0}
+
+    config = TowerConfig.from_dict(technologies['tower'])
+    tower = TowerPlant(site, config=config)
+    tower.optimize_field_before_sim = False
+    tower.setup_performance_model()
+
+    model = pyomo.ConcreteModel(name='tower_only')
+    model.forecast_horizon = pyomo.Set(initialize=range(dispatch_n_look_ahead))
+
+    tower._dispatch = TowerDispatch(model,
+                                    model.forecast_horizon,
+                                    tower,
+                                    tower._financial_model)
+
+    # Manually creating objective for testing
+    prices = {}
+    block_length = 8
+    index = 0
+    for i in range(int(dispatch_n_look_ahead / block_length)):
+        for j in range(block_length):
+            if i % 2 == 0:
+                prices[index] = 30.0  # assuming low prices
+            else:
+                prices[index] = 100.0  # assuming high prices
+            index += 1
+
+    model.price = pyomo.Param(model.forecast_horizon,
+                              within=pyomo.Reals,
+                              initialize=prices,
+                              mutable=True,
+                              units=u.USD / u.MWh)
+
+    # TODO: Use hybrid simulation class with grid and remove this objective set-up
+    def create_test_objective_rule(m):
+        return sum(m.tower[t].time_duration * m.price[t] * ( m.tower[t].cycle_generation 
+                                                            - m.tower[t].heater_thermal_power / m.tower[t].heater_efficiency )
+                   - m.tower[t].cost_per_field_generation * m.tower[t].receiver_thermal_power * m.tower[t].time_duration
+                   - m.tower[t].cost_per_field_start * m.tower[t].incur_field_start
+                   - m.tower[t].cost_per_cycle_generation * m.tower[t].cycle_generation * m.tower[t].time_duration
+                   - m.tower[t].cost_per_cycle_start * m.tower[t].incur_cycle_start
+                   - m.tower[t].cost_per_change_thermal_input * m.tower[t].cycle_thermal_ramp 
+                   - m.tower[t].cost_per_heater_start * m.tower[t].incur_heater_start
+                   for t in m.tower.index_set())
+
+    model.test_objective = pyomo.Objective(
+        rule=create_test_objective_rule,
+        sense=pyomo.maximize)
+
+    tower.dispatch.initialize_parameters()
+    tower.dispatch.update_time_series_parameters(0)
+    tower.dispatch.update_initial_conditions()
+
+    assert_units_consistent(model)
+    results = HybridDispatchBuilderSolver.glpk_solve_call(model)
+
+    tower.simulate_with_dispatch(48, 0)
+
+    assert results.solver.termination_condition == TerminationCondition.optimal
+    assert pyomo.value(model.test_objective) == pytest.approx(expected_objective, 1e-5)
+    assert sum(tower.dispatch.receiver_thermal_power) > 0.0  # Useful thermal generation
+    assert sum(tower.dispatch.cycle_generation) > 0.0  # Useful power generation
+
+    assert sum(tower.dispatch.heater_thermal_power) > 0.0  # Heater is dispatched
+    # Heater power matches simulation results
+    assert sum(tower.dispatch.heater_thermal_power) == pytest.approx(sum(tower.outputs.ssc_time_series["q_dot_heater_to_htf"]), 1e-3)
 
 def test_trough_dispatch(site):
     """Tests setting up trough dispatch using system model and running simulation with dispatch"""

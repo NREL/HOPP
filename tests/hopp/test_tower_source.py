@@ -19,7 +19,7 @@ def site():
     return create_default_site_info()
 
 
-def test_trough_config(subtests):
+def test_tower_config(subtests):
     with subtests.test("with default params"):
         config = TowerConfig.from_dict(config_data)
 
@@ -40,7 +40,7 @@ def test_trough_config(subtests):
             config = TowerConfig.from_dict(data)
 
 
-def test_trough_init(site, subtests):
+def test_tower_init(site, subtests):
     config = TowerConfig.from_dict(config_data)
 
     with subtests.test("with default params"):

@@ -5,10 +5,11 @@ from math import pi, log, sin
 from attrs import define, field
 import PySAM.Singleowner as Singleowner
 
+from hopp.simulation.base import BaseClass
 from hopp.simulation.technologies.csp.csp_plant import CspConfig
 from hopp.simulation.technologies.csp.csp_plant import CspPlant
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.utilities.validators import contains
+from hopp.utilities.validators import contains, gt_zero, range_val
 
 
 # TODO: Figure out where to put this...
@@ -25,6 +26,25 @@ def copydoc(fromfunc, sep="\n"):
         return func
     return _decorator
 
+@define
+class HeaterConfig(BaseClass):
+    """
+    Configuration class for electric heater.
+
+    Args:
+        heater_mult: Heater multiple relative to design cycle thermal power [-]
+        heater_efficiency: Heater electric to thermal efficiency [%]
+        f_q_dot_des_allowable_su: Fraction of design power allowed during startup [-] 
+        hrs_startup_at_max_rate: Duration of startup at max startup power [hr]
+        f_q_dot_heater_min: Minimum allowable heater output as fraction of design [-]
+        heater_spec_cost: Heater specific cost [$/kWht]
+    """
+    heater_mult: float = field(validator=gt_zero)
+    heater_efficiency: float = field(validator=range_val(0.0, 100.0), default=100.0)
+    f_q_dot_des_allowable_su: float = field(validator=range_val(0.0, 1.0), default=1.0)
+    hrs_startup_at_max_rate: float = field(validator=gt_zero, default=0.25)
+    f_q_dot_heater_min: float = field(validator=range_val(0.0, 1.0), default=0.25)
+    heater_spec_cost: float = field(validator=gt_zero, default=104.0)
 
 @define
 class TowerConfig(CspConfig):
@@ -43,10 +63,10 @@ class TowerConfig(CspConfig):
             :py:func:`hopp.simulation.technologies.csp.tower_plant.scale_params` before system simulation.
     """
     tech_name: str = field(validator=contains(["tcsmolten_salt", "trough_physical"]), default="tcsmolten_salt")
+    heater_params: HeaterConfig = field(default=None)
     optimize_field_before_sim: bool = field(default=True)
     scale_input_params: bool = field(default=False)
     name: str = field(default="TowerPlant")
-
 
 @define
 class TowerPlant(CspPlant):
@@ -59,7 +79,7 @@ class TowerPlant(CspPlant):
     """
     site: SiteInfo
     config: TowerConfig
-
+    heater_config: HeaterConfig = field(init=False, default=None)
     optimize_field_before_sim: bool = field(init=False)
 
     def __attrs_post_init__(self):
@@ -71,8 +91,25 @@ class TowerPlant(CspPlant):
         rel_path_to_param_files = os.path.join('pySSC_daotk', 'tower_data')
         self.param_file_paths(rel_path_to_param_files)
 
+        # Initialize electric heater configuration if provided
+        if self.config.heater_params is not None:
+            self.heater_config = HeaterConfig.from_dict(self.config.heater_params)
+
         # Run code in parent post_init
         super().__attrs_post_init__()
+
+        if self.heater_config is not None:
+            # Set heater parameters within ssc model
+            self.ssc.set({
+                'is_parallel_htr': 1,
+                'allow_heater_no_dispatch_opt': 1,  # Needed to allow heater operation without dispatch optimization (within SSC)
+                'heater_mult': self.heater_config.heater_mult,
+                'heater_efficiency': self.heater_config.heater_efficiency,
+                'f_q_dot_des_allowable_su': self.heater_config.f_q_dot_des_allowable_su,
+                'hrs_startup_at_max_rate': self.heater_config.hrs_startup_at_max_rate,
+                'f_q_dot_heater_min': self.heater_config.f_q_dot_heater_min,
+                'heater_spec_cost': self.heater_config.heater_spec_cost
+            })
 
         self.optimize_field_before_sim = self.config.optimize_field_before_sim
 
@@ -243,43 +280,51 @@ class TowerPlant(CspPlant):
         .. note::
             This must be called after heliostat field layout is created
         """
-        total_installed_cost = self.outputs.ssc_values['total_installed_cost']
+        total_installed_cost_ssc = self.outputs.ssc_values['total_installed_cost']
+        # TODO: Check if this works all the time
 
         # Tower total installed cost is also a direct output from the ssc compute module    
         # TODO: should we pull this directly from SSC
-        # site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
-        # heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
+        site_improvement_cost = self.ssc.get('site_spec_cost') * self.ssc.get('A_sf_in')
+        heliostat_cost = self.ssc.get('cost_sf_fixed') + self.ssc.get('heliostat_spec_cost') * self.ssc.get('A_sf_in')
 
-        # height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
-        # tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
-        # Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
-        # receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
-        # tower_receiver_cost = tower_cost + receiver_cost
+        height = self.ssc.get('h_tower')-0.5*self.ssc.get('rec_height') + 0.5*self.ssc.get('helio_height')
+        tower_cost = self.ssc.get('tower_fixed_cost') * np.exp(self.ssc.get('tower_exp') * height)
+        Arec = 3.1415926 * self.ssc.get('rec_height') * self.ssc.get('D_rec')
+        receiver_cost = self.ssc.get('rec_ref_cost') * (Arec / self.ssc.get('rec_ref_area'))**self.ssc.get('rec_cost_exp')
+        tower_receiver_cost = tower_cost + receiver_cost
 
-        # tes_cost = self.tes_capacity * 1000 * self.ssc.get('tes_spec_cost')
-        # cycle_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('plant_spec_cost')
-        # bop_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('bop_spec_cost')
-        # fossil_backup_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('fossil_spec_cost')
-        # direct_cost = site_improvement_cost + heliostat_cost + tower_receiver_cost + tes_cost + cycle_cost + bop_cost + fossil_backup_cost
-        # contingency_cost = self.ssc.get('contingency_rate')/100 * direct_cost
-        # total_direct_cost = direct_cost + contingency_cost
-        # total_land_area = self.ssc.get('land_area_base') * self.ssc.get('csp.pt.sf.land_overhead_factor') + self.ssc.get('csp.pt.sf.fixed_land_area')
-        # plant_net_capacity = self.outputs.ssc_values['nameplate']
+        tes_cost = self.tes_capacity * 1000 * self.ssc.get('tes_spec_cost')
+        cycle_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('plant_spec_cost')
+        heater_cost = 0.0
+        if self.heater_config is not None:
+            heater_cap = self.ssc.get('P_ref') * 1000.0 / self.ssc.get('design_eff') * self.ssc.get('heater_mult')
+            heater_cost = heater_cap * self.ssc.get('heater_spec_cost')
+        bop_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('bop_spec_cost')
+        fossil_backup_cost = self.ssc.get('P_ref') * 1000 * self.ssc.get('fossil_spec_cost')
+        direct_cost = site_improvement_cost + heliostat_cost + tower_receiver_cost + tes_cost + cycle_cost + heater_cost + bop_cost + fossil_backup_cost
+        contingency_cost = self.ssc.get('contingency_rate')/100 * direct_cost
+        total_direct_cost = direct_cost + contingency_cost
+        total_land_area = self.ssc.get('land_area_base') * self.ssc.get('csp.pt.sf.land_overhead_factor') + self.ssc.get('csp.pt.sf.fixed_land_area')
+        plant_net_capacity = self.outputs.ssc_values['nameplate']
         
-        # land_cost = total_land_area * self.ssc.get('land_spec_cost') + \
-        #             total_direct_cost * self.ssc.get('csp.pt.cost.plm.percent')/100 + \
-        #             plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.plm.per_watt') + \
-        #             self.ssc.get('csp.pt.cost.plm.fixed')
+        land_cost = total_land_area * self.ssc.get('land_spec_cost') + \
+                    total_direct_cost * self.ssc.get('csp.pt.cost.plm.percent')/100 + \
+                    plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.plm.per_watt') + \
+                    self.ssc.get('csp.pt.cost.plm.fixed')
 
-        # epc_cost = total_land_area * self.ssc.get('csp.pt.cost.epc.per_acre') + \
-        #            total_direct_cost * self.ssc.get('csp.pt.cost.epc.percent')/100 + \
-        #            plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.epc.per_watt') + \
-        #            self.ssc.get('csp.pt.cost.epc.fixed')
+        epc_cost = total_land_area * self.ssc.get('csp.pt.cost.epc.per_acre') + \
+                   total_direct_cost * self.ssc.get('csp.pt.cost.epc.percent')/100 + \
+                   plant_net_capacity * 1e6 * self.ssc.get('csp.pt.cost.epc.per_watt') + \
+                   self.ssc.get('csp.pt.cost.epc.fixed')
         
-        # sales_tax_cost = total_direct_cost * self.ssc.get('sales_tax_frac')/100 * self.ssc.get('sales_tax_rate')/100
-        # total_indirect_cost = land_cost + epc_cost + sales_tax_cost
-        # total_installed_cost = total_direct_cost + total_indirect_cost
-        return total_installed_cost
+        sales_tax_cost = total_direct_cost * self.ssc.get('sales_tax_frac')/100 * self.ssc.get('sales_tax_rate')/100
+        total_indirect_cost = land_cost + epc_cost + sales_tax_cost
+        total_installed_cost_calc = total_direct_cost + total_indirect_cost
+        assert abs(total_installed_cost_ssc - total_installed_cost_calc) < 1e-2, \
+            f"Total installed cost from SSC ({total_installed_cost_ssc}) does not match calculated cost ({total_installed_cost_calc})."
+
+        return total_installed_cost_calc
 
     def estimate_receiver_pumping_parasitic(self, nonheated_length=0.2):
         """
@@ -376,8 +421,7 @@ class TowerPlant(CspPlant):
             return 0.0
         return max(1e-4, 0.02270616 - 1.199514e-4*TC + 2.279989e-7*TC*TC - 1.473302e-10*TC*TC*TC)
 
-    @staticmethod
-    def get_plant_state_io_map() -> dict:
+    def get_plant_state_io_map(self) -> dict:
         io_map = {  # State:
                   # Number Inputs                         # Arrays Outputs (end of timestep)
                   'is_field_tracking_init':               'is_field_tracking_final',
@@ -395,6 +439,11 @@ class TowerPlant(CspPlant):
                   # For dispatch ramping penalty
                   'heat_into_cycle':                      'q_pb'
                   }
+        if self.heater_config is not None:
+            io_map.update({
+                'is_heater_on_init':                      'is_PAR_HTR_allowed',
+                'heater_target':                          'q_dot_elec_to_PAR_HTR'
+            })
         return io_map        
 
     def set_initial_plant_state(self) -> dict:

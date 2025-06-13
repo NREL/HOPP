@@ -29,6 +29,12 @@ class CspDispatch(Dispatch):
             block_set_name (str, optional): Name of the block. Defaults to 'csp'.
 
         """
+        # Check if there exists a electric heater within the system model
+        self.heater_enabled = False
+        if hasattr(system_model, "heater_config"):
+            if system_model.heater_config is not None:
+                self.heater_enabled = True
+
         super().__init__(
             pyomo_model,
             index_set,
@@ -45,6 +51,8 @@ class CspDispatch(Dispatch):
             "cost_per_cycle_start_rel": 40.0,
             "cost_per_change_thermal_input": 0.5,
         }
+        if self.heater_enabled:
+            self.objective_cost_terms["cost_per_heater_start_rel"] = 0.015
 
     def dispatch_block_rule(self, csp):
         """Called during Dispatch's __init__. Define dispatch block rules.
@@ -57,14 +65,20 @@ class CspDispatch(Dispatch):
         self._create_storage_parameters(csp)
         self._create_receiver_parameters(csp)
         self._create_cycle_parameters(csp)
+        if self.heater_enabled:
+            self._create_heater_parameters(csp)
         # Variables
         self._create_storage_variables(csp)
         self._create_receiver_variables(csp)
         self._create_cycle_variables(csp)
+        if self.heater_enabled:
+            self._create_heater_variables(csp)
         # Constraints
         self._create_storage_constraints(csp)
         self._create_receiver_constraints(csp)
         self._create_cycle_constraints(csp)
+        if self.heater_enabled:
+            self._create_heater_constraints(csp)
         # Ports
         self._create_csp_port(csp)
 
@@ -298,6 +312,43 @@ class CspDispatch(Dispatch):
             units=u.MW,
         )
 
+    @staticmethod
+    def _create_heater_parameters(csp):
+        """Create parameters related to electric heater.
+
+        Args:
+            csp: CSP dispatch instance.
+
+        """
+        csp.cost_per_heater_start = pyomo.Param(
+            doc="Fixed cost for electric heater start [$/start]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.USD,
+        )  # $/start
+        csp.minimum_heater_thermal_power = pyomo.Param(
+            doc="Minimum allowable power delivery by the electrical heaters when operating [MWt]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MW,
+        )
+        csp.maximum_heater_thermal_power = pyomo.Param(
+            doc="Maximum allowable power delivery by the electrical heaters when operating[MWt]",
+            default=0.0,
+            within=pyomo.NonNegativeReals,
+            mutable=True,
+            units=u.MW,
+        )
+        csp.heater_efficiency = pyomo.Param(
+            doc="Electric resistance heating sub-system efficiency[-]",
+            default=0.0,
+            within=pyomo.PercentFraction,
+            mutable=True,
+            units=u.dimensionless,
+        )
+
     ##################################
     # Variables                      #
     ##################################
@@ -450,31 +501,65 @@ class CspDispatch(Dispatch):
             units=u.dimensionless,
         )
 
+    @staticmethod
+    def _create_heater_variables(csp):
+        """Create variables related to the electric heater.
+
+        Args:
+            csp: CSP instance.
+
+        """
+        csp.heater_thermal_power = pyomo.Var(
+            doc="Thermal power delivered by the heater [MWt]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
+        csp.is_heater_operating = pyomo.Var(
+            doc="1 if electric heater is operating; 0 Otherwise [-]",
+            domain=pyomo.Binary,
+            units=u.dimensionless,
+        )
+        csp.is_receiver_heater_operating = pyomo.Var(
+            doc="1 if both receiver and electric heater is operating; 0 Otherwise [-] (for defocusing constraint)",
+            domain=pyomo.Binary,
+            units=u.dimensionless,
+        )
+        csp.incur_heater_start = pyomo.Var(
+            doc="1 if electric heater start-up penalty is incurred; 0 Otherwise [-]",
+            domain=pyomo.Binary,
+            units=u.dimensionless,
+        )
+        # initial variables
+        csp.was_heater_operating = pyomo.Var(
+            doc="1 if electric heater was operating in the previous time period; 0 Otherwise [-]",
+            domain=pyomo.Binary,
+            units=u.dimensionless,
+        )
+
     ##################################
     # Constraints                    #
     ##################################
 
-    @staticmethod
-    def _create_storage_constraints(csp):
+    def _create_storage_constraints(self, csp):
         """Create constraints related to thermal energy storage.
 
         Args:
             csp: CSP instance.
 
         """
+        def storage_inventory_rule(csp):
+            """Thermal energy storage inventory balance."""
+            rhs = csp.time_duration * ( csp.receiver_thermal_power 
+                                       - (csp.allowable_cycle_startup_power * csp.is_cycle_starting 
+                                          + csp.cycle_thermal_power))
+            if self.heater_enabled:
+                rhs += csp.time_duration * csp.heater_thermal_power
+
+            return csp.thermal_energy_storage - csp.previous_thermal_energy_storage == rhs
+        
         csp.storage_inventory = pyomo.Constraint(
             doc="Thermal energy storage energy balance",
-            expr=(
-                csp.thermal_energy_storage - csp.previous_thermal_energy_storage
-                == csp.time_duration
-                * (
-                    csp.receiver_thermal_power
-                    - (
-                        csp.allowable_cycle_startup_power * csp.is_cycle_starting
-                        + csp.cycle_thermal_power
-                    )
-                )
-            ),
+            rule=storage_inventory_rule,
         )
         csp.receiver_startup = pyomo.Constraint(
             doc="If receiver is starting up, then there must be a sufficient charge level "
@@ -566,8 +651,7 @@ class CspDispatch(Dispatch):
             >= csp.is_field_starting - csp.was_field_starting,
         )
 
-    @staticmethod
-    def _create_cycle_constraints(csp):
+    def _create_cycle_constraints(self, csp):
         """Create constraints related to the power cycle.
 
         Args:
@@ -648,10 +732,9 @@ class CspDispatch(Dispatch):
             >= csp.cycle_thermal_power - csp.previous_cycle_thermal_power,
         )
         # System load
-        csp.generation_balance = pyomo.Constraint(
-            doc="Calculates csp system load for grid model",
-            expr=csp.system_load
-            == (
+        def system_load_rule(csp):
+            """CSP system load balance."""
+            rhs = (
                 csp.cycle_generation * csp.condenser_losses
                 + csp.receiver_pumping_losses
                 * (csp.receiver_thermal_power + csp.receiver_startup_consumption)
@@ -663,13 +746,72 @@ class CspDispatch(Dispatch):
                 + csp.field_track_losses * csp.is_field_generating
                 # + csp.heat_trace_losses * csp.is_field_starting
                 + (csp.field_startup_losses / csp.time_duration) * csp.is_field_starting
-            ),
+            )
+            if self.heater_enabled:
+                rhs += csp.heater_thermal_power / csp.heater_efficiency
+
+            return csp.system_load == rhs
+        csp.generation_balance = pyomo.Constraint(
+            doc="Calculates csp system load for grid model",
+            rule=system_load_rule,
         )
         # Logic governing cycle modes
         csp.cycle_startup = pyomo.Constraint(
             doc="Ensures that cycle start is accounted",
             expr=csp.incur_cycle_start
             >= csp.is_cycle_starting - csp.was_cycle_starting,
+        )
+
+    @staticmethod
+    def _create_heater_constraints(csp):
+        """Create constraints related to the electric heater.
+
+        Args:
+            csp: CSP instance.
+
+        """
+        # Supply and demand
+        csp.maximum_heater_generation = pyomo.Constraint(
+            doc="Heater maximum generation limit",
+            expr=csp.heater_thermal_power
+            <= csp.maximum_heater_thermal_power * csp.is_heater_operating,
+        )
+        csp.minimum_heater_generation = pyomo.Constraint(
+            doc="Heater minimum generation limit",
+            expr=csp.heater_thermal_power
+            >= csp.minimum_heater_thermal_power * csp.is_heater_operating,
+        )
+        # TODO: is this too restrictive?
+        # csp.heater_cycle_coincide = pyomo.Constraint(
+        #     doc="Heater and cycle cannot operate at the same time",
+        #     expr=csp.is_heater_operating + csp.is_cycle_generating <= 1,
+        # )
+        csp.heaters_off_before_defocus = pyomo.Constraint(
+            doc="Heater must be off before field defocus",
+            expr=csp.receiver_thermal_power + csp.receiver_startup_consumption
+            >= csp.available_thermal_generation * csp.is_receiver_heater_operating,
+        )
+        # Linearization of is_heater_operating * is_field_generating
+        csp.upper_bound_heater = pyomo.Constraint(
+            doc="Upper bound with heater operation",
+            expr=csp.is_receiver_heater_operating
+            <= csp.is_heater_operating,
+        )
+        csp.upper_bound_field = pyomo.Constraint(
+            doc="Upper bound with field operation",
+            expr=csp.is_receiver_heater_operating
+            <= csp.is_field_generating,
+        )
+        csp.lower_bound_heater_field = pyomo.Constraint(
+            doc="Lower bound of lineaerization",
+            expr=csp.is_receiver_heater_operating
+            >= csp.is_heater_operating + csp.is_field_generating - 1,
+        )
+        # Logic associated with receiver modes
+        csp.heater_startup = pyomo.Constraint(
+            doc="Ensures that heater start is accounted",
+            expr=csp.incur_heater_start
+            >= csp.is_heater_operating - csp.was_heater_operating,
         )
 
     ##################################
@@ -697,6 +839,8 @@ class CspDispatch(Dispatch):
         self._create_storage_linking_constraints()
         self._create_receiver_linking_constraints()
         self._create_cycle_linking_constraints()
+        if self.heater_enabled:
+            self._create_heater_linking_constraints()
 
     ##################################
     # Initial Parameters             #
@@ -905,6 +1049,33 @@ class CspDispatch(Dispatch):
             rule=cycle_starting_linking_rule,
         )
 
+    def _create_heater_linking_constraints(self):
+        """Create constraints for linking electric heater."""
+        self.model.is_heater_operating_initial = pyomo.Param(
+            doc="1 if heater is operating 'usable' thermal power at beginning of the horizon; 0 Otherwise [-]",
+            default=0.0,
+            within=pyomo.Binary,
+            mutable=True,
+            units=u.dimensionless,
+        )
+
+        def heater_operating_linking_rule(m, t):
+            if t == self.blocks.index_set().first():
+                return (
+                    self.blocks[t].was_heater_operating
+                    == self.model.is_heater_operating_initial
+                )
+            return (
+                self.blocks[t].was_heater_operating
+                == self.blocks[t - 1].is_heater_operating
+            )
+
+        self.model.heater_operating_linking = pyomo.Constraint(
+            self.blocks.index_set(),
+            doc="Is heater operating binary block linking constraint",
+            rule=heater_operating_linking_rule,
+        )
+
     def initialize_parameters(self):
         """Initialize parameters for the CSP model."""
         csp = self._system_model
@@ -967,6 +1138,14 @@ class CspDispatch(Dispatch):
             csp.value("cycle_max_frac") * cycle_rated_thermal
         )
         self.set_part_load_cycle_parameters()
+
+        # Electric heater if applicable
+        if self.heater_enabled:
+            heater_rated_thermal = cycle_rated_thermal * csp.value("heater_mult")
+            self.minimum_heater_thermal_power = heater_rated_thermal * csp.value("f_q_dot_heater_min")
+            self.maximum_heater_thermal_power = heater_rated_thermal
+            self.heater_efficiency = csp.value("heater_efficiency") / 100.0
+            self.cost_per_heater_start = self.objective_cost_terms["cost_per_heater_start_rel"] * heater_rated_thermal
 
     def update_time_series_parameters(self, start_time: int):
         """Sets up SSC simulation to get time series performance parameters after simulation.
@@ -1314,6 +1493,9 @@ class CspDispatch(Dispatch):
             self.initial_cycle_thermal_power = max(min(csp.plant_state['heat_into_cycle'], self.maximum_cycle_thermal_power), self.minimum_cycle_thermal_power)
         else:
             self.initial_cycle_thermal_power = 0.0
+
+        if self.heater_enabled:
+            self.is_heater_operating_initial = csp.plant_state["is_heater_on_init"] == 1
 
     @staticmethod
     def get_start_end_datetime(start_time: int, n_horizon: int):
@@ -1776,7 +1958,79 @@ class CspDispatch(Dispatch):
                 round(electric_power, self.round_digits)
             )
 
+    # Electric Heater Parameters
+    @property
+    def cost_per_heater_start(self) -> float:
+        """Fixed cost (penalty) for electric heater start [$/start]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get cost_per_heater_start value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            return self.blocks[t].cost_per_heater_start.value
+    
+    @cost_per_heater_start.setter
+    def cost_per_heater_start(self, dollars_per_start: float):
+        if not self.heater_enabled:
+            raise ValueError("Cannot get cost_per_heater_start value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            self.blocks[t].cost_per_heater_start.set_value(
+                round(dollars_per_start, self.round_digits)
+            )
+
+    @property
+    def minimum_heater_thermal_power(self) -> float:
+        """Minimum allowable power delivery by the electrical heaters when operating [MWt]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get minimum_heater_thermal_power value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            return self.blocks[t].minimum_heater_thermal_power.value
+
+    @minimum_heater_thermal_power.setter
+    def minimum_heater_thermal_power(self, thermal_power: float):
+        if not self.heater_enabled:
+            raise ValueError("Cannot set minimum_heater_thermal_power value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            self.blocks[t].minimum_heater_thermal_power.set_value(
+                round(thermal_power, self.round_digits)
+            )
+
+    @property
+    def maximum_heater_thermal_power(self) -> float:
+        """Maximum allowable power delivery by the electrical heaters when operating [MWt]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get maximum_heater_thermal_power value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            return self.blocks[t].maximum_heater_thermal_power.value
+
+    @maximum_heater_thermal_power.setter
+    def maximum_heater_thermal_power(self, thermal_power: float):
+        if not self.heater_enabled:
+            raise ValueError("Cannot set maximum_heater_thermal_power value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            self.blocks[t].maximum_heater_thermal_power.set_value(
+                round(thermal_power, self.round_digits)
+            )
+    
+    @property
+    def heater_efficiency(self) -> float:
+        """Electric resistance heating sub-system efficiency [-]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get heater_efficiency value if heater is not enabled.")
+        for t in self.blocks.index_set():
+            return self.blocks[t].heater_efficiency.value
+
+    @heater_efficiency.setter
+    def heater_efficiency(self, efficiency: float):
+        if not self.heater_enabled:
+            raise ValueError("Cannot set heater_efficiency value if heater is not enabled.")
+        efficiency = self._check_efficiency_value(efficiency)
+        for t in self.blocks.index_set():
+            self.blocks[t].heater_efficiency.set_value(
+                round(efficiency, self.round_digits)
+            )
+
+    #################################
     # INITIAL CONDITIONS
+    #################################
     @property
     def initial_thermal_energy_storage(self) -> float:
         """Initial thermal energy storage reserve quantity at beginning of the horizon [MWht]"""
@@ -1856,7 +2110,24 @@ class CspDispatch(Dispatch):
     def is_cycle_starting_initial(self, is_cycle_starting: Union[bool, int]):
         self.model.is_cycle_starting_initial = int(is_cycle_starting)
 
+    # Electric Heater Initial Conditions
+    @property
+    def is_heater_operating_initial(self) -> bool:
+        """True (1) if heater is operating 'usable' thermal power at beginning of the horizon; 0 Otherwise [-]
+        False (0) Otherwise [-]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get is_heater_operating_initial value if heater is not enabled.")
+        return bool(self.model.is_heater_operating_initial.value)
+
+    @is_heater_operating_initial.setter
+    def is_heater_operating_initial(self, is_heater_operating: Union[bool, int]):
+        if not self.heater_enabled:
+            raise ValueError("Cannot set is_heater_operating_initial value if heater is not enabled.")
+        self.model.is_heater_operating_initial = int(is_heater_operating)
+
+    ##################
     # OUTPUTS
+    ##################
     @property
     def thermal_energy_storage(self) -> list:
         """Thermal energy storage reserve quantity [MWht]"""
@@ -1974,5 +2245,45 @@ class CspDispatch(Dispatch):
         """1 if cycle start-up penalty is incurred; 0 Otherwise [-]"""
         return [
             round(self.blocks[t].incur_cycle_start.value, self.round_digits)
+            for t in self.blocks.index_set()
+        ]
+    
+    @property
+    def heater_thermal_power(self) -> list:
+        """Thermal power delivered by the heater [MWt]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get heater_thermal_power value if heater is not enabled.")
+        return [
+            round(self.blocks[t].heater_thermal_power.value, self.round_digits)
+            for t in self.blocks.index_set()
+        ]
+    
+    @property
+    def is_heater_operating(self) -> list:
+        """1 if electric heater is operating; 0 Otherwise [-]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get is_heater_operating value if heater is not enabled.")
+        return [
+            round(self.blocks[t].is_heater_operating.value, self.round_digits)
+            for t in self.blocks.index_set()
+        ]
+
+    @property
+    def is_receiver_heater_operating(self) -> list:
+        """1 if both receiver and electric heater is operating; 0 Otherwise [-] (for defocusing constraint)"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get is_receiver_heater_operating value if heater is not enabled.")
+        return [
+            round(self.blocks[t].is_receiver_heater_operating.value, self.round_digits)
+            for t in self.blocks.index_set()
+        ]
+    
+    @property
+    def incur_heater_start(self) -> list:
+        """1 if electric heater start-up penalty is incurred; 0 Otherwise [-]"""
+        if not self.heater_enabled:
+            raise ValueError("Cannot get incur_heater_start value if heater is not enabled.")
+        return [
+            round(self.blocks[t].incur_heater_start.value, self.round_digits)
             for t in self.blocks.index_set()
         ]

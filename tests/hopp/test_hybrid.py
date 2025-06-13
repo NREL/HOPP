@@ -1419,6 +1419,50 @@ def test_tower_pv_battery_hybrid(hybrid_config):
     # assert npvs.tower == approx(-13909363, 1e3)
     # assert npvs.hybrid == approx(-19216589, 1e3)
 
+def test_tower_with_heater_pv_hybrid(hybrid_config):
+    interconnection_size_kw_test = 50000
+    technologies_test = {
+        "tower": {
+            "cycle_capacity_kw": 50 * 1000,
+            "solar_multiple": 2.5,
+            "tes_hours": 12.0,
+            "heater_params": {
+                'heater_mult': 1.0,
+                'heater_efficiency': 95.0,
+                'f_q_dot_des_allowable_su': 1.0,
+                'hrs_startup_at_max_rate': 0.05,
+                'f_q_dot_heater_min': 0.1,
+                'heater_spec_cost': 50.0
+            },
+            "optimize_field_before_sim": False
+        },
+        "pv": {"system_capacity_kw": 50 * 1000},
+        "grid": {"interconnect_kw": interconnection_size_kw_test, "ppa_price": 0.12},
+    }
+
+    solar_hybrid = {key: technologies_test[key] for key in ("tower", "pv", "grid")}
+    hybrid_config["technologies"] = solar_hybrid
+    dispatch_options = {"is_test_start_year": True, "is_test_end_year": True}
+    hybrid_config["config"]["dispatch_options"] = dispatch_options
+    hi = HoppInterface(hybrid_config)
+    hybrid_plant = hi.system
+    hybrid_plant.tower.value("helio_width", 8.0)
+    hybrid_plant.tower.value("helio_height", 8.0)
+
+    hi.simulate()
+
+    aeps = hybrid_plant.annual_energies
+    npvs = hybrid_plant.net_present_values
+
+    assert aeps.pv == approx(112339520.44, 1e-3)
+    assert aeps.tower == approx(4302598.92, 5e-2)
+    assert aeps.hybrid == approx(116285140.98, 1e-2)
+
+    # TODO: check npv for csp would require a full simulation
+    assert npvs.pv == approx(45233832.23, 1e3)
+    # assert npvs.tower == approx(-13909363, 1e3)
+    # assert npvs.hybrid == approx(-19216589, 1e3)
+
 
 def test_hybrid_om_costs_error(hybrid_config):
     technologies = hybrid_config["technologies"]
