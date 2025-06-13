@@ -80,12 +80,14 @@ class PvDispatch(PowerSourceDispatch):
                 models by adding modeling components as attributes.
 
         """
-        self.obj = sum(
-            hybrid_blocks[t].time_weighting_factor
-            * self.blocks[t].time_duration
-            * self.blocks[t].cost_per_generation
-            * hybrid_blocks[t].pv_generation
-            for t in hybrid_blocks.index_set()
+        self.obj = Expression(
+            expr=sum(
+                hybrid_blocks[t].time_weighting_factor
+                * self.blocks[t].time_duration
+                * self.blocks[t].cost_per_generation
+                * hybrid_blocks[t].pv_generation
+                for t in hybrid_blocks.index_set()
+            )
         )
 
     def _create_variables(self, hybrid):

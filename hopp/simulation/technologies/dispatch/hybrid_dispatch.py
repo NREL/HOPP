@@ -191,10 +191,10 @@ class HybridDispatch(Dispatch):
                 self.power_sources[tech]._dispatch.min_operating_cost_objective(
                     self.blocks
                 )
-
+                # Copy the technology objective to the pyomo model.
+                setattr(m, tech + "_obj", self.power_sources[tech]._dispatch.obj)
                 # Assemble the objective as a linear summation.
-                obj += self.power_sources[tech]._dispatch.obj
-
+                obj += getattr(m, tech + "_obj")
             return obj
 
         self.model.objective = pyomo.Objective(

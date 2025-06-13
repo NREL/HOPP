@@ -59,22 +59,24 @@ class GridDispatch(Dispatch):
         )
 
     def min_operating_cost_objective(self, hybrid_blocks):
-        self.obj = sum(
-            hybrid_blocks[t].time_weighting_factor
-            * self.blocks[t].time_duration
-            * self.blocks[t].electricity_sell_price
-            * (
-                self.blocks[t].generation_transmission_limit
-                - hybrid_blocks[t].electricity_sold
-            )
-            + (
+        self.obj = pyomo.Expression(
+            expr=sum(
                 hybrid_blocks[t].time_weighting_factor
                 * self.blocks[t].time_duration
-                * self.blocks[t].electricity_purchase_price
-                * hybrid_blocks[t].electricity_purchased
+                * self.blocks[t].electricity_sell_price
+                * (
+                    self.blocks[t].generation_transmission_limit
+                    - hybrid_blocks[t].electricity_sold
+                )
+                + (
+                    hybrid_blocks[t].time_weighting_factor
+                    * self.blocks[t].time_duration
+                    * self.blocks[t].electricity_purchase_price
+                    * hybrid_blocks[t].electricity_purchased
+                )
+                + (self.blocks[t].epsilon * self.blocks[t].is_generating)
+                for t in hybrid_blocks.index_set()
             )
-            + (self.blocks[t].epsilon * self.blocks[t].is_generating)
-            for t in hybrid_blocks.index_set()
         )
 
     def _create_variables(self, hybrid):

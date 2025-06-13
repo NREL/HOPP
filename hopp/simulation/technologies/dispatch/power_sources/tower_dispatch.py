@@ -123,25 +123,26 @@ class TowerDispatch(CspDispatch):
                 "Minimum operating cost objective for TowerDispatch with heater enabled is not implemented."
             )
 
-        self.obj = sum(
-            hybrid_blocks[t].time_weighting_factor
-            * (
-                self.blocks[t].cost_per_field_start * self.blocks[t].incur_field_start
-                - (
-                    self.blocks[t].cost_per_field_generation
-                    * self.blocks[t].receiver_thermal_power
-                    * self.blocks[t].time_duration
-                )  # Trying to incentivize TES generation
-                + (
-                    self.blocks[t].cost_per_cycle_generation
-                    * self.blocks[t].cycle_generation
-                    * self.blocks[t].time_duration
+        self.obj = pyomo.Expression(
+            expr=sum(
+                hybrid_blocks[t].time_weighting_factor
+                * (
+                    self.blocks[t].cost_per_field_start * self.blocks[t].incur_field_start
+                    - (
+                        self.blocks[t].cost_per_field_generation
+                        * self.blocks[t].receiver_thermal_power
+                        * self.blocks[t].time_duration
+                    )  # Trying to incentivize TES generation
+                    + (
+                        self.blocks[t].cost_per_cycle_generation
+                        * self.blocks[t].cycle_generation
+                        * self.blocks[t].time_duration
+                    )
+                    + self.blocks[t].cost_per_cycle_start * self.blocks[t].incur_cycle_start
+                    + self.blocks[t].cost_per_change_thermal_input * self.blocks[t].cycle_thermal_ramp
                 )
-                + self.blocks[t].cost_per_cycle_start * self.blocks[t].incur_cycle_start
-                + self.blocks[t].cost_per_change_thermal_input
-                * self.blocks[t].cycle_thermal_ramp
+                for t in hybrid_blocks.index_set()
             )
-            for t in hybrid_blocks.index_set()
         )
 
     def _create_variables(self, hybrid):

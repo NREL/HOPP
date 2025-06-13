@@ -82,8 +82,7 @@ class PowerStorageDispatch(Dispatch):
                 * self.blocks[t].time_duration
                 * (
                     self.blocks[t].cost_per_charge * hybrid_blocks[t].battery_charge
-                    + self.blocks[t].cost_per_discharge
-                    * hybrid_blocks[t].battery_discharge
+                    + self.blocks[t].cost_per_discharge * hybrid_blocks[t].battery_discharge
                 )
                 for t in hybrid_blocks.index_set()
             )
@@ -101,19 +100,21 @@ class PowerStorageDispatch(Dispatch):
                 models by adding modeling components as attributes.
 
         """
-        objective = sum(
-            hybrid_blocks[t].time_weighting_factor
-            * self.blocks[t].time_duration
-            * (
-                self.blocks[t].cost_per_discharge * hybrid_blocks[t].battery_discharge
-                - self.blocks[t].cost_per_charge * hybrid_blocks[t].battery_charge
-            )  # Try to incentivize battery charging
-            for t in self.blocks.index_set()
-        )
-        if self.options.include_lifecycle_count:
-            objective += self.model.lifecycle_cost * sum(self.model.lifecycles)
+        def battery_cost_objective_rule(m):
+            objective = sum(
+                hybrid_blocks[t].time_weighting_factor
+                * self.blocks[t].time_duration
+                * (
+                    self.blocks[t].cost_per_discharge * hybrid_blocks[t].battery_discharge
+                    - self.blocks[t].cost_per_charge * hybrid_blocks[t].battery_charge
+                )  # Try to incentivize battery charging
+                for t in self.blocks.index_set()
+            )
+            if self.options.include_lifecycle_count:
+                objective += self.model.lifecycle_cost * sum(self.model.lifecycles)
+            return objective
 
-        self.obj = objective
+        self.obj = pyomo.Expression(rule=battery_cost_objective_rule)
 
     def _create_variables(self, hybrid):
         """Creates storage variables.
