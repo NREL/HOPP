@@ -292,7 +292,7 @@ class Clustering:
 
         #--- Read in price data
         hourly_data['price'] = np.ones(n_pts)
-        if self.price is None or self.price == {}:
+        if self.price is None or len(self.price) == 0:
             if self.weights['price'] > 0 or self.weights['price_prev'] > 0 or self.weights['price_next'] > 0:
                 print('Warning: Electricity price array was not provided. ' +
                     'Classification metrics will be calculated with a uniform price multiplier.')

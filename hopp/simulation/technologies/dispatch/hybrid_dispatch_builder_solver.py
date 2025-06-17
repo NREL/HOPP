@@ -546,16 +546,16 @@ class HybridDispatchBuilderSolver:
                             elif tech in ["battery"]:
                                 step = day * 24 * int(self.site.n_timesteps / 8760)
                                 initial_states[tech]["soc"].append(
-                                    self.power_sources[tech].Outputs.SOC[step]
+                                    self.power_sources[tech].outputs.SOC[step]
                                 )
 
             # After exemplar simulations, update to full annual generation array for dispatchable technologies
             for tech in self.power_sources.keys():
                 if tech in ["battery"]:
                     for key in ["gen", "P", "SOC"]:
-                        val = getattr(self.power_sources[tech].Outputs, key)
+                        val = getattr(self.power_sources[tech].outputs, key)
                         setattr(
-                            self.power_sources[tech].Outputs,
+                            self.power_sources[tech].outputs,
                             key,
                             list(
                                 self.clustering.compute_annual_array_from_cluster_exemplar_data(
