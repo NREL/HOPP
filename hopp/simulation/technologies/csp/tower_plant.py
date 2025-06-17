@@ -32,14 +32,14 @@ class HeaterConfig(BaseClass):
     Configuration class for electric heater.
 
     Args:
-        heater_mult: Heater multiple relative to design cycle thermal power [-]
+        heater_multiple: Heater multiple relative to design cycle thermal power [-]
         heater_efficiency: Heater electric to thermal efficiency [%]
         f_q_dot_des_allowable_su: Fraction of design power allowed during startup [-] 
         hrs_startup_at_max_rate: Duration of startup at max startup power [hr]
         f_q_dot_heater_min: Minimum allowable heater output as fraction of design [-]
         heater_spec_cost: Heater specific cost [$/kWht]
     """
-    heater_mult: float = field(validator=gt_zero)
+    heater_multiple: float = field(validator=gt_zero)
     heater_efficiency: float = field(validator=range_val(0.0, 100.0), default=100.0)
     f_q_dot_des_allowable_su: float = field(validator=range_val(0.0, 1.0), default=1.0)
     hrs_startup_at_max_rate: float = field(validator=gt_zero, default=0.25)
@@ -103,7 +103,7 @@ class TowerPlant(CspPlant):
             self.ssc.set({
                 'is_parallel_htr': 1,
                 'allow_heater_no_dispatch_opt': 1,  # Needed to allow heater operation without dispatch optimization (within SSC)
-                'heater_mult': self.heater_config.heater_mult,
+                'heater_mult': self.heater_config.heater_multiple,
                 'heater_efficiency': self.heater_config.heater_efficiency,
                 'f_q_dot_des_allowable_su': self.heater_config.f_q_dot_des_allowable_su,
                 'hrs_startup_at_max_rate': self.heater_config.hrs_startup_at_max_rate,
