@@ -101,6 +101,7 @@ class CspConfig(BaseClass):
         solar_multiple: Solar multiple [-]
         tes_hours: Full load hours of thermal energy storage [hrs]
         fin_model: Financial model for the specific technology
+        verbose: When *True*, prints additional information during simulation
         name: Configured name for this plant
     """
     tech_name: str = field(validator=contains(["tcsmolten_salt", "trough_physical"]))
@@ -108,6 +109,7 @@ class CspConfig(BaseClass):
     solar_multiple: float = field(validator=gt_zero)
     tes_hours: float = field(validator=gt_zero)
     fin_model: Optional[Union[dict, FinancialModelType]] = field(default=None)
+    verbose: bool = field(default=False)
     name: str = field(default="TowerPlant")
 
 
@@ -503,7 +505,8 @@ class CspPlant(PowerSource):
         # Inflate TES capacity, set near-zero startup requirements, and run ssc estimates
         original_values = {k: self.ssc.get(k) for k in ['tshours', 'rec_su_delay', 'rec_qf_delay']}
         self.ssc.set({'tshours': 100, 'rec_su_delay': 0.001, 'rec_qf_delay': 0.001})
-        print("Forecasting CSP thermal energy production...")
+        if self.config.verbose:
+            print("Forecasting CSP thermal energy production...")
         ssc_outputs = self.ssc.execute()
         self.ssc.set(original_values)
 

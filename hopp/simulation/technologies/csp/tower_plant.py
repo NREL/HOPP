@@ -205,12 +205,14 @@ class TowerPlant(CspPlant):
         if optimize_tower_field:
             # Run field, tower height, and receiver diameter and height optimization
             self.ssc.set({'field_model_type': 0})
-            print('Optimizing field layout, tower height, receiver diameter, and receiver height'
-                  ' and simulating flux and eta maps ...')
+            if self.config.verbose:
+                print('Optimizing field layout, tower height, receiver diameter, and receiver height'
+                      ' and simulating flux and eta maps ...')
         else:
             # Create field layout and generate flux and eta maps, but don't optimize field or tower
             self.ssc.set({'field_model_type': 1})
-            print('Generating field layout and simulating flux and eta maps ...')
+            if self.config.verbose:
+                print('Generating field layout and simulating flux and eta maps ...')
 
         original_values = {k: self.ssc.get(k) for k in['is_dispatch_targets', 'rec_clearsky_model', 'time_steps_per_hour', 'sf_adjust:hourly']}
         # set so unneeded dispatch targets and clearsky DNI are not required
@@ -220,7 +222,8 @@ class TowerPlant(CspPlant):
         tech_outputs = self.ssc.execute()
         if not tech_outputs["cmod_success"]:
             raise ValueError('PySSC simulation failed during layout and flux maps...')
-        print('Finished creating field layout and simulating flux and eta maps. # Heliostats = %d, Tower height = %.1fm, Receiver height = %.2fm, Receiver diameter = %.2fm'%
+        if self.config.verbose:
+            print('Finished creating field layout and simulating flux and eta maps. # Heliostats = %d, Tower height = %.1fm, Receiver height = %.2fm, Receiver diameter = %.2fm'%
              (tech_outputs['N_hel_calc'], tech_outputs['h_tower_calc'], tech_outputs['rec_height_calc'], tech_outputs['D_rec_calc']))
         self.ssc.set(original_values)
         eta_map = tech_outputs["eta_map_out"]

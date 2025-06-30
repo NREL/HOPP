@@ -436,7 +436,9 @@ class PySSC:
             self.pdll = CDLL(os.path.join(this_directory, "libs", 'ssc.so'))
         else:
             print('Platform not supported ', sys.platform)
-        print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call
+        # For debugging purposes, uncomment the following line to print the process ID
+        # This can be useful for attaching a debugger to the process
+        #print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call
         pass
 
     INVALID = 0
