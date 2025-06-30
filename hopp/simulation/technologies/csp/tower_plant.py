@@ -275,6 +275,28 @@ class TowerPlant(CspPlant):
         else:
             self.generate_field()
 
+        # This checks if the field and receiver combination is valid, this mimics a check within SSC. If this fails, SSC will fail.
+        rec_type = self.ssc.get('receiver_type')
+        heliostat_positions = self.ssc.get('helio_positions')
+        y_h_min = 1e6
+        y_h_max = -1e6
+        for hp in heliostat_positions:
+            y_h_min = min(y_h_min, hp[1])
+            y_h_max = max(y_h_max, hp[1])
+
+        is_cavity_field = False
+        if ((y_h_max - y_h_min) / max(abs(y_h_max), abs(y_h_min))) < 1.25:
+            is_cavity_field = True
+        
+        if is_cavity_field and rec_type == 0:
+            raise ValueError('External receiver specified, but cavity field detected. Either:' \
+            '\n- Change the receiver and tower dimensions' \
+            '\n- Turn on field optimization by setting optimize_field_before_sim to True')
+        elif not is_cavity_field and rec_type == 1:
+            raise ValueError('Cavity receiver specified, but surround field detected.' \
+            '\n- Change the receiver and tower dimensions' \
+            '\n- Turn on field optimization by setting optimize_field_before_sim to True')    
+
         super().setup_performance_model()
 
     @copydoc(CspPlant.calculate_total_installed_cost)
