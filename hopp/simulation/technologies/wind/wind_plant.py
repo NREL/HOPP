@@ -105,7 +105,7 @@ class WindConfig(BaseClass):
         validator=contains(["pysam", "floris"]),
         converter=(str.strip, str.lower)
     )
-    model_input_file: Optional[str] = field(default=None)
+    model_input_file: Optional[Union[str,dict]] = field(default=None)
     rating_range_kw: Tuple[int, int] = field(default=(1000, 3000))
     floris_config: Optional[Union[dict, str, Path]] = field(default=None)
     adjust_air_density_for_elevation: Optional[bool] = field(default=False)
@@ -186,7 +186,10 @@ class WindPlant(PowerSource):
                 system_model = Windpower.default(self.config_name)
             else:
                 # initialize system using pysam input file
-                input_dict = load_yaml(self.config.model_input_file)
+                if isinstance(self.config.model_input_file,str):
+                    input_dict = load_yaml(self.config.model_input_file)
+                else:
+                    input_dict = self.config.model_input_file
                 nTurbs = 0
                 try:
                     nTurbs = len(input_dict['Farm']['wind_farm_xCoordinates'])
@@ -200,20 +203,24 @@ class WindPlant(PowerSource):
                         }
                     print("Using wind layout found in model_input_file, changing layout_mode to custom.")
                 
-                system_model = Windpower.new()
-                system_model.assign(input_dict)
+                
+
                 user_provided_data = False if input_dict.get("Resource", {}).get("wind_resource_data",None) is None else True
                 user_provided_distribution = False if input_dict.get("Resource", {}).get("wind_resource_distribution",None) is None else True
-                user_provided_weibill = False if input_dict.get("Resource", {}).get("weibull_wind_speed:",None) is None else True
-                if not user_provided_data and not user_provided_distribution and not user_provided_weibill:
-                    system_model.value("wind_resource_data", self.site.wind_resource.data)
+                user_provided_weibull = False if input_dict.get("Resource", {}).get("weibull_wind_speed:",None) is None else True
+                input_dict.setdefault('Resource',{})
+                if not user_provided_data and not user_provided_distribution and not user_provided_weibull:
+                    input_dict['Resource'].update({"wind_resource_data": self.site.wind_resource.data})
                     user_provided_data = True
                 if user_provided_data:
-                    system_model.value("wind_resource_model_choice",0)
-                if user_provided_weibill:
-                    system_model.value("wind_resource_model_choice",1)
+                    input_dict['Resource'].setdefault("wind_resource_model_choice",0)
+                if user_provided_weibull:
+                    input_dict['Resource'].setdefault("wind_resource_model_choice",1)
                 if user_provided_distribution:
-                    system_model.value("wind_resource_model_choice",2)
+                    input_dict['Resource'].setdefault("wind_resource_model_choice",2)
+                
+                system_model = Windpower.default(self.config_name)
+                system_model.assign(input_dict)
 
             if financial_model is None:
                 # default
