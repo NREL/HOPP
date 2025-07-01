@@ -187,11 +187,33 @@ class WindPlant(PowerSource):
             else:
                 # initialize system using pysam input file
                 input_dict = load_yaml(self.config.model_input_file)
-
+                nTurbs = 0
+                try:
+                    nTurbs = len(input_dict['Farm']['wind_farm_xCoordinates'])
+                except KeyError:
+                    pass
+                if nTurbs==self.config.num_turbines:
+                    self.config.layout_mode = 'custom'
+                    self.config.layout_params = {
+                        'layout_x': input_dict['Farm']['wind_farm_xCoordinates'],
+                        'layout_y': input_dict['Farm']['wind_farm_yCoordinates'],
+                        }
+                    print("Using wind layout found in model_input_file, changing layout_mode to custom.")
+                
                 system_model = Windpower.new()
                 system_model.assign(input_dict)
-
-                system_model.value("wind_resource_data", self.site.wind_resource.data)
+                user_provided_data = False if input_dict.get("Resource", {}).get("wind_resource_data",None) is None else True
+                user_provided_distribution = False if input_dict.get("Resource", {}).get("wind_resource_distribution",None) is None else True
+                user_provided_weibill = False if input_dict.get("Resource", {}).get("weibull_wind_speed:",None) is None else True
+                if not user_provided_data and not user_provided_distribution and not user_provided_weibill:
+                    system_model.value("wind_resource_data", self.site.wind_resource.data)
+                    user_provided_data = True
+                if user_provided_data:
+                    system_model.value("wind_resource_model_choice",0)
+                if user_provided_weibill:
+                    system_model.value("wind_resource_model_choice",1)
+                if user_provided_distribution:
+                    system_model.value("wind_resource_model_choice",2)
 
             if financial_model is None:
                 # default
