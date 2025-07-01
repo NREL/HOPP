@@ -246,9 +246,12 @@ class WindLayout(BaseClass):
         if isinstance(self._system_model, Floris):
             self.turb_pos_x, self.turb_pos_y = self._system_model.wind_farm_layout
         else:
-            self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
-            self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
-
+            if 'wind_farm_xCoordinates' in self._system_model.Farm.export():
+                self.turb_pos_x = self._system_model.value("wind_farm_xCoordinates")
+                self.turb_pos_y = self._system_model.value("wind_farm_yCoordinates")
+            else:
+                self.turb_pos_x = [0]
+                self.turb_pos_y = [0]
         if isinstance(self.parameters, dict):
             if self.layout_mode == 'boundarygrid':
                 self.parameters = WindBoundaryGridParameters.from_dict(self.parameters)

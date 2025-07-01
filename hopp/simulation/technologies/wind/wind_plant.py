@@ -186,18 +186,12 @@ class WindPlant(PowerSource):
                 system_model = Windpower.default(self.config_name)
             else:
                 # initialize system using pysam input file
-                input_file_path = resource_file_converter(self.config.model_input_file)
-                input_dict = load_yaml(input_file_path)
+                input_dict = load_yaml(self.config.model_input_file)
 
                 system_model = Windpower.new()
                 system_model.assign(input_dict)
 
-                wind_farm_xCoordinates = input_dict['Farm']['wind_farm_xCoordinates']
-                nTurbs = len(wind_farm_xCoordinates)
                 system_model.value("wind_resource_data", self.site.wind_resource.data)
-
-                # turbine power curve (array of kW power outputs)
-                self.wind_turbine_powercurve_powerout = [1] * nTurbs            
 
             if financial_model is None:
                 # default
