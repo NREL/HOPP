@@ -190,11 +190,10 @@ class WindPlant(PowerSource):
                     input_dict = load_yaml(self.config.model_input_file)
                 else:
                     input_dict = self.config.model_input_file
-                nTurbs = 0
                 try:
                     nTurbs = len(input_dict['Farm']['wind_farm_xCoordinates'])
                 except KeyError:
-                    pass
+                    nTurbs = 0
                 if nTurbs==self.config.num_turbines:
                     self.config.layout_mode = 'custom'
                     self.config.layout_params = {
@@ -203,11 +202,10 @@ class WindPlant(PowerSource):
                         }
                     print("Using wind layout found in model_input_file, changing layout_mode to custom.")
                 
-                
-
-                user_provided_data = False if input_dict.get("Resource", {}).get("wind_resource_data",None) is None else True
-                user_provided_distribution = False if input_dict.get("Resource", {}).get("wind_resource_distribution",None) is None else True
-                user_provided_weibull = False if input_dict.get("Resource", {}).get("weibull_wind_speed:",None) is None else True
+                resource = input_dict.get("Resource", {})
+                user_provided_data = False if resource.get("wind_resource_data", None) is None else True
+                user_provided_distribution = False if resource.get("wind_resource_distribution", None) is None else True
+                user_provided_weibull = False if resource.get("weibull_wind_speed:", None) is None else True
                 input_dict.setdefault('Resource',{})
                 if not user_provided_data and not user_provided_distribution and not user_provided_weibull:
                     input_dict['Resource'].update({"wind_resource_data": self.site.wind_resource.data})
