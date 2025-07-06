@@ -3,6 +3,7 @@
 * Add `overwrite_fin_values` from H2Integrate to sync cost input methods
 * Bump minimum NREL-PySAM version to 7.0.0
 * Clarify that the `nominal_discount_rate` method of the `CustomFinancialModel` uses the Fisher equation
+* Bug-fix in `WindPlant` for handling model_input_file for PySAM simulations.
 
 ## Version 3.3.0, April 30, 2025
 
