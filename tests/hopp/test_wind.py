@@ -75,6 +75,46 @@ def test_wind_powercurve_pysam():
     assert all([a == b for a, b in zip(windspeeds_truth, windspeeds_calc)])
     assert all([a == b for a, b in zip(powercurve_truth, powercurve_calc)])
 
+def test_user_input_turbine_dict_pysam(site):
+    nTurbs = 10
+    pysam_model = windpower.default("WindpowerSingleowner")
+    pysam_default_model = pysam_model.export()
+    input_turbine_config = {'Turbine':pysam_default_model['Turbine']}
+    
+    config = WindConfig.from_dict({'num_turbines': nTurbs, "model_input_file": input_turbine_config})
+    model = WindPlant(site, config=config)
+
+    turbine_rated_power_kW = max(pysam_default_model['Turbine']['wind_turbine_powercurve_powerout'])
+    assert model.system_capacity_kw == nTurbs*turbine_rated_power_kW
+
+    model._system_model.execute(0)
+    assert model._system_model.Outputs.capacity_factor == approx(36.5,abs = 0.5)
+
+def test_user_input_turbine_file_pysam(site):
+    nTurbs = 10
+    pysam_turbine_input_filepath = str(ROOT_DIR.parent/"tests"/"hopp"/"inputs"/"pysam_turbine_input.yaml")
+    config = WindConfig.from_dict({'num_turbines': nTurbs, "model_input_file": pysam_turbine_input_filepath})
+    model = WindPlant(site, config=config)
+
+    testing_pysam_model = load_yaml(pysam_turbine_input_filepath)
+    turbine_rated_power_kW = max(testing_pysam_model['Turbine']['wind_turbine_powercurve_powerout'])
+    assert model.system_capacity_kw == nTurbs*turbine_rated_power_kW
+    model._system_model.execute(0)
+    assert model._system_model.Outputs.capacity_factor == approx(36.5,abs = 0.5)
+
+
+def test_user_input_pysam_file(site):
+    nTurbs = 32
+    pysam_input_filepath = str(ROOT_DIR.parent/"tests"/"hopp"/"inputs"/"pysam_simulation_input.yaml")
+    config = WindConfig.from_dict({'num_turbines': nTurbs, "model_input_file": pysam_input_filepath})
+    model = WindPlant(site, config=config)
+
+    testing_pysam_model = load_yaml(pysam_input_filepath)
+    turbine_rated_power_kW = max(testing_pysam_model['Turbine']['wind_turbine_powercurve_powerout'])
+    assert model.system_capacity_kw == nTurbs*turbine_rated_power_kW
+
+    model._system_model.execute(0)
+    assert model._system_model.Outputs.capacity_factor == approx(35.0,abs = 0.5)
 
 def test_changing_n_turbines_pysam(site):
     # test with gridded layout
