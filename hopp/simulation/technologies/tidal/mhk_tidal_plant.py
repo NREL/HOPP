@@ -19,10 +19,6 @@ class MHKTidalConfig(BaseClass):
         device_rating_kw (float): Rated power of the MHK device [kW]
         num_devices (int): Number of MHK tidal devices in the system
         tidal_power_curve (List[List[float]]): Power curve of tidal energy device as function of stream speeds [kW]
-        tidal_resource (List[List[float]]): Required by the PySAM MhkTidal module for initialization. Although this parameter 
-            is not actively used in HOPP's timeseries simulation mode, it must still be provided to fully 
-            instantiate the PySAM MhkTidal model.
-            Frequency distribution of resource as a function of stream speeds.
         fin_model (obj | dict): Optional financial model. Can be any of the following:
             - a dict representing a `CustomFinancialModel`
             - an object representing a `CustomFinancialModel` instance
@@ -36,7 +32,6 @@ class MHKTidalConfig(BaseClass):
     device_rating_kw: float = field(validator=gt_zero)
     num_devices: int = field(validator=gt_zero)
     tidal_power_curve: List[List[float]]
-    tidal_resource: List[List[float]]
     fin_model: Union[dict, CustomFinancialModel]
     loss_array_spacing: float = field(default=0., validator=range_val(0, 100))
     loss_resource_overprediction: float = field(default=0., validator=range_val(0, 100))
@@ -93,7 +88,6 @@ class MHKTidalPlant(PowerSource):
         self._system_model.device_rated_power = self.config.device_rating_kw
         self._system_model.value("number_devices",  self.config.num_devices)
         self._system_model.value("tidal_power_curve", self.config.tidal_power_curve)
-        self._system_model.value("tidal_resource", self.config.tidal_resource)
 
         # Losses
         loss_attributes = [
