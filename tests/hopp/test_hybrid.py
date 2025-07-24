@@ -449,7 +449,6 @@ def test_hybrid_tidal_only(hybrid_config, mhk_tidal_config, tidalsite, subtests)
             "device_rating_kw": mhk_tidal_config["device_rating_kw"],
             "num_devices": 2,
             "tidal_power_curve": mhk_tidal_config["tidal_power_curve"],
-            "tidal_resource": mhk_tidal_config["tidal_resource"],
             "fin_model": DEFAULT_FIN_CONFIG,
         },
         "grid": {
@@ -598,7 +597,6 @@ def test_hybrid_tidal_battery(hybrid_config, mhk_tidal_config,tidalsite, subtest
             "device_rating_kw": mhk_tidal_config["device_rating_kw"],
             "num_devices": 2,
             "tidal_power_curve": mhk_tidal_config["tidal_power_curve"],
-            "tidal_resource": mhk_tidal_config["tidal_resource"],
             "fin_model": DEFAULT_FIN_CONFIG,
         },
         "battery": {
