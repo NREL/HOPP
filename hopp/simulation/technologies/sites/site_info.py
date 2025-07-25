@@ -12,8 +12,10 @@ from shapely.validation import make_valid
 from fastkml import kml, KML
 import pyproj
 import utm
-from suntime import Sun
-from datetime import date, datetime, timedelta, timezone
+
+
+# from suntime import Sun
+# from datetime import date, datetime, timedelta, timezone
 
 from hopp.simulation.technologies.resource import (
     SolarResource,
@@ -36,6 +38,7 @@ from hopp.type_dec import (
 from hopp.simulation.base import BaseClass
 from hopp.utilities.validators import contains
 import hopp.simulation.technologies.sites.site_shape_tools as shape_tools
+
 from hopp import ROOT_DIR
 def plot_site(verts, plt_style, labels):
     for i in range(len(verts)):
@@ -258,64 +261,66 @@ class SiteInfo(BaseClass):
             # FIXME: this a hack
 
         self.use_bat_curtailment = bool(self.bat_curtailment)
-        if self.use_bat_curtailment:
-            # Parse input data for simulation
-            self.bat_curtailment_cut_in_speed = self.bat_curtailment["bat_curtailment_cut_in_speed"] # Cut in speed in m/s
-            self.curtail_start_month = self.bat_curtailment["curtail_start"].split("-")[0]  # start month of the curtailment (e.g. 07-15)
-            self.curtail_start_day = self.bat_curtailment["curtail_start"].split("-")[1]  # start day of the curtailment (e.g. 07-15)
-            self.curtail_end_month = self.bat_curtailment["curtail_end"].split("-")[0]  # start month of the curtailment (e.g. 10-15)
-            self.curtail_end_day = self.bat_curtailment["curtail_end"].split("-")[1]  # start day of the curtailment (e.g. 10-15)
-            self.curtailment_type = self.bat_curtailment["curtailment_type"] # type of curtailment, currently only support blanket curtailment
-            if self.tz is None:
-                raise ValueError("A time zone must be provided to run bat curtailment analysis")
-            # Note: you need time zone information for bat curtailment
-            timezone_info = timezone(np.sign(self.tz) * timedelta(hours=abs(self.tz)))
+        # if self.use_bat_curtailment:
+        #     # Parse input data for simulation
+        #     self.bat_curtailment_cut_in_speed = self.bat_curtailment["bat_curtailment_cut_in_speed"] # Cut in speed in m/s
+        #     self.curtail_start_month = self.bat_curtailment["curtail_start"].split("-")[0]  # start month of the curtailment (e.g. 07-15)
+        #     self.curtail_start_day = self.bat_curtailment["curtail_start"].split("-")[1]  # start day of the curtailment (e.g. 07-15)
+        #     self.curtail_end_month = self.bat_curtailment["curtail_end"].split("-")[0]  # start month of the curtailment (e.g. 10-15)
+        #     self.curtail_end_day = self.bat_curtailment["curtail_end"].split("-")[1]  # start day of the curtailment (e.g. 10-15)
+        #     self.curtailment_type = self.bat_curtailment["curtailment_type"] # type of curtailment, currently only support blanket curtailment
+        #     if self.tz is None:
+        #         raise ValueError("A time zone must be provided to run bat curtailment analysis")
+        #     # Note: you need time zone information for bat curtailment
+        #     timezone_info = timezone(np.sign(self.tz) * timedelta(hours=abs(self.tz)))
  
-            # TODO: add smart curtailment and informed curtailment 
-            if self.curtailment_type == "blanket":
-                # calculate
-                sun2 = Sun(self.lat,self.lon)
-                self.curtailment_schedule = np.zeros(self.n_timesteps)  # Only useful for multiples of 8760, does not account for leap years
+        #     # TODO: add smart curtailment and informed curtailment 
+        #     if self.curtailment_type == "blanket":
+        #         # calculate
+        #         sun2 = Sun(self.lat,self.lon)
+        #         self.curtailment_schedule = np.zeros(self.n_timesteps)  # Only useful for multiples of 8760, does not account for leap years
 
-                # calculate hours until you start curtailing 
-                year_start = datetime(self.year, 1, 1, 0, 0)
-                curtailment_start = datetime(self.year, int(self.curtail_start_month),int(self.curtail_start_day), 0, 0)
-                curtailment_end = datetime(self.year, int(self.curtail_end_month),int(self.curtail_end_day), 0, 0)
-                curtailment_date_list = [curtailment_start+timedelta(days=x) for x in range((curtailment_end-curtailment_start).days)]
-                print(curtailment_date_list)
-                print('time zone', self.tz)
+        #         # calculate hours until you start curtailing 
+        #         year_start = datetime(self.year, 1, 1, 0, 0)
+        #         curtailment_start = datetime(self.year, int(self.curtail_start_month),int(self.curtail_start_day), 0, 0)
+        #         curtailment_end = datetime(self.year, int(self.curtail_end_month),int(self.curtail_end_day), 0, 0)
+        #         curtailment_date_list = [curtailment_start+timedelta(days=x) for x in range((curtailment_end-curtailment_start).days)]
+        #         # print(curtailment_date_list)
+        #         # print('time zone', self.tz)
 
-                time_before_curtailment = curtailment_start - year_start
-                time_before_curtailment = int(time_before_curtailment.total_seconds() / 3600)
-                curtailment_time = curtailment_end - curtailment_start
-                curtailment_end_time = time_before_curtailment + int(curtailment_time.total_seconds()/3600)
-                  # This loop assumes you're simulation a full year and starting at Jan 1
-                sunset = sun2.get_sunset_time(datetime(self.year,int(self.curtail_start_month),int(self.curtail_start_day),0,0)).time().hour 
-                self.curtailment_schedule[(time_before_curtailment+sunset):time_before_curtailment+24] = self.bat_curtailment_cut_in_speed
-                current_time = time_before_curtailment+24
-                self.curtailment_schedule[current_time:curtailment_end_time-12] = self.bat_curtailment_cut_in_speed
-                for i in curtailment_date_list:
-                    sunrise = sun2.get_sunrise_time(i).astimezone(timezone_info).time().hour
-                    sunrise_min = sun2.get_sunrise_time(i).astimezone(timezone_info).time().minute
-                    sunset = sun2.get_sunset_time(i).astimezone(timezone_info).time().hour
-                    sunset_min = sun2.get_sunset_time(i).astimezone(timezone_info).time().minute
-                    if sunrise_min > 30:
-                        sunrise_time = sunrise +1
-                    else:
-                        sunrise_time = sunrise_time 
-                    if sunset_min > 30:
-                        sunset_time = sunset
-                    else:
-                        sunset_time = sunset - 1
-                    print("sunrise", sunrise, "sunset", sunset)
-                    print(sun2.get_sunrise_time(i).astimezone(timezone_info).time().minute)
-                    print(current_time + (sunrise_time), current_time + (sunset_time))
-                    self.curtailment_schedule[(current_time + (sunrise_time)):(current_time + (sunset_time))] = 0
-                    print(self.curtailment_schedule[current_time:current_time+24])
-                    current_time = current_time + 24
+        #         time_before_curtailment = curtailment_start - year_start
+        #         time_before_curtailment = int(time_before_curtailment.total_seconds() / 3600)
+        #         curtailment_time = curtailment_end - curtailment_start
+        #         curtailment_end_time = time_before_curtailment + int(curtailment_time.total_seconds()/3600)
+        #           # This loop assumes you're simulation a full year and starting at Jan 1
+        #         sunset = sun2.get_sunset_time(datetime(self.year,int(self.curtail_start_month),int(self.curtail_start_day),0,0)).time().hour 
+        #         self.curtailment_schedule[(time_before_curtailment+sunset):time_before_curtailment+24] = self.bat_curtailment_cut_in_speed
+        #         current_time = time_before_curtailment+24
+        #         self.curtailment_schedule[current_time:curtailment_end_time-12] = self.bat_curtailment_cut_in_speed
+        #         for i in curtailment_date_list:
+        #             sunrise = sun2.get_sunrise_time(i).astimezone(timezone_info).time().hour
+        #             sunrise_min = sun2.get_sunrise_time(i).astimezone(timezone_info).time().minute
+        #             sunset = sun2.get_sunset_time(i).astimezone(timezone_info).time().hour
+        #             sunset_min = sun2.get_sunset_time(i).astimezone(timezone_info).time().minute
+        #             sunrise_time = sunrise + 1
+        #             sunset_time = sunset - 1
+        #             # if sunrise_min > 30:
+        #             #     sunrise_time = sunrise + 2
+        #             # else:
+        #             #     sunrise_time = sunrise + 1
+        #             # if sunset_min > 30:
+        #             #     sunset_time = sunset - 1
+        #             # else:
+        #             #     sunset_time = sunset - 2
+        #             # print("sunrise", sunrise, "sunset", sunset)
+        #             # print(sun2.get_sunrise_time(i).astimezone(timezone_info).time().minute)
+        #             # print(current_time + (sunrise_time), current_time + (sunset_time))
+        #             self.curtailment_schedule[(current_time + (sunrise_time)):(current_time + (sunset_time))] = 0
+        #             # print(self.curtailment_schedule[current_time:current_time+24])
+        #             current_time = current_time + 24
 
-            else:
-                raise ValueError("Only blanket bat curtailment supported at this time.")
+        #     else:
+        #         raise ValueError("Only blanket bat curtailment supported at this time.")
 
         if self.wind:
             logger.info("Set up SiteInfo with wind resource file: {}".format(self.wind_resource.filename))

@@ -19,6 +19,14 @@ from hopp.utilities import load_yaml
 from hopp.utilities.log import hybrid_logger as logger
 import hopp.tools.design.wind.floris_helper_tools as floris_tools
 
+from hopp.utilities.utilities import write_yaml
+import floris.layout_visualization as layoutviz
+import matplotlib.pyplot as plt
+
+import pandas as pd
+from flasc.data_processing.dataframe_manipulations import is_day_or_night
+import csv
+
 @define
 class Floris(BaseClass):
     
@@ -89,6 +97,61 @@ class Floris(BaseClass):
         elif self.config.resource_parse_method == "weighted_average":
             self.speeds, self.wind_dirs = weighted_parse_resource_data(self.site.wind_resource)
         self.system_capacity = self.nTurbs * self.turb_rating
+
+        # save_data = np.zeros((len(self.speeds),2))
+        # save_data[:,0] = self.speeds
+        # save_data[:,1] = self.wind_dirs
+
+        # with open('speed_dir_data.csv', 'w', newline='') as fo:
+        #     writer = csv.writer(fo)
+        #     writer.writerows(save_data)
+
+        if self.site.use_bat_curtailment:
+            bat_dict = self.site.bat_curtailment
+            if bat_dict['curtailment_type'] == "blanket":
+                df = pd.read_csv(self.site.wind_resource.filename, skiprows=1)
+                df["time"] = pd.to_datetime(df.rename(
+                        columns={"Year":"year", "Month":"month", "Day":"day", "Hour":"hour", "Minute":"minute"}
+                    )
+                    [["year", "month", "day", "hour", "minute"]]
+                )
+                df["time_hrs"] = range(len(df))
+
+                # df = df.rename(columns={
+                #     f"Wind Direction at {height}m (deg)":"wd",
+                #     f"Wind Speed at {height}m (m/s)":"ws",
+                #     f"Air Temperature at {height}m (C)":"temp",
+                #     "Precipitation Rate 0m":"precip"
+                # })
+                df['ws_combined'] = self.speeds
+                df['wd_combined'] = self.wind_dirs
+
+                df_dn = is_day_or_night(
+                    df,
+                    self.site.wind_resource.latitude,
+                    self.site.wind_resource.longitude,
+                    sunrise_altitude=self.site.elev,
+                    sunset_altitude=self.site.elev,
+                    datetime_column="time"
+                    )
+                start_date = f"{self.site.wind_resource.year}-"+bat_dict["curtail_start"]
+                end_date = f"{self.site.wind_resource.year}-"+bat_dict["curtail_end"]
+                ws_low = -1
+                ws_high = bat_dict["bat_curtailment_cut_in_speed"]
+                df["date_cond"] = (df["time"] >= start_date) & (df["time"] <= end_date)
+                df["night_cond"] = ~df_dn["is_day"]
+                df["ws_cond"] = (df["ws_combined"] > ws_low) & (df["ws_combined"] < ws_high)
+
+                df["blanket_curtailed"] = df["date_cond"] & df["night_cond"] & df["ws_cond"]
+
+                self.curtailment_schedule = df["blanket_curtailed"].values
+                # fig = plt.figure()
+                # plt.plot(self.curtailment_schedule)
+                # plt.show()
+                # print(self.curtailment_schedule)
+
+            else:
+                raise ValueError("Only blanket bat curtailment supported at this time.")
 
         # time to simulate
         if len(self.config.timestep) > 0:
@@ -255,8 +318,10 @@ class Floris(BaseClass):
             wind_speeds=self.speeds[self.start_idx:self.end_idx],
             turbulence_intensities=self.fi.core.flow_field.turbulence_intensities[0]
         )
+        print('Wind Speeds', self.speeds[5790:5810])
+        print('Wind Direction', self.wind_dirs[0:10])
 
-        self.fi.set(wind_data=time_series)
+        self.fi.set(wind_data=time_series, reference_wind_height=self.site.wind_resource.hub_height_meters)
         self.fi.run()
 
         power_turbines[:, self.start_idx:self.end_idx] = self.fi.get_turbine_powers().reshape(
@@ -265,13 +330,14 @@ class Floris(BaseClass):
         power_farm[self.start_idx:self.end_idx] = self.fi.get_farm_power().reshape(
             (self.end_idx - self.start_idx)
         )
+        print('Wind Power', power_farm[5790:5810])
 
         operational_efficiency = ((100 - self._operational_losses)/100)
         if self.site.use_bat_curtailment:
-            wind_speed_difference = self.speeds[self.start_idx:self.end_idx] - self.site.curtailment_schedule[self.start_idx:self.end_idx]
-            ws_power_zip = zip(wind_speed_difference,power_farm[self.start_idx:self.end_idx])
-            power_farm[self.start_idx:self.end_idx] = [x[1]*0 if x[0]<0 else x[1] for x in ws_power_zip]
-
+            power_curtail_zip = zip(self.curtailment_schedule, power_farm)
+            print(self.curtailment_schedule[5790:5810])
+            power_farm[self.start_idx:self.end_idx] = [x[1]*0 if x[0] else x[1] for x in power_curtail_zip]
+        print('Wind Power', power_farm[5790:5810])
         # Adding losses from PySAM defaults (excluding turbine and wake losses)
         self.gen = power_farm * operational_efficiency / 1000 # kW
 

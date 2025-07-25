@@ -9,6 +9,8 @@ technologies:
     model_name: floris
     timestep: [0, 8760]
     floris_config: bat_inputs/gch.yaml
+    layout_mode: floris_layout
+
   # battery:
   #   system_capacity_kwh: 80000
   #   system_capacity_kw: 20000
