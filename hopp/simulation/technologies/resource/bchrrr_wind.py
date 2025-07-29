@@ -66,7 +66,7 @@ class BCHRRRWindData(Resource):
             return 
         
         if self.use_hpc:
-            self.calculate_heights_to_download()
+            self.data_hub_heights = self.calculate_heights_to_download()
 
             self.hpc_resource()
             # Pull data from HPC Wind Toolkit dataset
@@ -255,11 +255,38 @@ class BCHRRRWindData(Resource):
 
     @Resource.data.setter
     def data(self, data_info):
-        """
-        Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
-        """
-        if isinstance(data_info,dict):
-            self._data = data_info
-        if isinstance(data_info,(str, Path)):
-            resource_heights = [k for k in self.file_resource_heights.keys()]
-            self._data = combine_wind_files(str(data_info),resource_heights)
+
+        if self.use_hpc:
+            """Sets data property with wind resource data formatted for SAM
+
+                data (dict):
+                    :key heights (list(float)): floats corresponding to hub-height for 'data' entry.
+                        ex: [100, 100, 100, 100, 120, 120, 120, 120]
+                    :key fields (list(int)): integers corresponding to data type for 'data' entry
+                        ex: [1, 2, 3, 4, 1, 2, 3, 4]
+                        for each field (int) the corresponding data is:
+                        - 1: Ambient temperature in degrees Celsius
+                        - 2: Atmospheric pressure in in atmospheres.
+                        - 3: Wind speed in meters per second (m/s)
+                        - 4: Wind direction in degrees east of north (degrees).
+                    :key data (list(list(floats)): 8760 list with data of corresponding field and hub-height
+                        ex. data[timestep] is [-23.5, 0.65, 7.6, 261.2, -23.7, 0.65, 7.58, 261.1]
+                            - -23.5 is temperature at 100m at timestep
+                            - 7.6 is wind speed at 100m at timestep
+                            - 7.58 is wind speed at 120m at timestep
+            """
+            dic = {
+                'heights': [float(h) for h in self.data_hub_heights for i in range(4)],
+                'fields':  [1, 2, 3, 4] * len(self.data_hub_heights),
+                'data':    data_info
+                }
+            self._data = dic  
+        else:       
+            """
+            Sets the wind resource data to a dictionary in SAM Wind format (see Pysam.ResourceTools.SRW_to_wind_data)
+            """   
+            if isinstance(data_info,dict):
+                self._data = data_info
+            if isinstance(data_info,(str, Path)):
+                resource_heights = [k for k in self.file_resource_heights.keys()]
+                self._data = combine_wind_files(str(data_info),resource_heights)
