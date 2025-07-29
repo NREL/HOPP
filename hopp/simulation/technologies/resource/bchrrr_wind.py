@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 from typing import Union, Optional, List
 import urllib.parse
+from rex import WindX
+from rex.sam_resource import SAMResource
+import numpy as np 
 
 from attrs import define, field
 
@@ -12,6 +15,7 @@ from hopp import ROOT_DIR
 from hopp.tools.resource.pysam_wind_tools import combine_wind_files
 
 BCHRRR_BASE_URL = "https://developer.nrel.gov/api/wind-toolkit/v2/wind/wtk-bchrrr-v1-0-0-download.csv?"
+BCHRRR_HPC_BASE = "/datasets/WIND/HRRR/bchrrr_conus_"
 
 @define
 class BCHRRRWindData(Resource):    
@@ -26,7 +30,8 @@ class BCHRRRWindData(Resource):
             filepath (Union[str, Path], optional): file path of resource file to load
             use_api (bool, optional): Make an API call even if there's an existing file. Defaults to False.
             resource_data (Optional[dict], optional): dictionary of preloaded and formatted wind resource data. Defaults to None.
-            kwargs: extra kwargs
+            use_hpc (bool, Optional): use hpc bchrrr data or pull API data. Defaults to API
+           kwargs: extra kwargs
         """
     
     lat: float = field()
@@ -36,12 +41,14 @@ class BCHRRRWindData(Resource):
 
     #: the hub-height for wind resource data (meters)
     hub_height_meters: float = field(validator=range_val(10.0, 200.0))
+
     
     # OPTIONAL INPUTS
     path_resource: Optional[Union[str, Path]] = field(default = ROOT_DIR / "simulation" / "resource_files")
     filename: Optional[Union[str, Path]] = field(default = None)
     use_api: Optional[bool] = field(default = False)
     resource_data: Optional[dict] = field(default = None)
+    use_hpc: Optional[bool] = field(default = False)
 
     #: dictionary of heights and filenames to download from Wind Toolkit
     file_resource_heights: dict = field(default = None)
@@ -58,21 +65,32 @@ class BCHRRRWindData(Resource):
             self.data = self.resource_data
             return 
         
-        # if resource_data is not provided, download or load resource data
-        if isinstance(self.path_resource,str):
-            self.path_resource = Path(self.path_resource).resolve()
-        if self.path_resource.parts[-1]!="wind":
-            self.path_resource = self.path_resource / 'wind'
-
-        if self.filename is None:
+        if self.use_hpc:
             self.calculate_heights_to_download()
 
-        self.check_download_dir()
+            self.hpc_resource()
+            # Pull data from HPC Wind Toolkit dataset
+            self.download_resource_hpc()
 
-        if not os.path.isfile(self.filename) or self.use_api:
-            self.download_resource()
-        
-        self.format_data()
+            # Set wind resource data into SAM/PySAM digestible format
+            self.format_data_hpc()    
+        else:
+
+            # if resource_data is not provided, download or load resource data
+            if isinstance(self.path_resource,str):
+                self.path_resource = Path(self.path_resource).resolve()
+            if self.path_resource.parts[-1]!="wind":
+                self.path_resource = self.path_resource / 'wind'
+
+            if self.filename is None:
+                self.calculate_heights_to_download()
+
+            self.check_download_dir()
+
+            if not os.path.isfile(self.filename) or self.use_api:
+                self.download_resource()
+            
+            self.format_data()
         
     def calculate_heights_to_download(self):
         """
@@ -94,19 +112,23 @@ class BCHRRRWindData(Resource):
                     break
             heights[0] = height_low
             heights.append(height_high)
+        
+        if self.use_hpc:
+            return heights
+        else:
 
-        filename_base = f"{self.latitude}_{self.longitude}_BC_HRRR_{self.year}_{self.interval}min"
-        file_resource_full = filename_base
-        file_resource_heights = dict()
+            filename_base = f"{self.latitude}_{self.longitude}_BC_HRRR_{self.year}_{self.interval}min"
+            file_resource_full = filename_base
+            file_resource_heights = dict()
 
-        for h in heights:
-            h_int = int(h)
-            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.csv')
-            file_resource_full += f'_{h_int}m'
-        file_resource_full += ".csv"
+            for h in heights:
+                h_int = int(h)
+                file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.csv')
+                file_resource_full += f'_{h_int}m'
+            file_resource_full += ".csv"
 
-        self.file_resource_heights = file_resource_heights
-        self.filename = self.path_resource / file_resource_full
+            self.file_resource_heights = file_resource_heights
+            self.filename = self.path_resource / file_resource_full
 
     def update_height(self, hub_height_meters):
         self.hub_height_meters = hub_height_meters
@@ -139,6 +161,88 @@ class BCHRRRWindData(Resource):
             raise ValueError('Unable to download wind data')
 
         return success
+    
+    def hpc_resource(self):
+        """
+        Downloads the wind data from the BC-HRRR dataset hosted on the HPC
+        """
+        self.bchrrr_file = BCHRRR_HPC_BASE + f"{self.year}.h5"
+
+        # Check for valid filepath for Wind Toolkit file
+        if not os.path.isfile(self.bchrrr_file):
+            raise FileNotFoundError(f"Cannot find Wind Toolkit .h5 file, filepath {self.bchrrr_file} does not exist")
+        
+     
+
+    def download_resource_hpc(self):
+        """load BCHRRR h5 file using rex and get wind resource data for location
+        specified by (self.lat, self.lon)
+        """
+        # NOTE: Current setup of files on HPC WINDToolkit v1.0.0 = 2007-2013, v1.1.0 = 2014
+    
+        # Open file with rex WindX object
+        with WindX(self.bchrrr_file, hsds=False) as f:
+            # get gid of location closest to given lat/lon coordinates and timezone offset
+            site_gid = f.lat_lon_gid((self.latitude, self.longitude))
+            time_zone = f.meta['timezone'].iloc[site_gid]
+
+            # instantiate temp dictionary to hold each attributes dataset
+            self.wind_dict = {}
+            # loop through hub heights to download, capture datasets
+            # NOTE: datasets are not auto shifted by timezone offset 
+            # -> wrap extraction in SAMResource.roll_timeseries(input_array, timezone, #steps in an hour=1) to roll timezones
+            # NOTE: pressure datasets unit = Pa, convert to atm via division by 101325
+            for h in self.data_hub_heights:
+                self.wind_dict['temperature_{height}m_arr'.format(height=h)] = SAMResource.roll_timeseries((f['temperature_{height}m'.format(height=h), :, site_gid]), time_zone, 1)
+                self.wind_dict['pressure_{height}m_arr'.format(height=h)] = SAMResource.roll_timeseries((f['pressure_{height}m'.format(height=h), :, site_gid]/101325), time_zone, 1)
+                self.wind_dict['windspeed_{height}m_arr'.format(height=h)] = SAMResource.roll_timeseries((f['windspeed_{height}m'.format(height=h), :, site_gid]), time_zone, 1)
+                self.wind_dict['winddirection_{height}m_arr'.format(height=h)] = SAMResource.roll_timeseries((f['winddirection_{height}m'.format(height=h), :, site_gid]), time_zone, 1)    
+
+            self.site_gid = site_gid
+
+    def format_data_hpc(self):
+        # Remove data from feb29 on leap years
+        if (self.year % 4) == 0:
+            feb29 = np.arange(1416,1440)
+            for key, value in self.wind_dict.items():
+                self.wind_dict[key] = np.delete(value, feb29)
+
+        # round to desired precision and concatenate data into format needed for data dictionary
+        if len(self.data_hub_heights) == 2:
+            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. 
+            # If not sensitive, can remove following 8 lines of code to increase computational efficiency
+            self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
+            self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=2)
+            self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=3)
+            self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
+            self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[1])] = np.round((self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[1])]), decimals=1)
+            self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[1])] = np.round((self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[1])]), decimals=2)
+            self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[1])] = np.round((self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[1])]), decimals=3)
+            self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[1])] = np.round((self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[1])]), decimals=1)
+            # combine all data into one 2D list
+            self.combined_data = [list(a) for a in zip(self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[1])],
+                                                       self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[1])],
+                                                       self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[1])],
+                                                       self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[1])])]
+
+        elif len(self.data_hub_heights) == 1:
+            # NOTE: Unsure if SAM/PySAM is sensitive to data types ie: floats with long precision vs to 2 or 3 decimals. 
+            # If not sensitive, can remove following 4 lines of code to increase computational efficiency
+            self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
+            self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=2)
+            self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=3)
+            self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])] = np.round((self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])]), decimals=1)
+            # combine all data into one 2D list
+            self.combined_data = [list(a) for a in zip(self.wind_dict['temperature_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['pressure_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['windspeed_{h}m_arr'.format(h=self.data_hub_heights[0])],
+                                                       self.wind_dict['winddirection_{h}m_arr'.format(h=self.data_hub_heights[0])])]
+        self.data = self.combined_data
+    
 
     def format_data(self):
         """

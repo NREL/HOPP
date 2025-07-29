@@ -494,10 +494,17 @@ class SiteInfo(BaseClass):
             else:
                 raise ValueError("Invalid entry for `wind_resource_origin`, must be either 'WTK', 'TAP' or 'BC-HRRR'")
         elif self.renewable_resource_origin == "HPC":
-            return HPCWindData(wind_lat, wind_lon, wind_year, 
-                              wind_turbine_hub_ht=self.hub_height,
-                              wtk_source_path=self.wtk_source_path, 
-                              filepath=self.wind_resource_file)
+            if self.wind_resource_origin == "BC-HRRR":
+                 return BCHRRRWindData(wind_lat, wind_lon, wind_year, 
+                                     hub_height_meters=self.hub_height,
+                                     path_resource=self.path_resource, 
+                                     filename=self.wind_resource_file,
+                                     use_hpc=True)
+            else:               
+                return HPCWindData(wind_lat, wind_lon, wind_year, 
+                                wind_turbine_hub_ht=self.hub_height,
+                                wtk_source_path=self.wtk_source_path, 
+                                filepath=self.wind_resource_file)
 
     # TODO: determine if the below functions are obsolete
     @property
