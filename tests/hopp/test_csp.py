@@ -410,7 +410,7 @@ def test_tower_with_electric_heater(site):
     # Add electric heater
     heater_config = {
         'is_parallel_htr': 1,               # Enable parallel heater
-        'heater_multiple': 1.0,             # [-] Set heater multiple to 1.0
+        'heater_mult': 1.0,             # [-] Set heater multiple to 1.0
         'heater_efficiency': 95.0,          # [%] Set heater efficiency to 99%
         'f_q_dot_des_allowable_su': 1.0,    # [-] Fraction of design power allowed during startup
         'hrs_startup_at_max_rate': 0.25,    # [hr] Duration of startup at max startup power

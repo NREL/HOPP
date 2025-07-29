@@ -1427,7 +1427,7 @@ def test_tower_with_heater_pv_hybrid(hybrid_config):
             "solar_multiple": 2.5,
             "tes_hours": 12.0,
             "heater_params": {
-                'heater_multiple': 1.0,
+                'heater_mult': 1.0,
                 'heater_efficiency': 95.0,
                 'f_q_dot_des_allowable_su': 1.0,
                 'hrs_startup_at_max_rate': 0.05,

@@ -1086,7 +1086,7 @@ class HybridSimulation(BaseClass):
         Variable O&M, $/kW
         """
         return self._aggregate_financial_output("om_variable_expense", 1)
-
+    
     @property
     def om_total_expenses(self):
         """

@@ -281,7 +281,7 @@ def test_tower_with_heater_dispatch(site):
     expected_objective = 115787.485
     dispatch_n_look_ahead = 48
 
-    technologies['tower']['heater_params'] = {'heater_multiple': 1.0}
+    technologies['tower']['heater_params'] = {'heater_mult': 1.0}
 
     config = TowerConfig.from_dict(technologies['tower'])
     tower = TowerPlant(site, config=config)
@@ -991,7 +991,7 @@ def test_desired_schedule_with_heater_dispatch(site):
                                  'solar_multiple': 2.0,
                                  'tes_hours': 10.0,
                                  'heater_params': {
-                                     'heater_multiple': 1.0}
+                                     'heater_mult': 1.0}
                                  }
 
     tower_pv_battery['pv'] = {'system_capacity_kw': 80 * 1000}
