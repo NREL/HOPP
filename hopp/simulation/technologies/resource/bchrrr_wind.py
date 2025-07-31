@@ -64,8 +64,15 @@ class BCHRRRWindData(Resource):
         if isinstance(self.resource_data,dict):
             self.data = self.resource_data
             return 
+        # if resource_data is not provided, download or load resource data
+        if isinstance(self.path_resource,str):
+            self.path_resource = Path(self.path_resource).resolve()
+        if self.path_resource.parts[-1]!="wind":
+            self.path_resource = self.path_resource / 'wind'
         
         if self.use_hpc:
+            # Remove kestrel prefix for path
+            self.path_resource = Path(*self.path_resource.parts[2:])
             self.data_hub_heights = self.calculate_heights_to_download()
 
             self.hpc_resource()
@@ -75,12 +82,6 @@ class BCHRRRWindData(Resource):
             # Set wind resource data into SAM/PySAM digestible format
             self.format_data_hpc()    
         else:
-
-            # if resource_data is not provided, download or load resource data
-            if isinstance(self.path_resource,str):
-                self.path_resource = Path(self.path_resource).resolve()
-            if self.path_resource.parts[-1]!="wind":
-                self.path_resource = self.path_resource / 'wind'
 
             if self.filename is None:
                 self.calculate_heights_to_download()
@@ -113,22 +114,21 @@ class BCHRRRWindData(Resource):
             heights[0] = height_low
             heights.append(height_high)
         
+        filename_base = f"{self.latitude}_{self.longitude}_BC_HRRR_{self.year}_{self.interval}min"
+        file_resource_full = filename_base
+        file_resource_heights = dict()
+
+        for h in heights:
+            h_int = int(h)
+            file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.csv')
+            file_resource_full += f'_{h_int}m'
+        file_resource_full += ".csv"
+
+        self.file_resource_heights = file_resource_heights
+        self.filename = self.path_resource / file_resource_full
+
         if self.use_hpc:
             return heights
-        else:
-
-            filename_base = f"{self.latitude}_{self.longitude}_BC_HRRR_{self.year}_{self.interval}min"
-            file_resource_full = filename_base
-            file_resource_heights = dict()
-
-            for h in heights:
-                h_int = int(h)
-                file_resource_heights[h_int] = self.path_resource/(filename_base + f'_{h_int}m.csv')
-                file_resource_full += f'_{h_int}m'
-            file_resource_full += ".csv"
-
-            self.file_resource_heights = file_resource_heights
-            self.filename = self.path_resource / file_resource_full
 
     def update_height(self, hub_height_meters):
         self.hub_height_meters = hub_height_meters
