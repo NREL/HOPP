@@ -1171,6 +1171,7 @@ class HybridSimulation(BaseClass):
                 outputs['Missed Scheduled Load (%)'] = self.grid.missed_load_percentage
                 outputs['Schedule Curtailment year 1 (MWh)'] = sum(self.grid.schedule_curtailed[0:8760])/1.e3
                 outputs['Schedule Curtailment (%)'] = self.grid.schedule_curtailed_percentage
+                outputs['Load Capacity Factor (%)'] = self.grid.capacity_factor_load
 
         attr_map = {'annual_energies': {'name': 'AEP (GWh)', 'scale': 1/1e6},
                     'capacity_factors': {'name': 'Capacity Factor (-)'},

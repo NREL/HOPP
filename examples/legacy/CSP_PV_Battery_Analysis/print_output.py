@@ -85,3 +85,4 @@ def print_hybrid_output(hybrid: HybridSimulation):
         print("\tMissed load percentage [%]: {:.2f}".format(hybrid.grid.missed_load_percentage))
         print("\tSchedule curtailed [MWh]: {:.2f}".format(sum(hybrid.grid.schedule_curtailed[0:8760])/1.e3))
         print("\tSchedule curtailed percentage [%]: {:.2f}".format(hybrid.grid.schedule_curtailed_percentage))
+        print("\tLoad Capacity Factor [%]: {:.2f}".format(hybrid.grid.capacity_factor_load))
