@@ -72,7 +72,7 @@ class BCHRRRWindData(Resource):
         
         if self.use_hpc:
             # Remove kestrel prefix for path
-            self.path_resource = Path(*self.path_resource.parts[2:])
+            self.path_resource = '/' / Path(*self.path_resource.parts[2:])
             self.data_hub_heights = self.calculate_heights_to_download()
 
             self.hpc_resource()

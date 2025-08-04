@@ -109,15 +109,8 @@ class Floris(BaseClass):
         if self.site.use_bat_curtailment:
             bat_dict = self.site.bat_curtailment
             if bat_dict['curtailment_type'] == "blanket":
-                wind_resource_dict = self.site.wind_resource.__dict__
-                keys_to_pull = ["Year","Month","Day","Hour","Minute"]
-                df = pd.DataFrame(wind_resource_dict, columns=["Year","Month","Day","Hour","Minute"])
-                
-                df["time"] = pd.to_datetime(df.rename(
-                        columns={"Year":"year", "Month":"month", "Day":"day", "Hour":"hour", "Minute":"minute"}
-                    )
-                    [["year", "month", "day", "hour", "minute"]]
-                )
+                df = pd.read_csv(self.site.wind_resource.filename, skiprows=1)
+
                 df["time_hrs"] = range(len(df))
 
                 # df = df.rename(columns={
