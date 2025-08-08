@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict, Union, TYPE_CHECKING
 
 import pyomo.environ as pyomo
 from pyomo.environ import units as u
@@ -8,7 +8,10 @@ import PySAM.Singleowner as Singleowner
 from hopp.simulation.technologies.dispatch.power_storage.simple_battery_dispatch_heuristic import (
     SimpleBatteryDispatchHeuristic,
 )
-
+if TYPE_CHECKING:
+    from hopp.simulation.technologies.dispatch.hybrid_dispatch_builder_solver import (
+        HybridDispatchOptions
+    )
 
 class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
     """Operates the battery based on heuristic rules to meet the demand profile based power available from power generation profiles and
@@ -26,7 +29,7 @@ class HeuristicLoadFollowingDispatch(SimpleBatteryDispatchHeuristic):
         financial_model: Singleowner.Singleowner,
         fixed_dispatch: Optional[List] = None,
         block_set_name: str = "heuristic_load_following_battery",
-        dispatch_options: Optional[dict] = None,
+        dispatch_options: Optional[Union[Dict, "HybridDispatchOptions"]] = None,
     ):
         """Initialize HeuristicLoadFollowingDispatch.
 
