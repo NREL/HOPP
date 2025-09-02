@@ -111,8 +111,12 @@ class Floris(BaseClass):
             if bat_dict['curtailment_type'] == "blanket":
                 df = pd.read_csv(self.site.wind_resource.filename, skiprows=1)
 
+                df["time"] = pd.to_datetime(df.rename(
+                        columns={"Year":"year", "Month":"month", "Day":"day", "Hour":"hour", "Minute":"minute"}
+                    )
+                    [["year", "month", "day", "hour", "minute"]]
+                )
                 df["time_hrs"] = range(len(df))
-
                 # df = df.rename(columns={
                 #     f"Wind Direction at {height}m (deg)":"wd",
                 #     f"Wind Speed at {height}m (m/s)":"ws",
@@ -126,8 +130,8 @@ class Floris(BaseClass):
                     df,
                     self.site.wind_resource.latitude,
                     self.site.wind_resource.longitude,
-                    sunrise_altitude=self.site.elev,
-                    sunset_altitude=self.site.elev,
+                    sunrise_altitude=0,
+                    sunset_altitude=0,
                     datetime_column="time"
                     )
                 start_date = f"{self.site.wind_resource.year}-"+bat_dict["curtail_start"]
