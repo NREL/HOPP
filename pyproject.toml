@@ -42,8 +42,6 @@ dependencies = [
     "scipy",
     "shapely>=2",
     "setuptools",
-    "timezonefinder",
-    "urllib3",
     "openpyxl",
     "attrs",
     "utm",

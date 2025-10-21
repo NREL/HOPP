@@ -27,7 +27,6 @@ requirements:
     - requests
     - scipy
     - shapely
-    - timezonefinder
     - urllib3
   run:
     - python
@@ -44,7 +43,6 @@ requirements:
     - requests
     - scipy
     - shapely
-    - timezonefinder
     - urllib3
   run-constrained:
     - global_land_mask

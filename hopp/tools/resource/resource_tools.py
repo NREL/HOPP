@@ -10,13 +10,11 @@ Functionality includes:
 
 from datetime import datetime
 from pytz import timezone, utc
-from timezonefinder import TimezoneFinder
 from global_land_mask import globe
 from shapely.geometry import shape
 from shapely.prepared import prep
 from shapely.geometry import Point
 import requests
-import pandas as pd
 
 
 def get_country(lat, lon, geo_data):
@@ -72,6 +70,7 @@ def filter_sites(site_details, location='usa only'):
 
 
 def get_offset(lat, long):
+    from timezonefinder import TimezoneFinder
     """
     returns the timezone offset for a given lat/long
     :param lat:

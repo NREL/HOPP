@@ -8,16 +8,23 @@ from shapely.affinity import translate
 from shapely.geometry import Point
 from shapely.geometry import Polygon, MultiPolygon, MultiPoint
 from shapely.ops import unary_union
-import timezonefinder
 from pysolar.solar import *
 from pvmismatch import *
 
 from hopp.simulation.technologies.layout.pv_module import *
 
 
+
+
 def get_time_zone(lat: float,
                   lon: float
                   ) -> pytz.tzinfo:
+    try:
+        import timezonefinder
+    except ImportError:
+        raise ImportError("timezonefinder is required for shadow flicker calculations. "
+                        "Please install it via pip: pip install timezonefinder")
+
     timezone_str = timezonefinder.TimezoneFinder().certain_timezone_at(lat=lat, lng=lon)
     if timezone_str is None:
         raise ValueError("Could not determine the time zone")
