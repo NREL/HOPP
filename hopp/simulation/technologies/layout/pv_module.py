@@ -4,7 +4,7 @@ from typing import Union
 import PySAM.Pvsamv1 as pv_detailed
 import PySAM.Pvwattsv8 as pv_simple
 
-from hopp.tools.utils import flatten_dict
+from hopp.utilities import flatten_dict
 
 # PVWatts default module
 # pvmismatch standard module description

@@ -19,7 +19,7 @@ from hopp.simulation.technologies.layout.pv_inverter import (
 )
 from hopp.simulation.base import BaseClass
 
-from hopp.tools.utils import flatten_dict
+from hopp.utilities import flatten_dict
 
 
 @define
