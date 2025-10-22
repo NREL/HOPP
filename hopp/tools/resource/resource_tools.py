@@ -15,6 +15,7 @@ from shapely.geometry import shape
 from shapely.prepared import prep
 from shapely.geometry import Point
 import requests
+import timezonefinder
 
 
 def get_country(lat, lon, geo_data):
@@ -70,7 +71,6 @@ def filter_sites(site_details, location='usa only'):
 
 
 def get_offset(lat, long):
-    from timezonefinder import TimezoneFinder
     """
     returns the timezone offset for a given lat/long
     :param lat:
@@ -78,7 +78,7 @@ def get_offset(lat, long):
     :return:
     """
     today = datetime.now()
-    tf = TimezoneFinder()
+    tf = timezonefinder.TimezoneFinder()
     tz_target = timezone(tf.timezone_at(lng=long, lat=lat))
     if not tz_target:
         raise ValueError("tz_target error")
