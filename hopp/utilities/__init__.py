@@ -1,1 +1,1 @@
-from .utilities import load_yaml, write_yaml, check_create_folder, flatten_dict, equal
+from .utilities import load_yaml, write_yaml, check_create_folder, flatten_dict, equal, array_not_scalar
