@@ -15,8 +15,6 @@ import timezonefinder
 from hopp.simulation.technologies.layout.pv_module import *
 
 
-
-
 def get_time_zone(lat: float,
                   lon: float
                   ) -> pytz.tzinfo:
