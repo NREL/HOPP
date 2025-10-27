@@ -172,6 +172,13 @@ class TowerDispatch(CspDispatch):
             units=u.MW,
             initialize=0.0,
         )
+        if self.heater_enabled:
+            hybrid.tower_heater_electric_power = pyomo.Var(
+                doc="Heater Electric Power [MW]",
+                domain=pyomo.NonNegativeReals,
+                units=u.MW,
+                initialize=0.0,
+            )
         return hybrid.tower_generation, hybrid.tower_load
 
     def _create_port(self, hybrid):
@@ -184,10 +191,10 @@ class TowerDispatch(CspDispatch):
             Port: CSP Tower Port object.
 
         """
-        hybrid.tower_port = Port(
-            initialize={
-                "cycle_generation": hybrid.tower_generation,
-                "system_load": hybrid.tower_load,
-            }
-        )
+        vars_map = {"cycle_generation": hybrid.tower_generation,
+                    "system_load": hybrid.tower_load}
+        if self.heater_enabled:
+            vars_map["heater_electric_power"] = hybrid.tower_heater_electric_power
+
+        hybrid.tower_port = Port(initialize=vars_map)
         return hybrid.tower_port

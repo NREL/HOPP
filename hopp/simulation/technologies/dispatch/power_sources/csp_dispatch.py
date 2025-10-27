@@ -514,6 +514,11 @@ class CspDispatch(Dispatch):
             domain=pyomo.NonNegativeReals,
             units=u.MW,
         )
+        csp.heater_electric_power = pyomo.Var(
+            doc="Electric power consumed by the heater [MW]",
+            domain=pyomo.NonNegativeReals,
+            units=u.MW,
+        )
         csp.is_heater_operating = pyomo.Var(
             doc="1 if electric heater is operating; 0 Otherwise [-]",
             domain=pyomo.Binary,
@@ -748,7 +753,7 @@ class CspDispatch(Dispatch):
                 + (csp.field_startup_losses / csp.time_duration) * csp.is_field_starting
             )
             if self.heater_enabled:
-                rhs += csp.heater_thermal_power / csp.heater_efficiency
+                rhs += csp.heater_electric_power
 
             return csp.system_load == rhs
         csp.generation_balance = pyomo.Constraint(
@@ -780,6 +785,11 @@ class CspDispatch(Dispatch):
             doc="Heater minimum generation limit",
             expr=csp.heater_thermal_power
             >= csp.minimum_heater_thermal_power * csp.is_heater_operating,
+        )
+        csp.heater_electric_consumed = pyomo.Constraint(
+            doc="Heater electric power consumed [MW]",
+            expr=csp.heater_electric_power
+            >= csp.heater_thermal_power / csp.heater_efficiency
         )
         # TODO: is this too restrictive?
         # csp.heater_cycle_coincide = pyomo.Constraint(
@@ -818,8 +828,7 @@ class CspDispatch(Dispatch):
     # Ports                          #
     ##################################
 
-    @staticmethod
-    def _create_csp_port(csp):
+    def _create_csp_port(self, csp):
         """Create pyomo ports related to CSP instance.
 
         Args:
@@ -829,6 +838,8 @@ class CspDispatch(Dispatch):
         csp.port = Port()
         csp.port.add(csp.cycle_generation)
         csp.port.add(csp.system_load)
+        if self.heater_enabled:
+            csp.port.add(csp.heater_electric_power)
 
     ##################################
     # Linking Constraints            #

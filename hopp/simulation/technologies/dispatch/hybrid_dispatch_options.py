@@ -33,6 +33,9 @@ class HybridDispatchOptions:
 
             - **max_lifecycle_per_day** (int, default=None): If include_lifecycle_count, how many cycles allowed per day.
 
+            - **tes_heater_grid_charging** (bool, default=True): If True, electric heater for TES can charge via grid electricity (if False, only local generation can be used to charge the TES via the electric heater).
+                Requires CSP with electric heater enabled in the system model.
+
             - **n_look_ahead_periods** (int, default=48): Number of time periods dispatch looks ahead.
 
             - **n_roll_periods** (int, default=24): Number of time periods simulation rolls forward after each dispatch.
@@ -70,6 +73,7 @@ class HybridDispatchOptions:
             0.0265  # Estimated using SAM output (lithium-ion battery)
         )
         self.max_lifecycle_per_day: int = np.inf
+        self.tes_heater_grid_charging: bool = True
         self.grid_charging: bool = True
         self.pv_charging_only: bool = False
         self.n_look_ahead_periods: int = 48

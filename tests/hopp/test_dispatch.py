@@ -317,7 +317,7 @@ def test_tower_with_heater_dispatch(site):
     # TODO: Use hybrid simulation class with grid and remove this objective set-up
     def create_test_objective_rule(m):
         return sum(m.tower[t].time_duration * m.price[t] * ( m.tower[t].cycle_generation 
-                                                            - m.tower[t].heater_thermal_power / m.tower[t].heater_efficiency )
+                                                            - m.tower[t].heater_electric_power )
                    - m.tower[t].cost_per_field_generation * m.tower[t].receiver_thermal_power * m.tower[t].time_duration
                    - m.tower[t].cost_per_field_start * m.tower[t].incur_field_start
                    - m.tower[t].cost_per_cycle_generation * m.tower[t].cycle_generation * m.tower[t].time_duration
@@ -1045,10 +1045,13 @@ def test_desired_schedule_with_heater_dispatch(site):
     assert sum(hybrid_plant.tower.dispatch.cycle_generation) > 0.0
     assert sum(hybrid_plant.tower.dispatch.receiver_thermal_power) > 0.0
 
-    # Heater dispatches
-    assert sum(hybrid_plant.tower.dispatch.heater_thermal_power) > 0.0
+    # Heater design
     expected_heater_rating = hybrid_plant.tower.cycle_capacity_kw * 1.e-3 / hybrid_plant.tower.cycle_nominal_efficiency
     assert hybrid_plant.tower.outputs.ssc_values['q_dot_heater_des'] == pytest.approx(expected_heater_rating, 0.01)
+
+    # Heater dispatches
+    # print(sum(hybrid_plant.tower.outputs.ssc_time_series['W_dot_heater']))
+    assert sum(hybrid_plant.tower.dispatch.heater_thermal_power) > 0.0
 
 def test_simple_battery_dispatch_lifecycle_limit(site):
     expected_objective = 7882

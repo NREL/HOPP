@@ -104,6 +104,12 @@ class HybridDispatch(Dispatch):
             elif not self.options.grid_charging:
                 self._create_grid_battery_limitation(hybrid)
 
+        if "tower" in self.power_sources.keys():
+            if self.power_sources["tower"].heater_config is not None:
+                if not self.options.tes_heater_grid_charging:
+                    self._create_grid_heater_limitation(hybrid)
+
+
     @staticmethod
     def _create_grid_battery_limitation(hybrid):
         hybrid.no_grid_battery_charge = pyomo.Constraint(
@@ -117,6 +123,14 @@ class HybridDispatch(Dispatch):
             doc="Battery storage can only charge from pv",
             expr=hybrid.pv_generation >= hybrid.battery_charge,
         )
+
+    @staticmethod
+    def _create_grid_heater_limitation(hybrid):
+        hybrid.no_grid_heater_charge = pyomo.Constraint(
+            doc="Electric heater cannot charge TES via the grid",
+            expr=hybrid.system_generation >= hybrid.tower_heater_electric_power
+            )
+
 
     def create_arcs(self):
         ##################################
