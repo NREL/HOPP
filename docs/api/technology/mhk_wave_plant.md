@@ -14,7 +14,7 @@ MHK Wave Generator class
 ## Wave Plant Configuration
 
 ```{eval-rst}
-.. autoclass:: hopp.simulation.technologies.wave.mhk_wave_plant.MHKConfig
+.. autoclass:: hopp.simulation.technologies.wave.mhk_wave_plant.MHKWaveConfig
     :members:
     :undoc-members:
 ```

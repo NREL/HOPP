@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 import inspect
 from typing import Sequence, List
 import numpy as np
-from hopp.tools.utils import flatten_dict, equal
+from hopp.utilities import flatten_dict, equal
 from hopp.simulation.base import BaseClass
 import ProFAST
 

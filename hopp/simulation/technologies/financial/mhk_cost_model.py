@@ -8,7 +8,7 @@ from hopp.utilities.validators import gt_zero, range_val
 
 # avoid circular dep
 if TYPE_CHECKING:
-    from hopp.simulation.technologies.wave.mhk_wave_plant import MHKConfig
+    from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWaveConfig
 
 @define
 class MHKCostModelInputs(BaseClass):
@@ -65,7 +65,7 @@ class MHKCosts(BaseClass):
             ValueError: If any of the required keys in `mhk_config` or
                 `cost_model_inputs` are missing.
     """
-    mhk_config: "MHKConfig"
+    mhk_config: "MHKWaveConfig"
     cost_model_inputs: MHKCostModelInputs
 
     _device_rated_power: float = field(init=False)

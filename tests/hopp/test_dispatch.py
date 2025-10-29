@@ -13,7 +13,7 @@ from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.pv.pv_plant import PVPlant, PVConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerPlant, TowerConfig
 from hopp.simulation.technologies.csp.trough_plant import TroughPlant, TroughConfig
-from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKWaveConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.dispatch.power_sources.csp_dispatch import CspDispatch
 from hopp.simulation.technologies.dispatch.power_sources.tower_dispatch import TowerDispatch
@@ -361,7 +361,7 @@ def test_wave_dispatch():
 
     financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
     mhk_config.update(financial_model)
-    config = MHKConfig.from_dict(mhk_config)
+    config = MHKWaveConfig.from_dict(mhk_config)
 
     cost_model_input = MHKCostModelInputs.from_dict({
         'reference_model_num':3,

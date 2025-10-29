@@ -10,13 +10,12 @@ Functionality includes:
 
 from datetime import datetime
 from pytz import timezone, utc
-from timezonefinder import TimezoneFinder
 from global_land_mask import globe
 from shapely.geometry import shape
 from shapely.prepared import prep
 from shapely.geometry import Point
 import requests
-import pandas as pd
+import timezonefinder
 
 
 def get_country(lat, lon, geo_data):
@@ -79,7 +78,7 @@ def get_offset(lat, long):
     :return:
     """
     today = datetime.now()
-    tf = TimezoneFinder()
+    tf = timezonefinder.TimezoneFinder()
     tz_target = timezone(tf.timezone_at(lng=long, lat=lat))
     if not tz_target:
         raise ValueError("tz_target error")

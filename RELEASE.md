@@ -6,6 +6,7 @@
 * Bug-fix in `WindPlant` for handling model_input_file for PySAM simulations.
 * Remove `tidal_resource` as a required input to the tidal model because it's no longer required in the SSC model ([NREL/SSC PR #1305](https://github.com/NREL/ssc/pull/1305))
 * Add load following heuristic dispatch test
+* Consolidated utilities, renamed MHKConfig to MHKWaveConfig
 
 ## Version 3.3.0, April 30, 2025
 

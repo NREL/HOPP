@@ -23,6 +23,7 @@ from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.tools.resource import *
+from hopp.tools.resource.resource_tools import get_offset
 from hopp import ROOT_DIR
 
 
