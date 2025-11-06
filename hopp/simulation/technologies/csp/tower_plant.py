@@ -324,7 +324,7 @@ class TowerPlant(CspPlant):
         if nperpath % 2 == 1:
             dp += rho * 9.8 * Htot
 
-        # Pumping parasitic at design point reciever mass flow rate (MWe)
+        # Pumping parasitic at design point receiver mass flow rate (MWe)
         wdot = dp * m_rec_design / rho / self.value('eta_pump') / 1.e6
         return wdot / self.field_thermal_rating  # MWe / MWt
 
@@ -416,7 +416,7 @@ class TowerPlant(CspPlant):
     @solar_multiple.setter
     def solar_multiple(self, solar_multiple: float):
         """
-        Set the solar multiple and updates the system model. Solar multiple is defined as the the ratio of receiver
+        Set the solar multiple and updates the system model. Solar multiple is defined as the ratio of receiver
         design thermal power over power cycle design thermal power.
         """
         self.ssc.set({'solarm': solar_multiple})
