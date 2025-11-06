@@ -42,6 +42,23 @@
 * Bugfix for flicker mismatch; cases with a single `Point` now correctly work
 
 
+
+## Version 3.3.0, April 30, 2025
+
+* Added GenericPlant model ([PR #472](https://github.com/NREL/HOPP/pull/472)) which may be used to:
+    - simulate grid and battery performance without resimulating generation of other technologies
+    - represent the physics-based performance of a generation technology that is not included in HOPP
+* Loosened strictness of comparison for wind turbine config checking and added tests
+* Loosened strictness of comparison for wind turbine hub-height and wind resource hub-height
+* Updated workflow for specifying wind turbine parameters without specifying a turbine name with PySAM.
+* Added ability to download wind resource data from WTK-LED for Alaska ([PR #461](https://github.com/NREL/HOPP/pull/461))
+* Added ability to download wind resource data from BC-HRRR CONUS 60-minute (NOAA + NREL) for 2015-2023 ([PR #474](https://github.com/NREL/HOPP/pull/474))
+* Updated HOPP for pySAM 7.0.0 release ([PR #477](https://github.com/NREL/HOPP/pull/477))
+* Add long-duration energy storage (LDES) ([PR #471](https://github.com/NREL/HOPP/pull/471))
+* Bugfix for cycle counting in the minimum operating cost objective function - no longer throws an error
+* Bugfix for flicker mismatch; cases with a single `Point` now correctly work
+
+
 ## Version 3.2.0, March 21, 2025
 
 * Updates related to PySAM:
