@@ -89,6 +89,7 @@ develop = [
     "responses",
     "jupyter-book",
     "sphinxcontrib-napoleon",
+    "nodejs",
 ]
 examples = ["jupyterlab"]
 all = ["hopp[develop,examples]"]
