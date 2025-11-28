@@ -1,19 +1,10 @@
-# .readthedocs.yaml
-# Read the Docs configuration file
-# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
-
 version: 2
-sphinx:
-  # Path to your Sphinx configuration file.
-  configuration: docs/conf.py
 
+# https://docs.readthedocs.io/en/stable/config-file/v2.html
 build:
-  os: ubuntu-22.04
+  os: ubuntu-24.04
   tools:
     python: "3.11"
-    nodejs: "18"  # add Node.js for the doc build (choose version as needed)
-
-  # Generate the Sphinx configuration for Jupyter Book so it builds
   jobs:
     pre_build:
       - "jupyter-book config sphinx docs/"
@@ -23,4 +14,9 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - develop
+      - develop
+
+sphinx:
+  configuration: docs/conf.py
+  builder: html
+  fail_on_warning: false
