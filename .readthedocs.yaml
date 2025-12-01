@@ -15,7 +15,6 @@ python:
       path: .
       extra_requirements:
       - develop
-      - nodejs
 
 sphinx:
   configuration: docs/conf.py
