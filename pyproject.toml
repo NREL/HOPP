@@ -87,7 +87,7 @@ develop = [
     "pytest-subtests",
     "pytest-dependency",
     "responses",
-    "jupyter-book",
+    "jupyter-book<2",
     "sphinxcontrib-napoleon",
 ]
 examples = ["jupyterlab"]
