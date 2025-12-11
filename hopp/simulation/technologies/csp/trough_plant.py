@@ -48,6 +48,9 @@ class TroughPlant(CspPlant):
         # Run code in parent post_init
         super().__attrs_post_init__()
 
+        # Switch to relative mass flow rate limits
+        self.ssc.set({'use_abs_or_rel_mdot_limit': 1})
+
         # set latitude for cmod
         solar_resource_data = self.ssc.get('solar_resource_data')
         self.ssc.set({'lat': solar_resource_data['lat']})
