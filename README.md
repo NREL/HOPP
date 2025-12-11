@@ -9,9 +9,19 @@ As part of NREL's [Hybrid Energy Systems Research](https://www.nrel.gov/wind/hyb
 software assesses optimal designs for the deployment of distributed, commercial, and utility-scale hybrid energy plants, particularly considering wind,
 solar and storage.
 
+
+## Part of the WETO Stack
+
+HOPP is primarily developed with the support of the U.S. Department of Energy and is part of the [WETO Software Stack](https://nrel.github.io/WETOStack). For more information and other integrated modeling software, see:
+- [Portfolio Overview](https://nrel.github.io/WETOStack/portfolio_analysis/overview.html)
+- [Entry Guide](https://nrel.github.io/WETOStack/_static/entry_guide/index.html)
+- [Techno-Economic Modeling Workshop](https://nrel.github.io/WETOStack/workshops/user_workshops_2024.html#tea-and-cost-modeling)
+- [Systems Engineering Workshop](https://nrel.github.io/WETOStack/workshops/user_workshops_2024.html#systems-engineering)
+
+
 ## Software requirements
 
-- Python version 3.10, and 3.11 only
+- Python version 3.11 or higher
 
 ## Installing from Package Repositories
 

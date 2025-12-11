@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 import inspect
 from typing import Sequence, List
 import numpy as np
-from hopp.tools.utils import flatten_dict, equal
+from hopp.utilities import flatten_dict, equal
 from hopp.simulation.base import BaseClass
 import ProFAST
 
@@ -450,7 +450,7 @@ class CustomFinancialModel():
     @staticmethod
     def nominal_discount_rate(inflation_rate: float, real_discount_rate: float):
         """
-        Computes the nominal discount rate [%]
+        Computes the nominal discount rate [%] using the Fisher equation.
 
         :param inflation_rate: inflation rate [%]
         :param real_discount_rate: real discount rate [%]
@@ -469,7 +469,6 @@ class CustomFinancialModel():
             )
 
         return ( (1 + real_discount_rate / 100) * (1 + inflation_rate / 100) - 1 ) * 100
-
 
     def net_cash_flow(self, project_life=25):
         """
@@ -508,7 +507,6 @@ class CustomFinancialModel():
         """
         Computes the annual O&M cost from the fixed, per capacity and per production costs
         """
-        
         return self.value('om_fixed')[0] \
                + self.value('om_capacity')[0] * self.value('system_capacity') \
                + self.value('om_production')[0] * self.value('annual_energy_kwh') * 1e-3

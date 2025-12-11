@@ -3,7 +3,7 @@ from pytest import fixture
 from pathlib import Path
 
 from hopp.simulation.technologies.sites import SiteInfo
-from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKWaveConfig
 from hopp.simulation.technologies.financial.mhk_cost_model import MHKCostModelInputs
 from hopp.simulation.technologies.financial.custom_financial_model import CustomFinancialModel
 from hopp.utilities import load_yaml
@@ -35,7 +35,7 @@ def mhk_config():
 def waveplant(mhk_config, site):
     financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
     mhk_config.update(financial_model)
-    config = MHKConfig.from_dict(mhk_config)
+    config = MHKWaveConfig.from_dict(mhk_config)
     
     cost_model_input = MHKCostModelInputs.from_dict({
         'reference_model_num':3,
@@ -54,7 +54,7 @@ def test_mhk_config(mhk_config, subtests):
         financial_model = {'fin_model': DEFAULT_FIN_CONFIG}
         mhk_config.update(financial_model)
 
-        config = MHKConfig.from_dict(mhk_config)
+        config = MHKWaveConfig.from_dict(mhk_config)
 
         assert config.device_rating_kw == 286.
         assert config.num_devices == 100

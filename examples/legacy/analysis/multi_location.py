@@ -27,6 +27,7 @@ from hopp.simulation.technologies.sites import flatirons_site as sample_site
 from hopp.simulation.hybrid_simulation import HybridSimulation
 from hopp.tools.analysis import create_cost_calculator
 from hopp.tools.resource import *
+from hopp.tools.resource.resource_tools import get_offset
 from hopp.tools.resource.resource_loader import site_details_creator
 from hopp import ROOT_DIR
 resource_dir = ROOT_DIR / "simulation" / "resource_files"
