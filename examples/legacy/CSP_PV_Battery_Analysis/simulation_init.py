@@ -142,7 +142,7 @@ def init_hybrid_plant(techs_in_sim: list, is_test: bool = False, ud_techs: dict 
                                     dispatch_options={
                                         'is_test_start_year': is_test,
                                         'is_test_end_year': is_test,
-                                        'solver': 'cbc',
+                                        'solver': 'appsi_highs',
                                         'grid_charging': False,
                                         'pv_charging_only': True
                                         },

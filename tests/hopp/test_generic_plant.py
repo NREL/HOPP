@@ -97,7 +97,7 @@ def hybrid_tech_config():
 def dispatch_options():
     dispatch_opt = {
         "battery_dispatch": "load_following_heuristic",
-        "solver": "cbc",
+        "solver": "highs",
         "n_look_ahead_periods": 48,
         "grid_charging": False,
         "pv_charging_only": False,

@@ -139,6 +139,8 @@ class HybridDispatchBuilderSolver:
             solver_results = self.glpk_solve()
         elif self.options.solver == "cbc":
             solver_results = self.cbc_solve()
+        elif self.options.solver == "highs":
+            solver_results = self.highs_solve()
         elif self.options.solver == "xpress":
             solver_results = self.xpress_solve()
         elif self.options.solver == "xpress_persistent":
@@ -185,6 +187,96 @@ class HybridDispatchBuilderSolver:
 
     def glpk_solve(self):
         return HybridDispatchBuilderSolver.glpk_solve_call(
+            self.pyomo_model, self.options.log_name, self.options.solver_options
+        )
+    
+    @staticmethod
+    def highs_solve_call(
+        pyomo_model: pyomo.ConcreteModel,
+        log_name: str = "",
+        user_solver_options: dict = None,
+    ):
+
+        # log_name = "annual_solve_GLPK.log"  # For debugging MILP solver
+        # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+        # highs_solver_options = {
+        #     "cuts": None,
+        #     "presol": None,
+        #     # 'mostf': None,
+        #     # 'mipgap': 0.001,
+        #     "tmlim": 30,
+        # }
+        highs_solver_options = dict(
+                time_limit=60.0,
+                mip_rel_gap=0.05,  # TODO ???
+                presolve = 'on',
+                # simplex_strategy = "dual",
+                solver="ipm"
+            )
+        
+        solver_options = SolverOptions(
+            highs_solver_options, log_name, user_solver_options, "log"
+        )
+        with pyomo.SolverFactory("appsi_highs") as solver:
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
+        HybridDispatchBuilderSolver.log_and_solution_check(
+            log_name,
+            solver_options.instance_log,
+            results.solver.termination_condition,
+            pyomo_model,
+        )
+        return results
+    
+    def highs_solve(self):
+        return HybridDispatchBuilderSolver.highs_solve_call(
+            self.pyomo_model, self.options.log_name, self.options.solver_options
+        )
+    
+    @staticmethod
+    def scip_solve_call(
+        pyomo_model: pyomo.ConcreteModel,
+        log_name: str = "",
+        user_solver_options: dict = None,
+    ):
+
+        # log_name = "annual_solve_GLPK.log"  # For debugging MILP solver
+        # Ref. on solver options: https://en.wikibooks.org/wiki/GLPK/Using_GLPSOL
+        # highs_solver_options = {
+        #     "cuts": None,
+        #     "presol": None,
+        #     # 'mostf': None,
+        #     # 'mipgap': 0.001,
+        #     "tmlim": 30,
+        # }
+        scip_solver_options = {
+                "limits/gap": 0.5,
+                "limits/time": 60.0,
+                "display/freq": 0.5,
+                "presolving/maxrounds": -1,
+                "limits/nodes": 1000000,
+                "heuristics/emphasis": "aggressive",
+                "separating/maxrounds": 10,
+                "separating/maxcuts": 100,
+                "branching/priority": "fullstrong"
+                # this is currently useless, as pyomo is not calling the concurrent solver
+                # 'parallel/maxnthreads': 16,
+            }
+        
+        solver_options = SolverOptions(
+            scip_solver_options, log_name, user_solver_options, "log"
+        )
+        with pyomo.SolverFactory("scip") as solver:
+            results = solver.solve(pyomo_model, options=solver_options.constructed)
+        HybridDispatchBuilderSolver.log_and_solution_check(
+            log_name,
+            solver_options.instance_log,
+            results.solver.termination_condition,
+            pyomo_model,
+        )
+        return results
+    
+    def scip_solve(self):
+        return HybridDispatchBuilderSolver.scip_solve_call(
             self.pyomo_model, self.options.log_name, self.options.solver_options
         )
 

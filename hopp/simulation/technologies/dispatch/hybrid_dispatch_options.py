@@ -17,7 +17,7 @@ class HybridDispatchOptions:
     Args:
         dispatch_options (dict): Contains attribute key-value pairs to change default options.
 
-            - **solver** (str, default='cbc'): MILP solver used for dispatch optimization problem. Options are `('glpk', 'cbc', 'xpress', 'xpress_persistent', 'gurobi_ampl', 'gurobi')`.
+            - **solver** (str, default='highs'): MILP solver used for dispatch optimization problem. Options are `('glpk', 'cbc', 'highs', 'scip', 'xpress', 'xpress_persistent', 'gurobi_ampl', 'gurobi')`.
 
             - **solver_options** (dict): Dispatch solver options.
 
@@ -60,7 +60,7 @@ class HybridDispatchOptions:
     """
 
     def __init__(self, dispatch_options: dict = None):
-        self.solver: str = "cbc"
+        self.solver: str = "highs"
         self.solver_options: dict = (
             {}
         )  # used to update solver options, look at specific solver for option names

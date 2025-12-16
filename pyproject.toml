@@ -20,6 +20,7 @@ dependencies = [
     "future",
     "global_land_mask",
     "hybridbosse",
+    "highspy",
     "lcoe",
     "lxml",
     "matplotlib",
