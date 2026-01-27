@@ -132,7 +132,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
      save_outputs contains a dictionary of all results for the hopp calculation.
 
     :param scenario_description: Project scenario - 'greenfield' or 'solar addition'.
-    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup, HybridBOSSE).
+    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup).
     :param total_hybrid_plant_capacity_mw: capacity in MW of hybrid plant.
     :param solar_size_mw: capacity in MW of solar component of plant.
     :param wind_size_mw: capacity in MW of wind component of plant.
@@ -210,7 +210,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     :param solar_size: capacity in MW of solar component of plant.
     :param hybrid_size: capacity in MW of hybrid plant.
     :param bos_details: contains bos details including type of analysis to conduct (cost/mw,
-     json lookup, HybridBOSSE).
+     json lookup).
     :param ppa_price: PPA price in USD($).
     :param solar_tracking_mode: solar tracking mode (e.g. fixed, single-axis, two-axis).
     :param hub_height: hub height in meters.
@@ -477,7 +477,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
     :param wind_size: capacity in MW of wind plant.
     :param solar_size: capacity in MW of solar plant.
     :param hybrid_size: capacity in MW of hybrid plant.
-    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup, HybridBOSSE).
+    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup).
     :param ppa_price: ppa price in $(USD)
     :param solar_tracking_mode: solar tracking mode
     :param hub_height: hub height in meters.
@@ -558,7 +558,7 @@ if __name__ == '__main__':
     scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
                              'Solar Overbuild', 'Hybrid Vs. Wind + Solar Greenfield']
     bos_details = dict()
-    bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+    bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup
     bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
     bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
     # Variable Ratio Wind and Solar Greenfield, or Solar Addition
