@@ -8,6 +8,7 @@
 * Add load following heuristic dispatch test
 * Consolidated utilities, renamed MHKConfig to MHKWaveConfig
 * Updated solar resource download to use GOES Aggregated PSM v4 download
+* Deprecate support for HybridBOSSE.
 
 ## Version 3.3.0, April 30, 2025
 
