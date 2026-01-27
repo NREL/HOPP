@@ -19,7 +19,6 @@ dependencies = [
     "floris==4.3",
     "future",
     "global_land_mask",
-    "hybridbosse",
     "lcoe",
     "lxml",
     "matplotlib",
