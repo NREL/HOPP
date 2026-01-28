@@ -486,7 +486,7 @@ class PySSC:
     def data_set_array(self, p_data, name, parr):
         count = len(parr)
         arr = (c_number * count)()
-        arr[:] = parr  # set all at once instead of looping
+        arr[:] = parr.flatten()  # set all at once instead of looping
         return self.pdll.ssc_data_set_array(c_void_p(p_data), c_char_p(name), pointer(arr), c_int(count))
 
     def data_set_array_from_csv(self, p_data, name, fn):
