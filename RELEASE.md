@@ -1,12 +1,12 @@
 # Release Notes
 
-## Version 3.4.1, December, 10, 2025
+## Version 3.4.1, January 28, 2026
 
 * Pin Jupyter Book to 1.x until v2 migration.
 * Deprecate support for HybridBOSSE.
 * Fix a bug caused by arrays with shape (N, 1) being passed to a `c_double` array with shape (N,)
 
-## Version 3.4
+## Version 3.4, December, 10, 2025
 
 * Add `overwrite_fin_values` from H2Integrate to sync cost input methods
 * Bump minimum NREL-PySAM version to 7.0.0
