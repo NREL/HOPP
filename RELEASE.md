@@ -1,5 +1,13 @@
 # Release Notes
-## Unreleased
+
+## Version 3.4.1, December, 10, 2025
+
+* Pin Jupyter Book to 1.x until v2 migration.
+* Deprecate support for HybridBOSSE.
+* Fix a bug caused by arrays with shape (N, 1) being passed to a `c_double` array with shape (N,)
+
+## Version 3.4
+
 * Add `overwrite_fin_values` from H2Integrate to sync cost input methods
 * Bump minimum NREL-PySAM version to 7.0.0
 * Clarify that the `nominal_discount_rate` method of the `CustomFinancialModel` uses the Fisher equation
@@ -8,8 +16,6 @@
 * Add load following heuristic dispatch test
 * Consolidated utilities, renamed MHKConfig to MHKWaveConfig
 * Updated solar resource download to use GOES Aggregated PSM v4 download
-* Deprecate support for HybridBOSSE.
-* Fix a bug caused by arrays with shape (N, 1) being passed to a `c_double` array with shape (N,)
 
 ## Version 3.3.0, April 30, 2025
 
