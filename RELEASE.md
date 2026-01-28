@@ -1,5 +1,9 @@
 # Release Notes
 ## Unreleased
+* Added excel file with coordinates for 50 locations in west Africa. This excel file is used in example 12, but can also be broadly useful in testing other HOPP scripts.
+    - `examples/inputs/west_africa_coordinates.xlsx`
+* Added an example that allows HOPP simulations to be run sequentially for multiple locations anywhere in the world.
+    - `examples/12-worldwide-multi-location-example.ipynb`
 * Add `overwrite_fin_values` from H2Integrate to sync cost input methods
 * Bump minimum NREL-PySAM version to 7.0.0
 * Clarify that the `nominal_discount_rate` method of the `CustomFinancialModel` uses the Fisher equation
