@@ -8,6 +8,7 @@
 * Add load following heuristic dispatch test
 * Consolidated utilities, renamed MHKConfig to MHKWaveConfig
 * Updated solar resource download to use GOES Aggregated PSM v4 download
+* Fix a bug caused by arrays with shape (N, 1) being passed to a `c_double` array with shape (N,)
 
 ## Version 3.3.0, April 30, 2025
 
