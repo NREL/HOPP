@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 3.4.2, February 9, 2026
+
+* Unpinned `fastkml` version to remove package dependency issues
+
 ## Version 3.4.1, January 28, 2026
 
 * Pin Jupyter Book to 1.x until v2 migration.

@@ -15,7 +15,7 @@ dependencies = [
     "NREL-PySAM>=7.0.0",
     "Pillow",
     "Pyomo>=6.1.2",
-    "fastkml<1",
+    "fastkml",
     "floris==4.3",
     "future",
     "global_land_mask",
