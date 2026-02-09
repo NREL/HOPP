@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 3.4.2, unreleased
+## Version 3.4.2, February 9, 2026
 
 * Unpinned `fastkml` version to remove package dependency issues
 
