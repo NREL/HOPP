@@ -1,6 +1,5 @@
 from .bos_model import BOSCostPerMW, BOSCalculator
 from .bos_lookup import BOSLookup
-# from .hybrid_bosse import HybridBOSSE
 from hopp.utilities.log import bos_logger as logger
 import numpy as np
 
@@ -25,8 +24,7 @@ class CostCalculator():
                  cost_reductions=[]):
 
         """
-        :param bos_cost_source: Defines the type of bos analysis used. Options are 'JSONLookup', 'Cost/MW',
-                                    'HybridBOSSE', 'HybridBOSSE manual'
+        :param bos_cost_source: Defines the type of bos analysis used. Options are 'JSONLookup' or 'Cost/MW'
         :param scenario: 'greenfield' or 'solar addition'
         :param interconnection_size: Size (MW) of interconnection
         :param wind_installed_cost_mw: $USD cost/mw for installed wind

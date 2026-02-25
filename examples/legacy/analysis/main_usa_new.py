@@ -23,6 +23,7 @@ from hopp.simulation.hybrid_simulation import HybridSimulation
 
 from hopp.tools.analysis import create_cost_calculator
 from hopp.tools.resource import *
+from hopp.tools.resource.resource_tools import get_offset
 from hopp import ROOT_DIR
 
 
@@ -131,7 +132,7 @@ def run_hopp_calc(Site, scenario_description, bos_details, total_hybrid_plant_ca
      save_outputs contains a dictionary of all results for the hopp calculation.
 
     :param scenario_description: Project scenario - 'greenfield' or 'solar addition'.
-    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup, HybridBOSSE).
+    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup).
     :param total_hybrid_plant_capacity_mw: capacity in MW of hybrid plant.
     :param solar_size_mw: capacity in MW of solar component of plant.
     :param wind_size_mw: capacity in MW of wind component of plant.
@@ -209,7 +210,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     :param solar_size: capacity in MW of solar component of plant.
     :param hybrid_size: capacity in MW of hybrid plant.
     :param bos_details: contains bos details including type of analysis to conduct (cost/mw,
-     json lookup, HybridBOSSE).
+     json lookup).
     :param ppa_price: PPA price in USD($).
     :param solar_tracking_mode: solar tracking mode (e.g. fixed, single-axis, two-axis).
     :param hub_height: hub height in meters.
@@ -296,48 +297,48 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
                                        key=operator.itemgetter(1))
 
     # Determine the differential between standalone wind + standalone solar vs. wind + adding solar
-    hopp_outputs['Hybrid vs. Seperate'] = establish_save_output_dict()
-    hopp_outputs['Hybrid vs. Seperate']['Scenario Description'].append(
+    hopp_outputs['Hybrid vs. Separate'] = establish_save_output_dict()
+    hopp_outputs['Hybrid vs. Separate']['Scenario Description'].append(
         '(Combined Wind & Solar) - (Standalone Wind + Standalone Solar)')
-    hopp_outputs['Hybrid vs. Seperate']['Solar (%)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Solar (MW)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Wind (MW)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['AEP (GWh)'].append((hopp_outputs['Hybrid']['AEP (GWh)'][0])
+    hopp_outputs['Hybrid vs. Separate']['Solar (%)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Solar (MW)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Wind (MW)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['AEP (GWh)'].append((hopp_outputs['Hybrid']['AEP (GWh)'][0])
                                                            - (hopp_outputs['Wind']['AEP (GWh)'][0]
                                                               + hopp_outputs['Solar']['AEP (GWh)'][0]))
-    hopp_outputs['Hybrid vs. Seperate']['Solar AEP (GWh)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Wind AEP (GWh)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Solar Capacity Factor'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Capacity Factor'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Wind Capacity Factor'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Capacity Factor of Interconnect'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Percentage Curtailment'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['NPV ($-million)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['LCOE - Nominal'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['LCOE - Real'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['IRR (%)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['PPA Price Used'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['TOD Profile Used'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Revenue (PPA)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Revenue (TOD)'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['Pearson R Wind V Solar'].append(float('nan'))
-    hopp_outputs['Hybrid vs. Seperate']['BOS Cost'].append((hopp_outputs['Hybrid']['BOS Cost'][0])
+    hopp_outputs['Hybrid vs. Separate']['Solar AEP (GWh)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Wind AEP (GWh)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Solar Capacity Factor'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Capacity Factor'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Wind Capacity Factor'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Capacity Factor of Interconnect'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Percentage Curtailment'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['NPV ($-million)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['LCOE - Nominal'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['LCOE - Real'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['IRR (%)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['PPA Price Used'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['TOD Profile Used'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Revenue (PPA)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Revenue (TOD)'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['Pearson R Wind V Solar'].append(float('nan'))
+    hopp_outputs['Hybrid vs. Separate']['BOS Cost'].append((hopp_outputs['Hybrid']['BOS Cost'][0])
                                                           - (hopp_outputs['Wind']['BOS Cost'][0]
                                                              + hopp_outputs['Solar']['BOS Cost'][0]))
-    hopp_outputs['Hybrid vs. Seperate']['BOS Cost percent reduction'].append(100 * ((
+    hopp_outputs['Hybrid vs. Separate']['BOS Cost percent reduction'].append(100 * ((
                                                                                        hopp_outputs[
-                                                                                           'Hybrid vs. Seperate'][
+                                                                                           'Hybrid vs. Separate'][
                                                                                            'BOS Cost'][0]) /
                                                                                    ((hopp_outputs['Wind']['BOS Cost'][0]
                                                                                      + hopp_outputs['Solar']['BOS Cost'][
                                                                                          0]))))
-    hopp_outputs['Hybrid vs. Seperate']['Cost / MWh Produced'].append((hopp_outputs['Hybrid']
+    hopp_outputs['Hybrid vs. Separate']['Cost / MWh Produced'].append((hopp_outputs['Hybrid']
     ['Cost / MWh Produced'][0])
                                                                      - (hopp_outputs['Wind']['Cost / MWh Produced'][0]
                                                                         + hopp_outputs['Solar']['Cost / MWh Produced'][
                                                                             0]) / 2)
-    hopp_outputs['Hybrid vs. Seperate']['Cost / MWh Produced percent reduction']. \
-        append(100 * ((hopp_outputs['Hybrid vs. Seperate']
+    hopp_outputs['Hybrid vs. Separate']['Cost / MWh Produced percent reduction']. \
+        append(100 * ((hopp_outputs['Hybrid vs. Separate']
     ['Cost / MWh Produced'][0])
                       / ((hopp_outputs['Wind']['Cost / MWh Produced'][0]
                           + hopp_outputs['Solar']
@@ -345,7 +346,7 @@ def run_hybrid_calc(site_num, scenario_descriptions, results_dir, load_resource_
     cost_per_mw_reduction_hybrid_vs_standalone = ((hopp_outputs['Hybrid']['Cost / MWh Produced'][0])
                                                   - (hopp_outputs['Wind']['Cost / MWh Produced'][0]
                                                      + hopp_outputs['Solar']['Cost / MWh Produced'][0]) / 2)
-    cost_per_mw_reduction_hybrid_vs_standalone_percent = (100 * ((hopp_outputs['Hybrid vs. Seperate']
+    cost_per_mw_reduction_hybrid_vs_standalone_percent = (100 * ((hopp_outputs['Hybrid vs. Separate']
     ['Cost / MWh Produced'][0])
                                                                  / ((hopp_outputs['Wind']
                                                                      ['Cost / MWh Produced'][0]
@@ -476,7 +477,7 @@ def run_all_hybrid_calcs(site_details, scenario_descriptions, results_dir, load_
     :param wind_size: capacity in MW of wind plant.
     :param solar_size: capacity in MW of solar plant.
     :param hybrid_size: capacity in MW of hybrid plant.
-    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup, HybridBOSSE).
+    :param bos_details: contains bos details including type of analysis to conduct (cost/mw, json lookup).
     :param ppa_price: ppa price in $(USD)
     :param solar_tracking_mode: solar tracking mode
     :param hub_height: hub height in meters.
@@ -557,7 +558,7 @@ if __name__ == '__main__':
     scenario_descriptions = ['Wind Only', 'Solar Only', 'Hybrid - Wind & Solar', 'Solar Addition', 'Wind Overbuild',
                              'Solar Overbuild', 'Hybrid Vs. Wind + Solar Greenfield']
     bos_details = dict()
-    bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup, HybridBOSSE, HybridBOSSE_manual
+    bos_details['BOSSource'] = 'JSONLookup'  # Cost/MW, JSONLookup
     bos_details['BOSFile'] = 'UPDATED_BOS_Summary_Results.json'
     bos_details['BOSScenario'] = 'TBD in analysis'  # Will be set to Wind Only, Solar Only,
     # Variable Ratio Wind and Solar Greenfield, or Solar Addition

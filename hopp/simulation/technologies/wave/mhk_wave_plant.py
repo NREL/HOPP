@@ -11,7 +11,7 @@ from hopp.utilities.validators import gt_zero, range_val
 
 
 @define
-class MHKConfig(BaseClass):
+class MHKWaveConfig(BaseClass):
     """
     Configuration class for MHKWavePlant.
 
@@ -56,7 +56,7 @@ class MHKWavePlant(PowerSource):
 
         """
     site: SiteInfo
-    config: MHKConfig
+    config: MHKWaveConfig
     cost_model_inputs: Optional[MHKCostModelInputs] = field(default=None)
     config_name: str = field(default="MhkWave")
 

@@ -18,7 +18,7 @@ class PowerStorageDispatch(Dispatch):
         block_set_name: str,
         dispatch_options,
     ):
-        """Intialize PowerStorageDispatch.
+        """Initialize PowerStorageDispatch.
 
         Args:
             pyomo_model (pyomo.ConcreteModel): Pyomo concrete model.

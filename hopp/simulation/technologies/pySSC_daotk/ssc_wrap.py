@@ -435,12 +435,10 @@ class PySSC:
         elif sys.platform == 'darwin':
             self.pdll = CDLL(os.path.join(this_directory, "libs", "ssc.dylib"))
         elif sys.platform == 'linux':
-            self.pdll = CDLL(os.path.join(this_directory, "libs", 'ssc.so'))
+            self.pdll = CDLL(os.path.join(this_directory, "libs", 'libssc.so'))
         else:
             print('Platform not supported ', sys.platform)
-        # For debugging purposes, uncomment the following line to print the process ID
-        # This can be useful for attaching a debugger to the process
-        #print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call
+        print('Process ID = ' + str(os.getpid()))       # attach to process will not work until after the above CDLL() call
         pass
 
     INVALID = 0

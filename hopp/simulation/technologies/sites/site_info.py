@@ -500,11 +500,9 @@ class SiteInfo(BaseClass):
 
     @staticmethod
     def kml_read(filepath):
-        k = kml.KML()
-        with open(filepath) as kml_file:
-            k.from_string(kml_file.read().encode("utf-8"))
-        features = list(k.features())[0]
-        placemarks = list(list(features.features())[0].features())
+        k = kml.KML.parse(filepath)
+        features = k.features[0]
+        placemarks = features.features[0].features
         
         gmaps_epsg = pyproj.CRS("EPSG:4326")
         project = None
@@ -533,7 +531,6 @@ class SiteInfo(BaseClass):
 
     @staticmethod
     def append_kml_data(kml_data, polygon, name):
-        folder = kml_data._features[0]._features[0]
-        new_pm = kml.Placemark(name=name)
-        new_pm.geometry = polygon
+        folder = kml_data.features[0].features[0]
+        new_pm = kml.Placemark(name=name, geometry=polygon)
         folder.append(new_pm)

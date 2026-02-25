@@ -14,7 +14,7 @@ from hopp.simulation.technologies.pv.detailed_pv_plant import DetailedPVPlant, D
 from hopp.simulation.technologies.wind.wind_plant import WindPlant, WindConfig
 from hopp.simulation.technologies.csp.tower_plant import TowerConfig, TowerPlant
 from hopp.simulation.technologies.csp.trough_plant import TroughConfig, TroughPlant
-from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKConfig
+from hopp.simulation.technologies.wave.mhk_wave_plant import MHKWavePlant, MHKWaveConfig
 from hopp.simulation.technologies.tidal.mhk_tidal_plant import MHKTidalPlant, MHKTidalConfig
 from hopp.simulation.technologies.generic.generic_plant import GenericConfig, GenericPlant
 from hopp.simulation.technologies.battery import Battery, BatteryConfig, BatteryStateless, BatteryStatelessConfig
@@ -111,7 +111,7 @@ class TechnologiesConfig(BaseClass):
     """
     pv: Optional[Union[PVConfig, DetailedPVConfig]] = field(default=None)
     wind: Optional[WindConfig] = field(default=None)
-    wave: Optional[MHKConfig] = field(default=None)
+    wave: Optional[MHKWaveConfig] = field(default=None)
     tidal: Optional[MHKTidalConfig] = field(default=None)
     generic: Optional[Union[GenericConfig,list[GenericConfig]]] = field(default=None)
     tower: Optional[TowerConfig] = field(default=None)
@@ -139,7 +139,7 @@ class TechnologiesConfig(BaseClass):
             config["wind"] = WindConfig.from_dict(data["wind"])
 
         if "wave" in data:
-            config["wave"] = MHKConfig.from_dict(data["wave"])
+            config["wave"] = MHKWaveConfig.from_dict(data["wave"])
 
         if "tidal" in data:
             config["tidal"] = MHKTidalConfig.from_dict(data["tidal"])
