@@ -195,8 +195,8 @@ class HybridDispatchBuilderSolver:
         user_solver_options: dict = None,
     ):
 
-        # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
-        gurobi_solver_options = {"timelim": 60, "threads": 1}
+        # Ref. on solver options: https://docs.gurobi.com/current/#ampl-gurobi/parameters.html
+        gurobi_solver_options = {"TimeLimit": 60, "threads": 1}
         solver_options = SolverOptions(
             gurobi_solver_options, log_name, user_solver_options, "logfile"
         )
@@ -226,8 +226,8 @@ class HybridDispatchBuilderSolver:
         user_solver_options: dict = None,
     ):
 
-        # Ref. on solver options: https://www.gurobi.com/documentation/9.1/ampl-gurobi/parameters.html
-        gurobi_solver_options = {"timelim": 60, "threads": 1}
+        # Ref. on solver options: https://docs.gurobi.com/current/#ampl-gurobi/parameters.html
+        gurobi_solver_options = {"TimeLimit": 60, "threads": 1}
         solver_options = SolverOptions(
             gurobi_solver_options, log_name, user_solver_options, "logfile"
         )
