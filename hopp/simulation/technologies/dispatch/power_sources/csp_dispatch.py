@@ -791,11 +791,11 @@ class CspDispatch(Dispatch):
             expr=csp.heater_electric_power
             >= csp.heater_thermal_power / csp.heater_efficiency
         )
-        # TODO: is this too restrictive?
-        # csp.heater_cycle_coincide = pyomo.Constraint(
-        #     doc="Heater and cycle cannot operate at the same time",
-        #     expr=csp.is_heater_operating + csp.is_cycle_generating <= 1,
-        # )
+        # SSC controller cannot handle heater and cycle operations at the same time
+        csp.heater_cycle_coincide = pyomo.Constraint(
+            doc="Heater and cycle cannot operate at the same time",
+            expr=csp.is_heater_operating + csp.is_cycle_generating <= 1,
+        )
         csp.heaters_off_before_defocus = pyomo.Constraint(
             doc="Heater must be off before field defocus",
             expr=csp.receiver_thermal_power + csp.receiver_startup_consumption
