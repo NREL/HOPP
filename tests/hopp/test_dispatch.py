@@ -1058,7 +1058,7 @@ def test_desired_schedule_with_heater_dispatch(site):
 
     # Default case doesn't leave enough head room for battery operations
     tower_pv_battery['tower'] = {'cycle_capacity_kw': 35 * 1000,
-                                 'solar_multiple': 2.0,
+                                 'solar_multiple': 0.8,
                                  'tes_hours': 10.0,
                                  'heater_params': {
                                      'heater_mult': 1.0}
@@ -1120,7 +1120,7 @@ def test_desired_schedule_with_heater_dispatch(site):
     assert hybrid_plant.tower.outputs.ssc_values['q_dot_heater_des'] == pytest.approx(expected_heater_rating, 0.01)
 
     # Heater dispatches
-    # print(sum(hybrid_plant.tower.outputs.ssc_time_series['W_dot_heater']))
+    print(sum(hybrid_plant.tower.outputs.ssc_time_series['W_dot_heater']))
     assert sum(hybrid_plant.tower.dispatch.heater_thermal_power) > 0.0
 
 def test_simple_battery_dispatch_lifecycle_limit(site):

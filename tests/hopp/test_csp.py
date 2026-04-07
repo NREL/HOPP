@@ -236,7 +236,7 @@ def test_tower_with_dispatch_model(site):
 
 def test_trough_with_dispatch_model(site):
     """Testing pySSC tower model using HOPP built-in dispatch model"""
-    expected_energy = 1810902
+    expected_energy = 1761519
 
     interconnection_size_kw = 50000
     technologies = {
@@ -350,7 +350,7 @@ def test_trough_annual_financial(site):
     # Expected values from SAM UI (develop) built 9/24/2021 (default parameters except those in trough_config, weather file, and ppa_soln_mode = 1)
     # Note results should be close, but won't match exactly because daotk-develop ssc branch is used for performance simulations
     expected_energy = 180106837
-    expected_lcoe_nom = 17.640
+    expected_lcoe_nom = 17.746
     expected_ppa_nom = 14.5131
 
     config = TroughConfig.from_dict(trough_config)

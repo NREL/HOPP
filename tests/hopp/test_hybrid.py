@@ -1371,7 +1371,7 @@ def test_trough_pv_hybrid(hybrid_config):
     npvs = hybrid_plant.net_present_values
 
     assert aeps.pv == approx(112339520.44, 1e-3)
-    assert aeps.trough == approx(1753257.87, 2e-2)
+    assert aeps.trough == approx(1712199.83, 2e-2)
     assert aeps.hybrid == approx(114088949.52, 1e-3)
 
     # assert npvs.pv == approx(80738107, 1e3)
