@@ -1721,6 +1721,8 @@ def test_capacity_credit(hybrid_config,subtests):
     np_cap = (
         hybrid_plant.system_nameplate_mw
     )  # This is not the same as nominal capacity...
+    assert np_cap["hybrid"] == approx(min(hybrid_plant.interconnect_kw, total_nominal_capacity) / 1000, rel=0.01)
+
     assert cp_pay["pv"][1] / (np_cap["pv"]) / (capcred["pv"][0] / 100) == approx(
         cap_payment_mw, 0.05
     )
@@ -1772,7 +1774,7 @@ def test_capacity_credit(hybrid_config,subtests):
     with subtests.test("battery npvs"):
         assert npvs.battery == approx(-2895459, rel=5e-2)
     with subtests.test("hybrid npvs"):
-        assert npvs.hybrid == approx(210321, rel=5e-2)
+        assert npvs.hybrid == approx(-1268680, rel=5e-2)
 
     with subtests.test("pv taxes"):
         assert taxes.pv[1] == approx(108631, rel=5e-2)
@@ -1781,7 +1783,7 @@ def test_capacity_credit(hybrid_config,subtests):
     with subtests.test("battery taxes"):
         assert taxes.battery[1] == approx(189346, rel=5e-2)
     with subtests.test("hybrid taxes"):
-        assert taxes.hybrid[1] == approx(598426, rel=5e-2)
+        assert taxes.hybrid[1] == approx(664036, rel=5e-2)
 
     with subtests.test("pv apv"):
         assert apv.pv[1] == approx(0, rel=5e-2)
@@ -1844,7 +1846,7 @@ def test_capacity_credit(hybrid_config,subtests):
     with subtests.test("battery rev"):
         assert rev.battery[1] == approx(446518, rel=5e-2)
     with subtests.test("hybrid rev"):
-        assert rev.hybrid[1] == approx(2187556, rel=5e-2)
+        assert rev.hybrid[1] == approx(1974404, rel=5e-2)
 
     with subtests.test("pv tc"):
         assert tc.pv[1] == approx(322913, rel=5e-2)

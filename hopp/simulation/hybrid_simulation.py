@@ -571,6 +571,7 @@ class HybridSimulation(BaseClass):
         hybrid_size_kw = sum([v.system_capacity_kw for v in generators])
         if hybrid_size_kw == 0:
             return
+        hybrid_size_kw = min(hybrid_size_kw, self.interconnect_kw)     # cap hybrid size at interconnection limit
 
         size_ratios = []
         for v in generators:
